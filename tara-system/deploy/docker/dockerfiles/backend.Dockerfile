@@ -4,38 +4,41 @@ ARG SERVICE_NAME=project-service
 
 WORKDIR /app
 
-# Configure Chinese mirrors
-RUN echo "deb https://mirrors.aliyun.com/debian/ bookworm main non-free non-free-firmware contrib" > /etc/apt/sources.list && \
-    echo "deb https://mirrors.aliyun.com/debian-security/ bookworm-security main" >> /etc/apt/sources.list && \
-    echo "deb https://mirrors.aliyun.com/debian/ bookworm-updates main non-free non-free-firmware contrib" >> /etc/apt/sources.list
+# === 1. 彻底清理所有现有 APT 源 ===
+RUN rm -f /etc/apt/sources.list && \
+    rm -rf /etc/apt/sources.list.d/*
 
-# Configure pip to use Chinese mirror
+# === 2. 使用 trixie（Debian 13）的阿里云源 ===
+RUN echo "deb https://mirrors.aliyun.com/debian/ trixie main non-free non-free-firmware contrib" > /etc/apt/sources.list && \
+    echo "deb https://mirrors.aliyun.com/debian/ trixie-updates main non-free non-free-firmware contrib" >> /etc/apt/sources.list && \
+    echo "deb https://mirrors.aliyun.com/debian-security/ trixie-security main non-free non-free-firmware contrib" >> /etc/apt/sources.list
+
+# === 3. 配置 pip 使用阿里云镜像 ===
 RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ && \
     pip config set global.trusted-host mirrors.aliyun.com
 
-# Install system dependencies
+# === 4. 安装系统依赖 ===
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy shared module first
+# === 5. 复制并安装共享模块 ===
 COPY backend/shared /app/shared
 RUN pip install --no-cache-dir -e /app/shared
 
-# Copy the specific service
+# === 6. 复制并安装具体服务 ===
 COPY backend/${SERVICE_NAME} /app/service
 RUN pip install --no-cache-dir -e /app/service
 
 WORKDIR /app/service
 
-# Extract port from service name
-# project=8001, document=8002, asset=8003, threat-risk=8004, diagram=8005, report=8006, agent=8007
+# 端口映射: project=8001, document=8002, asset=8003, threat-risk=8004, diagram=8005, report=8006, agent=8007
 EXPOSE 8001 8002 8003 8004 8005 8006 8007
 
-# Health check
+# 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8001}/health || exit 1
 
-# Run the application
+# 启动应用
 CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}"]
