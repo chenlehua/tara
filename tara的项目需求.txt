@@ -1,0 +1,5 @@
+这是一个汽车领域的智能TARA分析系统：
+1、包含项目管理、文档解析、资产识别、威胁分析、风险评估、图标生成、报告中心等模块。
+2、技术选型：ElasticSearch、Milvus、Mysql、Redis、Minio、Neo4j、MCP。
+3、包括前后端。
+4、采用智能体方式实现，结合私有化部署的Qwen3-VL-8B、Qwen3、Ocrflux、Qwen3-Embedding-0.6B等模型
