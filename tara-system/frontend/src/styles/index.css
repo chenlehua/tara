@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --el-color-primary: #409eff;
+  --header-height: 60px;
+  --sidebar-width: 240px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 
+    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+}
+
+/* Layout */
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  background-color: #304156;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.content-wrapper {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+  background-color: #f5f7fa;
+}
+
+/* Cards */
+.page-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Risk colors */
+.risk-critical {
+  color: #f56c6c;
+}
+
+.risk-high {
+  color: #e6a23c;
+}
+
+.risk-medium {
+  color: #409eff;
+}
+
+.risk-low {
+  color: #67c23a;
+}
+
+.risk-negligible {
+  color: #909399;
+}
+
+/* Status tags */
+.status-tag {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}

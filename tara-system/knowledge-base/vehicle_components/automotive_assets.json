@@ -1,0 +1,283 @@
+{
+  "version": "1.0.0",
+  "description": "汽车典型资产库",
+  "asset_categories": [
+    {
+      "id": "powertrain",
+      "name": "动力总成",
+      "description": "与车辆动力相关的系统",
+      "assets": [
+        {
+          "name": "Engine Control Module (ECM)",
+          "type": "ecu",
+          "description": "发动机控制模块",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN", "LIN", "Diagnostic"],
+          "safety_relevance": "high"
+        },
+        {
+          "name": "Transmission Control Module (TCM)",
+          "type": "ecu",
+          "description": "变速箱控制模块",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN"],
+          "safety_relevance": "high"
+        },
+        {
+          "name": "Battery Management System (BMS)",
+          "type": "ecu",
+          "description": "电池管理系统(电动车)",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN"],
+          "safety_relevance": "high"
+        }
+      ]
+    },
+    {
+      "id": "chassis",
+      "name": "底盘系统",
+      "description": "与车辆控制相关的系统",
+      "assets": [
+        {
+          "name": "Electronic Brake Control Module (EBCM)",
+          "type": "ecu",
+          "description": "电子制动控制模块(ABS/ESP)",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN", "FlexRay"],
+          "safety_relevance": "critical"
+        },
+        {
+          "name": "Electric Power Steering (EPS)",
+          "type": "ecu",
+          "description": "电动助力转向",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN"],
+          "safety_relevance": "critical"
+        },
+        {
+          "name": "Airbag Control Module (ACM)",
+          "type": "ecu",
+          "description": "安全气囊控制模块",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN"],
+          "safety_relevance": "critical"
+        }
+      ]
+    },
+    {
+      "id": "adas",
+      "name": "高级驾驶辅助系统",
+      "description": "ADAS相关系统",
+      "assets": [
+        {
+          "name": "ADAS Domain Controller",
+          "type": "ecu",
+          "description": "ADAS域控制器",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["Ethernet", "CAN", "Camera", "Radar", "Lidar"],
+          "safety_relevance": "critical"
+        },
+        {
+          "name": "Front Camera",
+          "type": "sensor",
+          "description": "前视摄像头",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["LVDS", "Ethernet"],
+          "safety_relevance": "high"
+        },
+        {
+          "name": "Radar Sensor",
+          "type": "sensor",
+          "description": "毫米波雷达",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN", "Ethernet"],
+          "safety_relevance": "high"
+        }
+      ]
+    },
+    {
+      "id": "connectivity",
+      "name": "互联系统",
+      "description": "车辆联网相关系统",
+      "assets": [
+        {
+          "name": "Telematics Control Unit (TCU)",
+          "type": "gateway",
+          "description": "远程信息处理单元",
+          "security_attrs": {
+            "confidentiality": "high",
+            "integrity": "high",
+            "availability": "medium"
+          },
+          "interfaces": ["Cellular", "WiFi", "CAN", "Ethernet"],
+          "safety_relevance": "medium"
+        },
+        {
+          "name": "Central Gateway",
+          "type": "gateway",
+          "description": "中央网关",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": ["CAN", "Ethernet", "LIN"],
+          "safety_relevance": "high"
+        },
+        {
+          "name": "OBD-II Port",
+          "type": "external_interface",
+          "description": "车载诊断接口",
+          "security_attrs": {
+            "confidentiality": "high",
+            "integrity": "high",
+            "availability": "low"
+          },
+          "interfaces": ["CAN", "K-Line"],
+          "safety_relevance": "medium"
+        }
+      ]
+    },
+    {
+      "id": "infotainment",
+      "name": "信息娱乐系统",
+      "description": "车载信息娱乐相关系统",
+      "assets": [
+        {
+          "name": "Infotainment Unit (IVI)",
+          "type": "ecu",
+          "description": "车载信息娱乐主机",
+          "security_attrs": {
+            "confidentiality": "high",
+            "integrity": "medium",
+            "availability": "low"
+          },
+          "interfaces": ["Bluetooth", "USB", "WiFi", "CAN"],
+          "safety_relevance": "low"
+        },
+        {
+          "name": "Instrument Cluster",
+          "type": "ecu",
+          "description": "仪表盘",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "medium",
+            "availability": "medium"
+          },
+          "interfaces": ["CAN"],
+          "safety_relevance": "medium"
+        }
+      ]
+    },
+    {
+      "id": "body",
+      "name": "车身系统",
+      "description": "车身控制相关系统",
+      "assets": [
+        {
+          "name": "Body Control Module (BCM)",
+          "type": "ecu",
+          "description": "车身控制模块",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "medium",
+            "availability": "medium"
+          },
+          "interfaces": ["CAN", "LIN"],
+          "safety_relevance": "low"
+        },
+        {
+          "name": "Keyless Entry System",
+          "type": "external_interface",
+          "description": "无钥匙进入系统",
+          "security_attrs": {
+            "confidentiality": "high",
+            "integrity": "high",
+            "availability": "medium"
+          },
+          "interfaces": ["RF", "LF"],
+          "safety_relevance": "low"
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "name": "网络总线",
+      "description": "车载网络",
+      "assets": [
+        {
+          "name": "CAN Bus (Powertrain)",
+          "type": "bus",
+          "description": "动力域CAN总线",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": [],
+          "safety_relevance": "high"
+        },
+        {
+          "name": "CAN Bus (Chassis)",
+          "type": "bus",
+          "description": "底盘域CAN总线",
+          "security_attrs": {
+            "confidentiality": "low",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": [],
+          "safety_relevance": "critical"
+        },
+        {
+          "name": "Automotive Ethernet",
+          "type": "bus",
+          "description": "车载以太网",
+          "security_attrs": {
+            "confidentiality": "medium",
+            "integrity": "high",
+            "availability": "high"
+          },
+          "interfaces": [],
+          "safety_relevance": "high"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tara-ingress
+  namespace: tara-system
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: tara.example.com
+      http:
+        paths:
+          # Frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend-service
+                port:
+                  number: 80
+          # Project API
+          - path: /api/v1/projects
+            pathType: Prefix
+            backend:
+              service:
+                name: project-service
+                port:
+                  number: 8001
+          # Document API
+          - path: /api/v1/documents
+            pathType: Prefix
+            backend:
+              service:
+                name: document-service
+                port:
+                  number: 8002
+          # Asset API
+          - path: /api/v1/assets
+            pathType: Prefix
+            backend:
+              service:
+                name: asset-service
+                port:
+                  number: 8003
+          # Threat Risk API
+          - path: /api/v1/threats
+            pathType: Prefix
+            backend:
+              service:
+                name: threat-risk-service
+                port:
+                  number: 8004
+          - path: /api/v1/risks
+            pathType: Prefix
+            backend:
+              service:
+                name: threat-risk-service
+                port:
+                  number: 8004
+          - path: /api/v1/attack-paths
+            pathType: Prefix
+            backend:
+              service:
+                name: threat-risk-service
+                port:
+                  number: 8004
+          # Diagram API
+          - path: /api/v1/diagrams
+            pathType: Prefix
+            backend:
+              service:
+                name: diagram-service
+                port:
+                  number: 8005
+          # Report API
+          - path: /api/v1/reports
+            pathType: Prefix
+            backend:
+              service:
+                name: report-service
+                port:
+                  number: 8006
+          # Agent API
+          - path: /api/v1/agents
+            pathType: Prefix
+            backend:
+              service:
+                name: agent-service
+                port:
+                  number: 8007
+          - path: /api/v1/chat
+            pathType: Prefix
+            backend:
+              service:
+                name: agent-service
+                port:
+                  number: 8007

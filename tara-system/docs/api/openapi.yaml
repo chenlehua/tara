@@ -1,0 +1,328 @@
+openapi: 3.0.3
+info:
+  title: TARA System API
+  description: |
+    汽车智能威胁分析与风险评估系统 API 文档
+    
+    ## 概述
+    TARA System 提供完整的威胁分析和风险评估功能，符合 ISO/SAE 21434 标准。
+    
+    ## 认证
+    所有 API 请求需要在 Header 中携带 JWT Token:
+    ```
+    Authorization: Bearer <token>
+    ```
+  version: 1.0.0
+  contact:
+    name: TARA System Team
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8001/api/v1
+    description: Development server
+  - url: https://tara.example.com/api/v1
+    description: Production server
+
+tags:
+  - name: Projects
+    description: 项目管理
+  - name: Documents
+    description: 文档解析
+  - name: Assets
+    description: 资产管理
+  - name: Threats
+    description: 威胁分析
+  - name: Risks
+    description: 风险评估
+  - name: Reports
+    description: 报告生成
+  - name: Agents
+    description: AI Agent
+
+paths:
+  /projects:
+    get:
+      tags: [Projects]
+      summary: 获取项目列表
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+    
+    post:
+      tags: [Projects]
+      summary: 创建项目
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+
+  /projects/{project_id}:
+    get:
+      tags: [Projects]
+      summary: 获取项目详情
+      parameters:
+        - name: project_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectResponse'
+
+  /documents:
+    post:
+      tags: [Documents]
+      summary: 上传文档
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: 上传成功
+
+  /assets:
+    get:
+      tags: [Assets]
+      summary: 获取资产列表
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+  /threats:
+    get:
+      tags: [Threats]
+      summary: 获取威胁列表
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+  /threats/analyze:
+    post:
+      tags: [Threats]
+      summary: STRIDE威胁分析
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_id:
+                  type: integer
+                asset_ids:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '202':
+          description: 分析任务已启动
+
+  /risks/matrix:
+    get:
+      tags: [Risks]
+      summary: 获取风险矩阵
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功
+
+  /reports/generate:
+    post:
+      tags: [Reports]
+      summary: 生成报告
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_id:
+                  type: integer
+                template:
+                  type: string
+                  enum: [iso21434, unr155, simple]
+                formats:
+                  type: array
+                  items:
+                    type: string
+                    enum: [pdf, docx, xlsx]
+      responses:
+        '202':
+          description: 报告生成任务已启动
+
+  /agents/analyze:
+    post:
+      tags: [Agents]
+      summary: 启动完整TARA分析
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                project_id:
+                  type: integer
+      responses:
+        '202':
+          description: 分析任务已启动
+
+  /chat:
+    post:
+      tags: [Agents]
+      summary: AI对话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                project_id:
+                  type: integer
+                stream:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: 成功
+
+components:
+  schemas:
+    ProjectCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        vehicle_type:
+          type: string
+          enum: [BEV, HEV, ICE, FCEV]
+        standard:
+          type: string
+          default: ISO/SAE 21434
+    
+    ProjectResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Project'
+    
+    ProjectListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Project'
+            total:
+              type: integer
+            page:
+              type: integer
+            page_size:
+              type: integer
+    
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        vehicle_type:
+          type: string
+        status:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

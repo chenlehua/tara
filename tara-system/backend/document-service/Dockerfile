@@ -1,0 +1,23 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libmagic1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy shared module
+COPY shared /app/shared
+RUN pip install --no-cache-dir -e /app/shared
+
+# Copy service code
+COPY document-service /app/service
+RUN pip install --no-cache-dir -e /app/service
+
+WORKDIR /app/service
+
+EXPOSE 8002
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8002"]
