@@ -1,3 +1,4 @@
+```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#4F46E5', 'primaryTextColor': '#fff', 'primaryBorderColor': '#3730A3', 'lineColor': '#6366F1'}}}%%
 
 flowchart TB
@@ -78,3 +79,4 @@ flowchart TB
     class Planner,DocAgent,AssetAgent,ThreatRiskAgent,ReportAgent,KnowledgeMCP,DatabaseMCP,DocumentMCP,InferenceMCP,ReportMCP agentClass
     class Qwen3VL,Qwen3,OCRFlux,Embedding aiClass
     class MySQL,Redis,Neo4j,Milvus,ES,MinIO dataClass
+```
