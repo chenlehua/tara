@@ -1,0 +1,59 @@
+// ==================== TARA System Design Variables ====================
+
+// Brand Colors
+$brand-blue: #3B82F6;
+$brand-purple: #8B5CF6;
+$brand-pink: #EC4899;
+$brand-cyan: #06B6D4;
+
+// Status Colors
+$success: #10B981;
+$warning: #F59E0B;
+$danger: #EF4444;
+$info: #06B6D4;
+
+// Background Colors (Dark Theme)
+$bg-primary: #0A0F1A;
+$bg-secondary: #111827;
+$bg-tertiary: #1E293B;
+$bg-card: rgba(255, 255, 255, 0.03);
+$bg-card-hover: rgba(255, 255, 255, 0.06);
+$bg-hover: rgba(255, 255, 255, 0.08);
+
+// Text Colors
+$text-primary: #FFFFFF;
+$text-secondary: #94A3B8;
+$text-muted: #64748B;
+$text-disabled: #475569;
+
+// Border Colors
+$border-color: rgba(255, 255, 255, 0.06);
+$border-light: rgba(255, 255, 255, 0.1);
+$border-focus: rgba(59, 130, 246, 0.5);
+
+// Shadows
+$shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+$shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+$shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+$shadow-glow: 0 0 20px rgba(59, 130, 246, 0.3);
+
+// Border Radius
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 14px;
+$radius-xl: 18px;
+
+// Transitions
+$transition-fast: 0.15s ease;
+$transition-normal: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+// Sidebar
+$sidebar-width: 260px;
+$sidebar-collapsed-width: 76px;
+
+// Header
+$header-height: 60px;
+
+// AI Panel
+$ai-panel-width: 420px;

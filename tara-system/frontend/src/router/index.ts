@@ -1,94 +1,115 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
 
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
     component: () => import('@/layouts/MainLayout.vue'),
-    redirect: '/dashboard',
     children: [
       {
-        path: 'dashboard',
+        path: '',
         name: 'Dashboard',
         component: () => import('@/views/Dashboard.vue'),
-        meta: { title: '工作台' },
+        meta: { title: '工作台' }
       },
-      // Project
+      {
+        path: 'generator',
+        name: 'ReportGenerator',
+        component: () => import('@/views/ReportGenerator.vue'),
+        meta: { title: '一键生成报告' }
+      },
       {
         path: 'projects',
         name: 'ProjectList',
-        component: () => import('@/views/project/ProjectList.vue'),
-        meta: { title: '项目列表' },
+        component: () => import('@/views/projects/ProjectList.vue'),
+        meta: { title: '项目管理' }
       },
       {
         path: 'projects/:id',
         name: 'ProjectDetail',
-        component: () => import('@/views/project/ProjectDetail.vue'),
-        meta: { title: '项目详情' },
+        component: () => import('@/views/projects/ProjectDetail.vue'),
+        meta: { title: '项目详情' }
       },
-      // Document
-      {
-        path: 'documents',
-        name: 'DocumentList',
-        component: () => import('@/views/document/DocumentList.vue'),
-        meta: { title: '文档管理' },
-      },
-      // Asset
       {
         path: 'assets',
         name: 'AssetList',
-        component: () => import('@/views/asset/AssetList.vue'),
-        meta: { title: '资产管理' },
+        component: () => import('@/views/assets/AssetList.vue'),
+        meta: { title: '资产识别' }
       },
-      {
-        path: 'assets/graph',
-        name: 'AssetGraph',
-        component: () => import('@/views/asset/AssetGraph.vue'),
-        meta: { title: '资产图谱' },
-      },
-      // Threat Risk
       {
         path: 'threats',
         name: 'ThreatList',
-        component: () => import('@/views/threat/ThreatList.vue'),
-        meta: { title: '威胁分析' },
+        component: () => import('@/views/threats/ThreatList.vue'),
+        meta: { title: '威胁分析' }
       },
       {
         path: 'risks',
-        name: 'RiskMatrix',
-        component: () => import('@/views/threat/RiskMatrix.vue'),
-        meta: { title: '风险矩阵' },
+        name: 'RiskList',
+        component: () => import('@/views/risks/RiskList.vue'),
+        meta: { title: '风险评估' }
       },
-      // Report
+      {
+        path: 'measures',
+        name: 'MeasureList',
+        component: () => import('@/views/measures/MeasureList.vue'),
+        meta: { title: '安全措施' }
+      },
       {
         path: 'reports',
         name: 'ReportList',
-        component: () => import('@/views/report/ReportList.vue'),
-        meta: { title: '报告中心' },
+        component: () => import('@/views/reports/ReportList.vue'),
+        meta: { title: '报告中心' }
       },
-    ],
+      {
+        path: 'knowledge',
+        name: 'KnowledgeBase',
+        component: () => import('@/views/knowledge/KnowledgeBase.vue'),
+        meta: { title: '知识库' }
+      }
+    ]
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
-    meta: { title: '登录' },
+    component: () => import('@/views/auth/Login.vue'),
+    meta: { title: '登录' }
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: () => import('@/views/NotFound.vue'),
-    meta: { title: '页面未找到' },
-  },
+    meta: { title: '页面未找到' }
+  }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0 }
+    }
+  }
 })
 
+// Navigation guard for authentication
 router.beforeEach((to, from, next) => {
-  document.title = `${to.meta.title || 'TARA'} - TARA System`
-  next()
+  // Update document title
+  const title = to.meta.title as string
+  if (title) {
+    document.title = `${title} - TARA Pro`
+  }
+  
+  // Check authentication (skip for login page)
+  if (to.name !== 'Login') {
+    // For now, allow all access
+    // In production, add token check here
+    next()
+  } else {
+    next()
+  }
 })
 
 export default router

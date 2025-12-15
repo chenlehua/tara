@@ -4,27 +4,32 @@ export default {
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+        brand: {
+          blue: '#3B82F6',
+          purple: '#8B5CF6',
+          pink: '#EC4899',
+          cyan: '#06B6D4',
         },
+        bg: {
+          primary: '#0A0F1A',
+          secondary: '#111827',
+          tertiary: '#1E293B',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+      },
+      borderRadius: {
+        'sm': '6px',
+        'md': '10px',
+        'lg': '14px',
+        'xl': '18px',
       },
     },
   },
   plugins: [],
-  // Avoid conflicts with Element Plus
-  corePlugins: {
-    preflight: false,
-  },
 }
