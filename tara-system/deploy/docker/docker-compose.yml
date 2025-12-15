@@ -19,7 +19,7 @@ services:
   # ===========================================
   
   nginx:
-    image: docker.mirrors.ustc.edu.cn/library/nginx:1.25-alpine
+    image: nginx:1.25-alpine
     ports:
       - "80:80"
     volumes:
@@ -36,7 +36,7 @@ services:
   # ===========================================
   
   mysql:
-    image: docker.mirrors.ustc.edu.cn/library/mysql:8.0
+    image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-tara_db}
@@ -57,7 +57,7 @@ services:
       - tara-network
 
   redis:
-    image: docker.mirrors.ustc.edu.cn/library/redis:7-alpine
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -72,7 +72,7 @@ services:
       - tara-network
 
   neo4j:
-    image: docker.mirrors.ustc.edu.cn/library/neo4j:5
+    image: neo4j:5
     environment:
       NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-neo4j_password}
       NEO4J_PLUGINS: '["apoc"]'
@@ -91,7 +91,7 @@ services:
       - tara-network
 
   milvus:
-    image: docker.mirrors.ustc.edu.cn/milvusdb/milvus:v2.3-latest
+    image: milvusdb/milvus:v2.4.8
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
@@ -107,7 +107,7 @@ services:
       - tara-network
 
   etcd:
-    image: rancher/mirrored-coreos-etcd:v3.5.5
+    image: rancher/mirrored-coreos-etcd:v3.5.16
     environment:
       ETCD_AUTO_COMPACTION_MODE: revision
       ETCD_AUTO_COMPACTION_RETENTION: "1000"
@@ -120,7 +120,7 @@ services:
       - tara-network
 
   elasticsearch:
-    image: docker.mirrors.ustc.edu.cn/library/elasticsearch:8.12.0
+    image: elasticsearch:8.12.0
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -138,7 +138,7 @@ services:
       - tara-network
 
   minio:
-    image: docker.mirrors.ustc.edu.cn/minio/minio:latest
+    image: minio/minio:latest
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio_access_key}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minio_secret_key}

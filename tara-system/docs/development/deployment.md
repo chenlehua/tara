@@ -28,8 +28,8 @@ make docker-up-frontend # 前端
 
 ```bash
 # 使用生产配置
-docker compose -f deploy/docker/docker compose.yml \
-               -f deploy/docker/docker compose.prod.yml \
+docker compose -f deploy/docker/docker-compose.yml \
+               -f deploy/docker/docker-compose.prod.yml \
                up -d
 ```
 
