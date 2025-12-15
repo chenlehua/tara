@@ -24,7 +24,7 @@ check_prerequisites() {
     echo -e "${GREEN}✓ Docker installed${NC}"
     
     # Check Docker Compose
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    if ! docker compose version &> /dev/null; then
         echo -e "${RED}Docker Compose is not installed. Please install Docker Compose first.${NC}"
         exit 1
     fi
@@ -67,7 +67,7 @@ setup_environment() {
 start_infrastructure() {
     echo -e "\n${YELLOW}Starting infrastructure services...${NC}"
     
-    docker-compose -f deploy/docker/docker-compose.yml up -d \
+    docker compose -f deploy/docker/docker-compose.yml up -d \
         mysql redis neo4j milvus-standalone elasticsearch minio
     
     echo -e "${GREEN}✓ Infrastructure services started${NC}"
@@ -97,6 +97,10 @@ install_python_deps() {
     python3 -m venv venv
     source venv/bin/activate
     
+    # Configure pip to use Chinese mirror
+    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+    pip config set global.trusted-host mirrors.aliyun.com
+    
     # Install shared module
     pip install -e backend/shared
     
@@ -112,8 +116,16 @@ install_python_deps() {
 install_frontend_deps() {
     echo -e "\n${YELLOW}Installing frontend dependencies...${NC}"
     
+    # Install pnpm if not exists
+    if ! command -v pnpm &> /dev/null; then
+        npm install -g pnpm --registry https://registry.npmmirror.com
+    fi
+    
+    # Configure pnpm to use Chinese mirror
+    pnpm config set registry https://registry.npmmirror.com
+    
     cd frontend
-    npm install
+    pnpm install
     cd ..
     
     echo -e "${GREEN}✓ Frontend dependencies installed${NC}"

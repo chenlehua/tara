@@ -42,6 +42,10 @@ cd tara-system
 python3 -m venv venv
 source venv/bin/activate
 
+# 配置 pip 使用国内镜像源
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+pip config set global.trusted-host mirrors.aliyun.com
+
 # 安装 Python 依赖
 pip install -e backend/shared
 pip install -e backend/project-service
@@ -55,8 +59,39 @@ pip install -e backend/agent-service
 # 安装开发工具
 pip install pytest pytest-cov pytest-asyncio black isort mypy ruff
 
+# 安装 pnpm 并配置淘宝镜像源
+npm install -g pnpm --registry https://registry.npmmirror.com
+pnpm config set registry https://registry.npmmirror.com
+
 # 安装前端依赖
-cd frontend && npm install && cd ..
+cd frontend && pnpm install && cd ..
+```
+
+### 镜像源配置
+
+#### pip (阿里云)
+```bash
+pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+```
+
+#### pnpm/npm (淘宝)
+```bash
+pnpm config set registry https://registry.npmmirror.com
+```
+
+#### Docker (国内镜像)
+编辑 `/etc/docker/daemon.json`:
+```json
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com"
+  ]
+}
+```
+然后重启 Docker:
+```bash
+sudo systemctl restart docker
 ```
 
 ### 3. 配置环境变量

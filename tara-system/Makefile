@@ -28,15 +28,15 @@ help: ## 显示帮助信息
 ## ==================== 环境设置 ====================
 install: ## 安装所有依赖
 	@echo "Installing dependencies..."
-	cd frontend && pnpm install
-	cd backend/shared && pip install -e .
-	cd backend/project-service && pip install -e .
-	cd backend/document-service && pip install -e .
-	cd backend/asset-service && pip install -e .
-	cd backend/threat-risk-service && pip install -e .
-	cd backend/diagram-service && pip install -e .
-	cd backend/report-service && pip install -e .
-	cd backend/agent-service && pip install -e .
+	cd frontend && pnpm install --registry https://registry.npmmirror.com
+	cd backend/shared && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/project-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/document-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/asset-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/threat-risk-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/diagram-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/report-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
+	cd backend/agent-service && pip install -i https://mirrors.aliyun.com/pypi/simple/ -e .
 
 setup-dev: ## 设置开发环境
 	@echo "Setting up development environment..."
@@ -87,38 +87,38 @@ build-frontend: ## 构建前端
 	cd frontend && pnpm build
 
 build-backend: ## 构建后端镜像
-	docker-compose -f deploy/docker/docker-compose.yml build
+	docker compose -f deploy/docker/docker compose.yml build
 
 ## ==================== Docker 操作 ====================
 infra-up: ## 启动基础设施 (数据库等)
-	docker-compose -f deploy/docker/docker-compose.yml up -d mysql redis neo4j milvus elasticsearch minio
+	docker compose -f deploy/docker/docker compose.yml up -d mysql redis neo4j milvus elasticsearch minio
 
 infra-down: ## 停止基础设施
-	docker-compose -f deploy/docker/docker-compose.yml down mysql redis neo4j milvus elasticsearch minio
+	docker compose -f deploy/docker/docker compose.yml down mysql redis neo4j milvus elasticsearch minio
 
 backend-up: ## 启动后端服务 (Docker)
-	docker-compose -f deploy/docker/docker-compose.yml up -d project-service document-service asset-service threat-risk-service diagram-service report-service agent-service
+	docker compose -f deploy/docker/docker compose.yml up -d project-service document-service asset-service threat-risk-service diagram-service report-service agent-service
 
 backend-down: ## 停止后端服务
-	docker-compose -f deploy/docker/docker-compose.yml stop project-service document-service asset-service threat-risk-service diagram-service report-service agent-service
+	docker compose -f deploy/docker/docker compose.yml stop project-service document-service asset-service threat-risk-service diagram-service report-service agent-service
 
 models-up: ## 启动AI模型服务 (需要GPU)
-	docker-compose -f deploy/docker/docker-compose.gpu.yml up -d
+	docker compose -f deploy/docker/docker compose.gpu.yml up -d
 
 models-down: ## 停止AI模型服务
-	docker-compose -f deploy/docker/docker-compose.gpu.yml down
+	docker compose -f deploy/docker/docker compose.gpu.yml down
 
 docker-up: ## 启动所有Docker服务
-	docker-compose -f deploy/docker/docker-compose.yml up -d
+	docker compose -f deploy/docker/docker compose.yml up -d
 
 docker-down: ## 停止所有Docker服务
-	docker-compose -f deploy/docker/docker-compose.yml down
+	docker compose -f deploy/docker/docker compose.yml down
 
 docker-logs: ## 查看Docker日志
-	docker-compose -f deploy/docker/docker-compose.yml logs -f
+	docker compose -f deploy/docker/docker compose.yml logs -f
 
 docker-ps: ## 查看Docker容器状态
-	docker-compose -f deploy/docker/docker-compose.yml ps
+	docker compose -f deploy/docker/docker compose.yml ps
 
 ## ==================== 数据库 ====================
 db-init: ## 初始化数据库
@@ -185,7 +185,7 @@ clean: ## 清理构建产物
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
 clean-docker: ## 清理Docker资源
-	docker-compose -f deploy/docker/docker-compose.yml down -v --rmi local
+	docker compose -f deploy/docker/docker compose.yml down -v --rmi local
 	docker system prune -f
 
 ## ==================== 文档 ====================

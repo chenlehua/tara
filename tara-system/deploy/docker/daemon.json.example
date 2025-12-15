@@ -1,0 +1,19 @@
+{
+    "registry-mirrors": [
+        "https://docker.mirrors.ustc.edu.cn",
+        "https://hub-mirror.c.163.com",
+        "https://mirror.ccs.tencentyun.com",
+        "https://registry.docker-cn.com"
+    ],
+    "insecure-registries": [],
+    "debug": false,
+    "experimental": false,
+    "features": {
+        "buildkit": true
+    },
+    "log-driver": "json-file",
+    "log-opts": {
+        "max-size": "100m",
+        "max-file": "3"
+    }
+}

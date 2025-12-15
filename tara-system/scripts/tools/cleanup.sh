@@ -52,7 +52,7 @@ clean_docker() {
     echo -e "\n${YELLOW}Cleaning Docker resources...${NC}"
     
     # Stop and remove containers
-    docker-compose -f deploy/docker/docker-compose.yml down -v 2>/dev/null || true
+    docker compose -f deploy/docker/docker-compose.yml down -v 2>/dev/null || true
     
     # Remove dangling images
     docker image prune -f 2>/dev/null || true

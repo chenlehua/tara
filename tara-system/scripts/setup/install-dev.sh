@@ -26,6 +26,10 @@ setup_python() {
     
     source venv/bin/activate
     
+    # Configure pip to use Chinese mirror
+    pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/
+    pip config set global.trusted-host mirrors.aliyun.com
+    
     # Upgrade pip
     pip install --upgrade pip
     
@@ -49,8 +53,16 @@ setup_python() {
 setup_frontend() {
     echo -e "\n${YELLOW}Setting up frontend environment...${NC}"
     
+    # Install pnpm if not exists
+    if ! command -v pnpm &> /dev/null; then
+        npm install -g pnpm --registry https://registry.npmmirror.com
+    fi
+    
+    # Configure pnpm to use Chinese mirror
+    pnpm config set registry https://registry.npmmirror.com
+    
     cd frontend
-    npm install
+    pnpm install
     cd ..
     
     echo -e "${GREEN}✓ Frontend environment ready${NC}"
