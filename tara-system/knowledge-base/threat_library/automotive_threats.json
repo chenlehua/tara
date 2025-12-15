@@ -1,0 +1,166 @@
+{
+  "version": "1.0.0",
+  "last_updated": "2024-01-01",
+  "threats": [
+    {
+      "id": "TARA-T001",
+      "name": "CAN总线消息注入",
+      "name_en": "CAN Bus Message Injection",
+      "stride_type": "T",
+      "category": "Network",
+      "description": "攻击者通过物理或远程访问CAN总线，注入恶意消息以控制车辆功能",
+      "target_assets": ["CAN", "ECU", "Gateway"],
+      "attack_vector": "通过OBD-II端口或恶意ECU接入CAN总线",
+      "prerequisites": ["物理接入车辆或远程漏洞"],
+      "impact": {
+        "safety": 4,
+        "financial": 2,
+        "operational": 3,
+        "privacy": 0
+      },
+      "cwe_ids": ["CWE-20", "CWE-346"],
+      "capec_ids": ["CAPEC-148"],
+      "mitigations": ["消息认证", "入侵检测", "安全网关"]
+    },
+    {
+      "id": "TARA-T002",
+      "name": "ECU固件篡改",
+      "name_en": "ECU Firmware Tampering",
+      "stride_type": "T",
+      "category": "Software",
+      "description": "通过诊断接口或软件漏洞篡改ECU固件，植入恶意代码",
+      "target_assets": ["ECU", "Gateway", "T-Box"],
+      "attack_vector": "利用诊断接口或OTA漏洞",
+      "prerequisites": ["获取固件更新权限", "逆向工程能力"],
+      "impact": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 4,
+        "privacy": 2
+      },
+      "cwe_ids": ["CWE-494", "CWE-345"],
+      "capec_ids": ["CAPEC-186"],
+      "mitigations": ["安全启动", "代码签名", "固件完整性验证"]
+    },
+    {
+      "id": "TARA-T003",
+      "name": "无线钥匙重放攻击",
+      "name_en": "Keyless Entry Relay Attack",
+      "stride_type": "S",
+      "category": "Communication",
+      "description": "捕获并重放无线钥匙信号，实现非法解锁和启动车辆",
+      "target_assets": ["PKE System", "BCM"],
+      "attack_vector": "使用中继设备放大钥匙信号",
+      "prerequisites": ["无线电设备", "接近车辆或钥匙"],
+      "impact": {
+        "safety": 1,
+        "financial": 4,
+        "operational": 2,
+        "privacy": 0
+      },
+      "cwe_ids": ["CWE-294"],
+      "capec_ids": ["CAPEC-220"],
+      "mitigations": ["滚动码", "UWB定位", "运动感应"]
+    },
+    {
+      "id": "TARA-T004",
+      "name": "远程代码执行",
+      "name_en": "Remote Code Execution",
+      "stride_type": "E",
+      "category": "Software",
+      "description": "利用车载系统漏洞远程执行任意代码",
+      "target_assets": ["T-Box", "IVI", "Gateway"],
+      "attack_vector": "通过蜂窝网络或Wi-Fi利用软件漏洞",
+      "prerequisites": ["目标系统存在可利用漏洞", "网络连接"],
+      "impact": {
+        "safety": 4,
+        "financial": 3,
+        "operational": 4,
+        "privacy": 4
+      },
+      "cwe_ids": ["CWE-94", "CWE-119"],
+      "capec_ids": ["CAPEC-242"],
+      "mitigations": ["安全编码", "输入验证", "沙箱隔离", "防火墙"]
+    },
+    {
+      "id": "TARA-T005",
+      "name": "车辆位置跟踪",
+      "name_en": "Vehicle Location Tracking",
+      "stride_type": "I",
+      "category": "Privacy",
+      "description": "未授权访问车辆位置数据，跟踪车辆和驾驶员行踪",
+      "target_assets": ["T-Box", "GPS Module", "Cloud Service"],
+      "attack_vector": "拦截通信或访问云服务",
+      "prerequisites": ["网络访问或云账户泄露"],
+      "impact": {
+        "safety": 1,
+        "financial": 1,
+        "operational": 0,
+        "privacy": 4
+      },
+      "cwe_ids": ["CWE-200", "CWE-359"],
+      "capec_ids": ["CAPEC-117"],
+      "mitigations": ["数据加密", "访问控制", "隐私保护设计"]
+    },
+    {
+      "id": "TARA-T006",
+      "name": "拒绝服务攻击",
+      "name_en": "Denial of Service",
+      "stride_type": "D",
+      "category": "Network",
+      "description": "通过网络或物理手段使车辆系统或服务不可用",
+      "target_assets": ["CAN", "Ethernet", "T-Box", "Cloud Service"],
+      "attack_vector": "消息洪泛、资源耗尽或物理干扰",
+      "prerequisites": ["网络访问或物理接近"],
+      "impact": {
+        "safety": 3,
+        "financial": 2,
+        "operational": 4,
+        "privacy": 0
+      },
+      "cwe_ids": ["CWE-400", "CWE-770"],
+      "capec_ids": ["CAPEC-125"],
+      "mitigations": ["速率限制", "冗余设计", "故障安全机制"]
+    },
+    {
+      "id": "TARA-T007",
+      "name": "诊断接口滥用",
+      "name_en": "Diagnostic Interface Abuse",
+      "stride_type": "E",
+      "category": "Interface",
+      "description": "通过OBD-II或其他诊断接口未授权访问车辆系统",
+      "target_assets": ["OBD", "Diagnostic Gateway", "ECU"],
+      "attack_vector": "利用诊断协议漏洞或弱认证",
+      "prerequisites": ["物理接入诊断接口", "诊断工具"],
+      "impact": {
+        "safety": 3,
+        "financial": 2,
+        "operational": 3,
+        "privacy": 2
+      },
+      "cwe_ids": ["CWE-287", "CWE-306"],
+      "capec_ids": ["CAPEC-114"],
+      "mitigations": ["强认证", "会话管理", "诊断服务限制"]
+    },
+    {
+      "id": "TARA-T008",
+      "name": "V2X通信欺骗",
+      "name_en": "V2X Communication Spoofing",
+      "stride_type": "S",
+      "category": "Communication",
+      "description": "伪造V2X消息，发送虚假的交通或安全信息",
+      "target_assets": ["V2X Module", "ADAS"],
+      "attack_vector": "伪造数字签名或利用协议漏洞",
+      "prerequisites": ["无线电设备", "协议知识"],
+      "impact": {
+        "safety": 4,
+        "financial": 2,
+        "operational": 3,
+        "privacy": 0
+      },
+      "cwe_ids": ["CWE-290", "CWE-347"],
+      "capec_ids": ["CAPEC-194"],
+      "mitigations": ["PKI证书验证", "消息完整性", "异常检测"]
+    }
+  ]
+}
