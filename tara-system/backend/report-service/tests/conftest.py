@@ -1,4 +1,4 @@
-"""Pytest configuration for document service tests."""
+"""Pytest configuration for report service tests."""
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -54,17 +54,17 @@ def client(db_session):
 
 
 @pytest.fixture
-def mock_minio():
-    """Mock MinIO storage."""
-    with patch("app.services.document_service.StorageService") as mock:
-        mock_instance = MagicMock()
-        mock.return_value = mock_instance
-        mock_instance.upload_file.return_value = "documents/test.pdf"
-        yield mock_instance
-
-
-@pytest.fixture
-def sample_pdf_content():
-    """Sample PDF file content."""
-    # Minimal PDF content
-    return b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\n%%EOF"
+def sample_report_request():
+    """Sample report generation request."""
+    return {
+        "project_id": 1,
+        "template": "iso21434",
+        "format": "pdf",
+        "include_sections": [
+            "executive_summary",
+            "assets",
+            "threats",
+            "risks",
+            "recommendations",
+        ],
+    }

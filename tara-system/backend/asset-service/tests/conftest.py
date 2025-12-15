@@ -1,4 +1,4 @@
-"""Pytest configuration for document service tests."""
+"""Pytest configuration for asset service tests."""
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -7,6 +7,8 @@ from sqlalchemy.pool import StaticPool
 from unittest.mock import MagicMock, patch
 
 from tara_shared.database.mysql import Base, get_db
+from tara_shared.models import Project, Asset
+
 from app.main import app
 
 
@@ -54,17 +56,43 @@ def client(db_session):
 
 
 @pytest.fixture
-def mock_minio():
-    """Mock MinIO storage."""
-    with patch("app.services.document_service.StorageService") as mock:
-        mock_instance = MagicMock()
-        mock.return_value = mock_instance
-        mock_instance.upload_file.return_value = "documents/test.pdf"
-        yield mock_instance
+def test_project(db_session):
+    """Create a test project."""
+    project = Project(
+        name="Test Asset Project",
+        vehicle_type="BEV",
+        standard="ISO/SAE 21434",
+    )
+    db_session.add(project)
+    db_session.commit()
+    return project
 
 
 @pytest.fixture
-def sample_pdf_content():
-    """Sample PDF file content."""
-    # Minimal PDF content
-    return b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n>>\nendobj\n%%EOF"
+def sample_asset():
+    """Sample asset data."""
+    return {
+        "name": "Gateway ECU",
+        "asset_type": "gateway",
+        "category": "connectivity",
+        "description": "Central vehicle gateway",
+        "security_attrs": {
+            "confidentiality": "high",
+            "integrity": "high",
+            "availability": "high",
+        },
+        "interfaces": [
+            {"name": "CAN1", "type": "CAN", "direction": "bidirectional"},
+            {"name": "ETH0", "type": "Ethernet", "direction": "bidirectional"},
+        ],
+    }
+
+
+@pytest.fixture
+def mock_neo4j():
+    """Mock Neo4j graph service."""
+    with patch("app.services.asset_service.GraphService") as mock:
+        mock_instance = MagicMock()
+        mock.return_value = mock_instance
+        mock_instance.create_node.return_value = "node-123"
+        yield mock_instance

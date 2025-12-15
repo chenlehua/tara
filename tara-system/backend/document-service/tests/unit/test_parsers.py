@@ -1,7 +1,7 @@
 """Unit tests for document parsers."""
 import pytest
 from unittest.mock import MagicMock, patch
-import io
+from io import BytesIO
 
 from app.parsers import get_parser
 from app.parsers.pdf_parser import PDFParser
@@ -9,7 +9,7 @@ from app.parsers.word_parser import WordParser
 
 
 class TestGetParser:
-    """Tests for parser factory function."""
+    """Tests for parser factory."""
 
     def test_get_pdf_parser(self):
         """Test getting PDF parser."""
@@ -27,7 +27,7 @@ class TestGetParser:
         assert isinstance(parser, WordParser)
 
     def test_get_unknown_parser(self):
-        """Test getting parser for unknown extension."""
+        """Test getting parser for unknown format."""
         parser = get_parser("xyz")
         assert parser is None
 
@@ -37,35 +37,41 @@ class TestPDFParser:
 
     @pytest.fixture
     def parser(self):
-        """Create PDF parser instance."""
         return PDFParser()
 
     def test_can_parse_pdf(self, parser):
-        """Test PDF parser can parse PDF files."""
+        """Test PDF format detection."""
         assert parser.can_parse("pdf") is True
         assert parser.can_parse("docx") is False
 
-    @patch('app.parsers.pdf_parser.PdfReader')
-    def test_extract_text(self, mock_reader, parser):
-        """Test text extraction from PDF."""
+    @patch("app.parsers.pdf_parser.PdfReader")
+    def test_parse_simple_pdf(self, mock_reader, parser):
+        """Test parsing simple PDF."""
         # Mock PDF reader
         mock_page = MagicMock()
-        mock_page.extract_text.return_value = "Test content"
+        mock_page.extract_text.return_value = "Test content from PDF"
         mock_reader.return_value.pages = [mock_page]
         
-        result = parser.extract_text(io.BytesIO(b"fake pdf"))
+        content = BytesIO(b"%PDF-1.4 test")
+        result = parser.parse(content)
         
-        assert "Test content" in result
+        assert "Test content from PDF" in result["text"]
 
-    def test_parse_result_structure(self, parser):
-        """Test parse result has correct structure."""
-        # Mock the parsing
-        with patch.object(parser, 'extract_text', return_value="Test"):
-            with patch.object(parser, 'extract_structure', return_value={}):
-                result = parser.parse(io.BytesIO(b"fake"))
+    @patch("app.parsers.pdf_parser.PdfReader")
+    def test_parse_multi_page_pdf(self, mock_reader, parser):
+        """Test parsing multi-page PDF."""
+        mock_pages = []
+        for i in range(3):
+            page = MagicMock()
+            page.extract_text.return_value = f"Page {i+1} content"
+            mock_pages.append(page)
         
-                assert "content" in result
-                assert "structure" in result
+        mock_reader.return_value.pages = mock_pages
+        
+        content = BytesIO(b"%PDF-1.4 test")
+        result = parser.parse(content)
+        
+        assert result["page_count"] == 3
 
 
 class TestWordParser:
@@ -73,41 +79,25 @@ class TestWordParser:
 
     @pytest.fixture
     def parser(self):
-        """Create Word parser instance."""
         return WordParser()
 
     def test_can_parse_docx(self, parser):
-        """Test Word parser can parse docx files."""
+        """Test docx format detection."""
         assert parser.can_parse("docx") is True
         assert parser.can_parse("doc") is True
         assert parser.can_parse("pdf") is False
 
-    @patch('app.parsers.word_parser.DocxDocument')
-    def test_extract_text(self, mock_document, parser):
-        """Test text extraction from Word document."""
+    @patch("app.parsers.word_parser.Document")
+    def test_parse_simple_docx(self, mock_document, parser):
+        """Test parsing simple Word document."""
         # Mock document
         mock_para = MagicMock()
-        mock_para.text = "Test paragraph"
+        mock_para.text = "Test paragraph content"
+        mock_para.style.name = "Normal"
         mock_document.return_value.paragraphs = [mock_para]
+        mock_document.return_value.tables = []
         
-        result = parser.extract_text(io.BytesIO(b"fake docx"))
+        content = BytesIO(b"PK test")
+        result = parser.parse(content)
         
-        assert "Test paragraph" in result
-
-    @patch('app.parsers.word_parser.DocxDocument')
-    def test_extract_structure(self, mock_document, parser):
-        """Test structure extraction from Word document."""
-        # Mock document with headings
-        mock_para1 = MagicMock()
-        mock_para1.style.name = "Heading 1"
-        mock_para1.text = "Chapter 1"
-        
-        mock_para2 = MagicMock()
-        mock_para2.style.name = "Normal"
-        mock_para2.text = "Content"
-        
-        mock_document.return_value.paragraphs = [mock_para1, mock_para2]
-        
-        result = parser.extract_structure(io.BytesIO(b"fake docx"))
-        
-        assert isinstance(result, dict)
+        assert "Test paragraph content" in result["text"]
