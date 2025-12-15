@@ -1,0 +1,67 @@
+# Embedding Model Configuration
+# ==============================
+
+model:
+  name: "Qwen/Qwen2.5-Embedding-0.6B"
+  type: "sentence-transformer"
+  dimension: 1024
+  max_sequence_length: 512
+  normalize_embeddings: true
+
+# Index configuration for Milvus
+milvus:
+  collections:
+    documents:
+      name: "doc_embeddings"
+      dimension: 1024
+      metric_type: "COSINE"
+      index_type: "IVF_FLAT"
+      index_params:
+        nlist: 1024
+      search_params:
+        nprobe: 16
+    
+    threats:
+      name: "threat_embeddings"
+      dimension: 1024
+      metric_type: "COSINE"
+      index_type: "IVF_FLAT"
+      index_params:
+        nlist: 512
+      search_params:
+        nprobe: 8
+    
+    knowledge:
+      name: "knowledge_embeddings"
+      dimension: 1024
+      metric_type: "COSINE"
+      index_type: "HNSW"
+      index_params:
+        M: 16
+        efConstruction: 256
+      search_params:
+        ef: 64
+
+# Batch processing
+batch:
+  size: 32
+  max_concurrent: 4
+
+# Caching
+cache:
+  enabled: true
+  ttl: 3600  # seconds
+  max_size: 10000  # number of embeddings
+
+# Text preprocessing
+preprocessing:
+  lowercase: false
+  remove_stopwords: false
+  max_length: 512
+  truncation: true
+  
+  # Chunking for long documents
+  chunking:
+    enabled: true
+    chunk_size: 256
+    overlap: 64

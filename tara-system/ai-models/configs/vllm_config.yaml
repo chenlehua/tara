@@ -1,0 +1,103 @@
+# vLLM Server Configuration for TARA System
+# ==========================================
+
+# Main LLM (Qwen3)
+qwen3:
+  model: "Qwen/Qwen2.5-7B-Instruct"
+  port: 8000
+  host: "0.0.0.0"
+  
+  # Model settings
+  tensor_parallel_size: 1
+  max_model_len: 8192
+  gpu_memory_utilization: 0.85
+  
+  # Generation defaults
+  max_tokens: 4096
+  temperature: 0.7
+  top_p: 0.9
+  
+  # Serving settings
+  api_key: ""  # Set via environment variable
+  trust_remote_code: true
+  dtype: "auto"
+
+# Vision-Language Model (Qwen3-VL)
+qwen3_vl:
+  model: "Qwen/Qwen2-VL-7B-Instruct"
+  port: 8001
+  host: "0.0.0.0"
+  
+  tensor_parallel_size: 1
+  max_model_len: 4096
+  gpu_memory_utilization: 0.85
+  
+  max_tokens: 2048
+  temperature: 0.3
+  
+  trust_remote_code: true
+  dtype: "auto"
+
+# Embedding Model
+embedding:
+  model: "Qwen/Qwen2.5-Embedding-0.6B"
+  port: 8002
+  host: "0.0.0.0"
+  
+  max_model_len: 512
+  gpu_memory_utilization: 0.3
+  
+  # Embedding specific
+  pooling_type: "mean"
+  normalize: true
+
+# OCR Model
+ocr:
+  model: "OCRFlux"
+  port: 8003
+  host: "0.0.0.0"
+  
+  # OCR settings
+  languages: ["en", "zh"]
+  use_gpu: true
+  
+  # Output settings
+  output_format: "json"
+  detect_layout: true
+  extract_tables: true
+
+# Common settings
+common:
+  log_level: "INFO"
+  log_requests: true
+  
+  # API settings
+  enable_cors: true
+  cors_allow_origins: ["*"]
+  
+  # Health check
+  health_check_interval: 30
+  
+  # Resource limits
+  max_concurrent_requests: 100
+  request_timeout: 300
+
+# Hardware recommendations
+hardware:
+  qwen3:
+    gpu: "NVIDIA A100 40GB or equivalent"
+    vram: "24GB minimum"
+    cpu: "8 cores"
+    ram: "32GB"
+  
+  qwen3_vl:
+    gpu: "NVIDIA A100 40GB or equivalent"
+    vram: "24GB minimum"
+    cpu: "8 cores"
+    ram: "32GB"
+  
+  embedding:
+    gpu: "Any CUDA-capable GPU"
+    vram: "4GB minimum"
+    cpu: "4 cores"
+    ram: "8GB"
