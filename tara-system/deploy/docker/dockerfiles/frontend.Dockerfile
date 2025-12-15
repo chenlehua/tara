@@ -2,11 +2,16 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Configure Chinese npm mirror
+RUN npm config set registry https://registry.npmmirror.com
+
 # Copy package files
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
 
-# Install pnpm and dependencies
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+# Install pnpm and dependencies with Chinese mirror
+RUN npm install -g pnpm --registry https://registry.npmmirror.com && \
+    pnpm config set registry https://registry.npmmirror.com && \
+    pnpm install --frozen-lockfile
 
 # Copy source code
 COPY frontend/ ./

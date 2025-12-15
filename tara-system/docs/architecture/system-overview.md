@@ -127,7 +127,7 @@ TARA System 是一个基于 AI 的汽车网络安全威胁分析与风险评估�
 
 ### Docker Compose (开发/测试)
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Kubernetes (生产)
