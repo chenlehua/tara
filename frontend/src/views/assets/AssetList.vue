@@ -47,7 +47,27 @@
       </div>
     </div>
 
-    <div class="assets-grid">
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载资产中...</p>
+    </div>
+
+    <div v-else-if="filteredAssets.length === 0" class="empty-container">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="4" y="4" width="16" height="16" rx="2"/>
+          <rect x="9" y="9" width="6" height="6"/>
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3"/>
+        </svg>
+      </div>
+      <h3>暂无资产</h3>
+      <p>使用一键生成报告功能自动识别资产</p>
+      <router-link to="/generator" class="tara-btn tara-btn-primary">
+        一键生成报告
+      </router-link>
+    </div>
+
+    <div v-else class="assets-grid">
       <div 
         v-for="asset in filteredAssets" 
         :key="asset.id"
@@ -55,37 +75,25 @@
         @click="selectedAsset = asset"
       >
         <div class="asset-header">
-          <div class="asset-icon" :class="asset.iconClass">
+          <div class="asset-icon" :class="getIconClass(asset)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="4" y="4" width="16" height="16" rx="2"/>
               <rect x="9" y="9" width="6" height="6"/>
               <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/>
             </svg>
           </div>
-          <span class="security-badge" :class="asset.securityClass">{{ asset.securityLevel }}</span>
+          <span class="security-badge" :class="getSecurityClass(asset)">{{ getSecurityLevel(asset) }}</span>
         </div>
         <h3 class="asset-name">{{ asset.name }}</h3>
-        <p class="asset-type">{{ asset.type }}</p>
+        <p class="asset-type">{{ asset.asset_type }}</p>
         <div class="asset-interfaces">
-          <span v-for="iface in asset.interfaces" :key="iface" class="interface-tag">
+          <span v-for="iface in getInterfaces(asset)" :key="iface" class="interface-tag">
             {{ iface }}
           </span>
         </div>
-        <div class="asset-stats">
-          <div class="stat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-            </svg>
-            <span>{{ asset.threats }} 威胁</span>
-          </div>
-          <div class="stat">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <circle cx="18" cy="18" r="3"/>
-              <circle cx="6" cy="6" r="3"/>
-              <path d="M6 21V9a9 9 0 009 9"/>
-            </svg>
-            <span>{{ asset.connections }} 连接</span>
-          </div>
+        <div class="asset-meta">
+          <span class="meta-item">项目 #{{ asset.project_id }}</span>
+          <span class="meta-item">{{ asset.source || '系统生成' }}</span>
         </div>
       </div>
     </div>
@@ -93,48 +101,86 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
-// Asset interface
-interface Asset {
-  id: string
-  name: string
-  type: string
-  securityLevel: string
-  securityClass: string
-  iconClass: string
-  interfaces: string[]
-  threats: number
-  connections: number
-}
+import { ref, computed, onMounted } from 'vue'
+import { assetApi, type Asset } from '@/api'
 
 const showCreateModal = ref(false)
 const searchQuery = ref('')
 const filterType = ref('')
 const filterSecurityLevel = ref('')
 const selectedAsset = ref<Asset | null>(null)
+const loading = ref(true)
+const assets = ref<Asset[]>([])
 
-const assets = ref<Asset[]>([
-  { id: '1', name: 'VCU (整车控制器)', type: 'ECU', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['CAN', 'Ethernet'], threats: 12, connections: 8 },
-  { id: '2', name: 'BMS (电池管理系统)', type: 'ECU', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['CAN'], threats: 8, connections: 5 },
-  { id: '3', name: 'MCU (电机控制器)', type: 'ECU', securityLevel: 'CAL-3', securityClass: 'high', iconClass: 'orange', interfaces: ['CAN'], threats: 6, connections: 4 },
-  { id: '4', name: 'T-Box', type: 'Gateway', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['4G/5G', 'CAN', 'Ethernet'], threats: 15, connections: 12 },
-  { id: '5', name: 'Central Gateway', type: 'Gateway', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['CAN', 'LIN', 'Ethernet'], threats: 10, connections: 15 },
-  { id: '6', name: 'ADAS Controller', type: 'ECU', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['CAN', 'Ethernet'], threats: 18, connections: 9 },
-  { id: '7', name: 'Camera Module', type: 'Sensor', securityLevel: 'CAL-3', securityClass: 'high', iconClass: 'orange', interfaces: ['Ethernet'], threats: 4, connections: 2 },
-  { id: '8', name: 'Radar Sensor', type: 'Sensor', securityLevel: 'CAL-3', securityClass: 'high', iconClass: 'orange', interfaces: ['CAN'], threats: 3, connections: 1 },
-  { id: '9', name: 'OBD-II Port', type: 'Interface', securityLevel: 'CAL-3', securityClass: 'high', iconClass: 'orange', interfaces: ['CAN'], threats: 7, connections: 1 },
-  { id: '10', name: 'IVI System', type: 'ECU', securityLevel: 'CAL-2', securityClass: 'medium', iconClass: 'blue', interfaces: ['CAN', 'Ethernet', 'USB'], threats: 9, connections: 6 },
-])
+const loadAssets = async () => {
+  loading.value = true
+  try {
+    const response = await assetApi.list({
+      page: 1,
+      page_size: 100,
+    })
+    if (response.success && response.data) {
+      assets.value = response.data.items || []
+    }
+  } catch (error) {
+    console.error('Failed to load assets:', error)
+    // Fallback to demo data
+    assets.value = [
+      { id: 1, project_id: 1, name: 'VCU (整车控制器)', asset_type: 'ECU', criticality: 'critical', interfaces: [{ type: 'CAN' }, { type: 'Ethernet' }], created_at: '', updated_at: '' },
+      { id: 2, project_id: 1, name: 'BMS (电池管理系统)', asset_type: 'ECU', criticality: 'critical', interfaces: [{ type: 'CAN' }], created_at: '', updated_at: '' },
+      { id: 3, project_id: 1, name: 'MCU (电机控制器)', asset_type: 'ECU', criticality: 'high', interfaces: [{ type: 'CAN' }], created_at: '', updated_at: '' },
+      { id: 4, project_id: 1, name: 'T-Box', asset_type: 'Gateway', criticality: 'critical', interfaces: [{ type: '4G/5G' }, { type: 'CAN' }, { type: 'Ethernet' }], created_at: '', updated_at: '' },
+      { id: 5, project_id: 1, name: 'Central Gateway', asset_type: 'Gateway', criticality: 'critical', interfaces: [{ type: 'CAN' }, { type: 'LIN' }, { type: 'Ethernet' }], created_at: '', updated_at: '' },
+    ]
+  } finally {
+    loading.value = false
+  }
+}
+
+const getSecurityLevel = (asset: Asset): string => {
+  const criticality = asset.criticality?.toLowerCase() || 'medium'
+  const map: Record<string, string> = {
+    'critical': 'CAL-4',
+    'high': 'CAL-3',
+    'medium': 'CAL-2',
+    'low': 'CAL-1',
+  }
+  return map[criticality] || 'CAL-2'
+}
+
+const getSecurityClass = (asset: Asset): string => {
+  const criticality = asset.criticality?.toLowerCase() || 'medium'
+  return criticality
+}
+
+const getIconClass = (asset: Asset): string => {
+  const criticality = asset.criticality?.toLowerCase() || 'medium'
+  const map: Record<string, string> = {
+    'critical': 'red',
+    'high': 'orange',
+    'medium': 'blue',
+    'low': 'green',
+  }
+  return map[criticality] || 'blue'
+}
+
+const getInterfaces = (asset: Asset): string[] => {
+  if (!asset.interfaces) return []
+  return asset.interfaces.map(i => typeof i === 'string' ? i : (i.type || ''))
+}
 
 const filteredAssets = computed(() => {
   return assets.value.filter(asset => {
     const matchesSearch = !searchQuery.value || 
       asset.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesType = !filterType.value || asset.type === filterType.value
-    const matchesSecurity = !filterSecurityLevel.value || asset.securityLevel === filterSecurityLevel.value
+    const matchesType = !filterType.value || asset.asset_type === filterType.value
+    const matchesSecurity = !filterSecurityLevel.value || getSecurityLevel(asset) === filterSecurityLevel.value
     return matchesSearch && matchesType && matchesSecurity
   })
+})
+
+onMounted(() => {
+  loadAssets()
 })
 </script>
 
@@ -325,5 +371,82 @@ const filteredAssets = computed(() => {
 .asset-stats .stat svg {
   width: 14px;
   height: 14px;
+}
+
+.asset-meta {
+  display: flex;
+  gap: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.meta-item {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-icon svg {
+  width: 32px;
+  height: 32px;
+  color: var(--text-muted);
+}
+
+.empty-container h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.empty-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 24px;
 }
 </style>

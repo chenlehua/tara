@@ -13,30 +13,48 @@
       </button>
     </div>
 
-    <div class="measures-grid">
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载安全措施中...</p>
+    </div>
+
+    <div v-else-if="measures.length === 0" class="empty-container">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <h3>暂无安全措施</h3>
+      <p>使用一键生成报告功能自动生成安全措施建议</p>
+      <router-link to="/generator" class="tara-btn tara-btn-primary">
+        一键生成报告
+      </router-link>
+    </div>
+
+    <div v-else class="measures-grid">
       <div 
         v-for="measure in measures" 
         :key="measure.id"
         class="measure-card tara-card"
       >
         <div class="measure-header">
-          <div class="measure-icon" :class="measure.categoryClass">
-            <component :is="measure.icon" />
+          <div class="measure-icon" :class="getCategoryClass(measure.category)">
+            <component :is="getCategoryIcon(measure.category)" />
           </div>
-          <span class="status-badge" :class="measure.statusClass">{{ measure.status }}</span>
+          <span class="status-badge" :class="getStatusClass(measure.status)">{{ getStatusText(measure.status) }}</span>
         </div>
         
         <h3 class="measure-name">{{ measure.name }}</h3>
-        <p class="measure-desc">{{ measure.description }}</p>
+        <p class="measure-desc">{{ measure.description || measure.implementation }}</p>
         
         <div class="measure-meta">
           <div class="meta-item">
             <span class="meta-label">类型</span>
-            <span class="meta-value">{{ measure.category }}</span>
+            <span class="meta-value">{{ measure.control_type || measure.category }}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">覆盖威胁</span>
-            <span class="meta-value">{{ measure.threatsCount }} 项</span>
+            <span class="meta-label">ISO 21434</span>
+            <span class="meta-value">{{ measure.iso21434_ref || '-' }}</span>
           </div>
         </div>
         
@@ -44,9 +62,9 @@
           <div class="effectiveness">
             <span>有效性</span>
             <div class="effectiveness-bar">
-              <div class="effectiveness-fill" :style="{ width: measure.effectiveness + '%' }"></div>
+              <div class="effectiveness-fill" :style="{ width: (measure.effectiveness || 80) + '%' }"></div>
             </div>
-            <span class="effectiveness-value">{{ measure.effectiveness }}%</span>
+            <span class="effectiveness-value">{{ measure.effectiveness || 80 }}%</span>
           </div>
         </div>
       </div>
@@ -55,15 +73,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { measureApi, type ControlMeasure } from '@/api'
 
-// Icons
-const IconLock = {
-  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`
-}
-const IconKey = {
-  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`
-}
+// Icons used for different control categories
 const IconShield = {
   template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`
 }
@@ -74,14 +87,75 @@ const IconRefresh = {
   template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>`
 }
 
-const measures = ref([
-  { id: '1', name: 'SecOC消息认证', description: '使用安全车载通信协议对CAN消息进行认证，防止消息伪造攻击', category: '加密', categoryClass: 'blue', icon: IconLock, status: '已实施', statusClass: 'active', threatsCount: 12, effectiveness: 95 },
-  { id: '2', name: '安全启动', description: '验证ECU固件完整性，确保只有经过认证的固件才能运行', category: '完整性', categoryClass: 'purple', icon: IconShield, status: '已实施', statusClass: 'active', threatsCount: 8, effectiveness: 90 },
-  { id: '3', name: 'HSM硬件安全模块', description: '使用专用硬件进行密钥存储和加密运算', category: '加密', categoryClass: 'blue', icon: IconKey, status: '已实施', statusClass: 'active', threatsCount: 15, effectiveness: 98 },
-  { id: '4', name: '入侵检测系统', description: '实时监控车载网络异常行为，检测潜在攻击', category: '检测', categoryClass: 'orange', icon: IconEye, status: '部署中', statusClass: 'review', threatsCount: 20, effectiveness: 75 },
-  { id: '5', name: 'OTA安全更新', description: '支持安全的远程固件更新，修复已知漏洞', category: '更新', categoryClass: 'green', icon: IconRefresh, status: '规划中', statusClass: 'draft', threatsCount: 10, effectiveness: 85 },
-  { id: '6', name: '网络分段隔离', description: '将车载网络划分为不同安全域，限制攻击横向移动', category: '隔离', categoryClass: 'cyan', icon: IconShield, status: '已实施', statusClass: 'active', threatsCount: 18, effectiveness: 88 }
-])
+const loading = ref(true)
+const measures = ref<ControlMeasure[]>([])
+
+const loadMeasures = async () => {
+  loading.value = true
+  try {
+    const response = await measureApi.list({
+      page: 1,
+      page_size: 100,
+    })
+    if (response.success && response.data) {
+      measures.value = response.data.items || []
+    }
+  } catch (error) {
+    console.error('Failed to load measures:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const getCategoryClass = (category: string | undefined): string => {
+  const map: Record<string, string> = {
+    '加密': 'blue',
+    '完整性': 'purple',
+    '检测': 'orange',
+    '更新': 'green',
+    '隔离': 'cyan',
+    'prevention': 'blue',
+    'detection': 'orange',
+    'response': 'green',
+  }
+  return map[category || ''] || 'blue'
+}
+
+const getCategoryIcon = (category: string | undefined) => {
+  const map: Record<string, any> = {
+    '加密': IconShield,
+    '完整性': IconShield,
+    '检测': IconEye,
+    '更新': IconRefresh,
+    '隔离': IconShield,
+    'prevention': IconShield,
+    'detection': IconEye,
+    'response': IconRefresh,
+  }
+  return map[category || ''] || IconShield
+}
+
+const getStatusText = (status: string | undefined): string => {
+  const map: Record<string, string> = {
+    'implemented': '已实施',
+    'in_progress': '部署中',
+    'planned': '规划中',
+  }
+  return map[status || ''] || status || '已实施'
+}
+
+const getStatusClass = (status: string | undefined): string => {
+  const map: Record<string, string> = {
+    'implemented': 'active',
+    'in_progress': 'review',
+    'planned': 'draft',
+  }
+  return map[status || ''] || 'active'
+}
+
+onMounted(() => {
+  loadMeasures()
+})
 </script>
 
 <style scoped>
@@ -217,5 +291,70 @@ const measures = ref([
   color: var(--success);
   min-width: 40px;
   text-align: right;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-icon svg {
+  width: 32px;
+  height: 32px;
+  color: var(--text-muted);
+}
+
+.empty-container h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.empty-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 24px;
 }
 </style>

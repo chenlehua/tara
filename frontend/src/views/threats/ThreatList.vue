@@ -54,14 +54,32 @@
         </div>
       </div>
       
-      <div class="threats-table">
+      <div v-if="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>加载威胁数据中...</p>
+      </div>
+
+      <div v-else-if="filteredThreats.length === 0" class="empty-container">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          </svg>
+        </div>
+        <h3>暂无威胁数据</h3>
+        <p>使用一键生成报告功能自动分析威胁</p>
+        <router-link to="/generator" class="tara-btn tara-btn-primary">
+          一键生成报告
+        </router-link>
+      </div>
+      
+      <div v-else class="threats-table">
         <table>
           <thead>
             <tr>
               <th>威胁ID</th>
               <th>威胁名称</th>
               <th>STRIDE类型</th>
-              <th>目标资产</th>
+              <th>项目ID</th>
               <th>风险等级</th>
               <th>状态</th>
               <th>操作</th>
@@ -69,22 +87,22 @@
           </thead>
           <tbody>
             <tr v-for="threat in filteredThreats" :key="threat.id">
-              <td class="threat-id">{{ threat.id }}</td>
-              <td class="threat-name">{{ threat.name }}</td>
+              <td class="threat-id">THR-{{ String(threat.id).padStart(3, '0') }}</td>
+              <td class="threat-name">{{ threat.threat_name }}</td>
               <td>
-                <span class="stride-tag" :style="{ background: getStrideColor(threat.stride) }">
-                  {{ threat.stride }}
+                <span class="stride-tag" :style="{ background: getStrideColor(threat.threat_type) }">
+                  {{ threat.threat_type }}
                 </span>
               </td>
-              <td class="threat-asset">{{ threat.asset }}</td>
+              <td class="threat-asset">项目 #{{ threat.project_id }}</td>
               <td>
-                <span class="risk-badge" :class="threat.riskClass">
-                  {{ threat.riskLevel }}
+                <span class="risk-badge" :class="getRiskClass(threat.risk_level)">
+                  {{ threat.risk_level || 'CAL-2' }}
                 </span>
               </td>
               <td>
-                <span class="status-badge" :class="threat.statusClass">
-                  {{ threat.status }}
+                <span class="status-badge" :class="getStatusClass(threat.treatment)">
+                  {{ getStatusText(threat.treatment) }}
                 </span>
               </td>
               <td class="actions">
@@ -111,35 +129,85 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { threatApi, type Threat } from '@/api'
 
 const selectedCategory = ref<string | null>(null)
 const filterRisk = ref('')
+const loading = ref(true)
+const threats = ref<Threat[]>([])
 
-const strideCategories = [
-  { id: 'S', letter: 'S', name: 'Spoofing', count: 28, bgColor: 'rgba(59,130,246,0.12)', color: '#60A5FA' },
-  { id: 'T', letter: 'T', name: 'Tampering', count: 24, bgColor: 'rgba(139,92,246,0.12)', color: '#A78BFA' },
-  { id: 'R', letter: 'R', name: 'Repudiation', count: 12, bgColor: 'rgba(236,72,153,0.12)', color: '#F472B6' },
-  { id: 'I', letter: 'I', name: 'Info Disclosure', count: 31, bgColor: 'rgba(245,158,11,0.12)', color: '#FBBF24' },
-  { id: 'D', letter: 'D', name: 'Denial of Service', count: 18, bgColor: 'rgba(239,68,68,0.12)', color: '#F87171' },
-  { id: 'E', letter: 'E', name: 'Elevation', count: 14, bgColor: 'rgba(16,185,129,0.12)', color: '#34D399' }
-]
+const strideCategories = computed(() => {
+  const categories = [
+    { id: 'S', letter: 'S', name: 'Spoofing', count: 0, bgColor: 'rgba(59,130,246,0.12)', color: '#60A5FA' },
+    { id: 'T', letter: 'T', name: 'Tampering', count: 0, bgColor: 'rgba(139,92,246,0.12)', color: '#A78BFA' },
+    { id: 'R', letter: 'R', name: 'Repudiation', count: 0, bgColor: 'rgba(236,72,153,0.12)', color: '#F472B6' },
+    { id: 'I', letter: 'I', name: 'Info Disclosure', count: 0, bgColor: 'rgba(245,158,11,0.12)', color: '#FBBF24' },
+    { id: 'D', letter: 'D', name: 'Denial of Service', count: 0, bgColor: 'rgba(239,68,68,0.12)', color: '#F87171' },
+    { id: 'E', letter: 'E', name: 'Elevation', count: 0, bgColor: 'rgba(16,185,129,0.12)', color: '#34D399' }
+  ]
+  
+  // Count threats by STRIDE type
+  threats.value.forEach(threat => {
+    const cat = categories.find(c => c.id === threat.threat_type)
+    if (cat) cat.count++
+  })
+  
+  return categories
+})
 
-const threats = ref([
-  { id: 'THR-001', name: 'CAN总线消息伪造攻击', stride: 'S', asset: 'CAN Bus', riskLevel: 'CAL-4', riskClass: 'critical', status: '已分析', statusClass: 'active' },
-  { id: 'THR-002', name: 'ECU固件篡改', stride: 'T', asset: 'VCU', riskLevel: 'CAL-4', riskClass: 'critical', status: '分析中', statusClass: 'review' },
-  { id: 'THR-003', name: '诊断数据窃取', stride: 'I', asset: 'OBD-II', riskLevel: 'CAL-3', riskClass: 'high', status: '已分析', statusClass: 'active' },
-  { id: 'THR-004', name: 'DoS攻击导致CAN总线瘫痪', stride: 'D', asset: 'CAN Bus', riskLevel: 'CAL-4', riskClass: 'critical', status: '待处理', statusClass: 'draft' },
-  { id: 'THR-005', name: 'T-Box远程控制劫持', stride: 'E', asset: 'T-Box', riskLevel: 'CAL-4', riskClass: 'critical', status: '已分析', statusClass: 'active' },
-  { id: 'THR-006', name: '车载网络身份伪造', stride: 'S', asset: 'Gateway', riskLevel: 'CAL-3', riskClass: 'high', status: '分析中', statusClass: 'review' },
-  { id: 'THR-007', name: '传感器数据注入', stride: 'T', asset: 'ADAS Sensor', riskLevel: 'CAL-4', riskClass: 'critical', status: '待处理', statusClass: 'draft' },
-  { id: 'THR-008', name: '用户隐私数据泄露', stride: 'I', asset: 'IVI System', riskLevel: 'CAL-2', riskClass: 'medium', status: '已分析', statusClass: 'active' }
-])
+const loadThreats = async () => {
+  loading.value = true
+  try {
+    const response = await threatApi.list({
+      page: 1,
+      page_size: 100,
+    })
+    if (response.success && response.data) {
+      threats.value = response.data.items || []
+    }
+  } catch (error) {
+    console.error('Failed to load threats:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const getRiskClass = (riskLevel: string | undefined): string => {
+  if (!riskLevel) return 'medium'
+  const map: Record<string, string> = {
+    'CAL-4': 'critical',
+    'CAL-3': 'high',
+    'CAL-2': 'medium',
+    'CAL-1': 'low',
+  }
+  return map[riskLevel] || 'medium'
+}
+
+const getStatusText = (treatment: string | undefined): string => {
+  const map: Record<string, string> = {
+    'mitigate': '已处理',
+    'accept': '已接受',
+    'transfer': '已转移',
+    'avoid': '已规避',
+  }
+  return map[treatment || ''] || '待处理'
+}
+
+const getStatusClass = (treatment: string | undefined): string => {
+  const map: Record<string, string> = {
+    'mitigate': 'active',
+    'accept': 'review',
+    'transfer': 'review',
+    'avoid': 'active',
+  }
+  return map[treatment || ''] || 'draft'
+}
 
 const filteredThreats = computed(() => {
   return threats.value.filter(threat => {
-    const matchesCategory = !selectedCategory.value || threat.stride === selectedCategory.value
-    const matchesRisk = !filterRisk.value || threat.riskClass === filterRisk.value
+    const matchesCategory = !selectedCategory.value || threat.threat_type === selectedCategory.value
+    const matchesRisk = !filterRisk.value || getRiskClass(threat.risk_level) === filterRisk.value
     return matchesCategory && matchesRisk
   })
 })
@@ -155,6 +223,10 @@ const getStrideColor = (stride: string) => {
   }
   return colors[stride] || 'rgba(148,163,184,0.2)'
 }
+
+onMounted(() => {
+  loadThreats()
+})
 </script>
 
 <style scoped>
@@ -341,5 +413,70 @@ const getStrideColor = (stride: string) => {
   .stride-overview {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-icon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+}
+
+.empty-container h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.empty-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 20px;
 }
 </style>

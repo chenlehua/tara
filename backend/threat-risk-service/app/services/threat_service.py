@@ -64,7 +64,7 @@ class ThreatService:
 
     def list_threats(
         self,
-        project_id: int,
+        project_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 20,
         asset_id: int = None,

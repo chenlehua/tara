@@ -32,14 +32,17 @@ class AssetRepository:
 
     def list_assets(
         self,
-        project_id: int,
+        project_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 20,
         asset_type: str = None,
         category: str = None,
         keyword: str = None,
     ) -> Tuple[List[Asset], int]:
-        query = self.db.query(Asset).filter(Asset.project_id == project_id)
+        query = self.db.query(Asset)
+
+        if project_id is not None:
+            query = query.filter(Asset.project_id == project_id)
 
         if asset_type:
             query = query.filter(Asset.asset_type == asset_type)

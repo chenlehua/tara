@@ -42,7 +42,7 @@ async def create_threat(
 
 @router.get("", response_model=dict)
 async def list_threats(
-    project_id: int = Query(..., description="项目ID"),
+    project_id: Optional[int] = Query(default=None, description="项目ID，为空则返回所有项目的威胁"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     asset_id: Optional[int] = Query(default=None, description="资产ID"),
@@ -50,7 +50,7 @@ async def list_threats(
     risk_level: Optional[str] = Query(default=None, description="风险等级"),
     service: ThreatService = Depends(get_threat_service),
 ):
-    """List threats for a project."""
+    """List threats for a project or all projects if project_id is not provided."""
     threats, total = service.list_threats(
         project_id=project_id,
         page=page,

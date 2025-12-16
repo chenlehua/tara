@@ -69,7 +69,7 @@ class AssetService:
 
     def list_assets(
         self,
-        project_id: int,
+        project_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 20,
         asset_type: str = None,

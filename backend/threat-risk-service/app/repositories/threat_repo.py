@@ -29,14 +29,17 @@ class ThreatRepository:
 
     def list_threats(
         self,
-        project_id: int,
+        project_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 20,
         asset_id: int = None,
         threat_type: str = None,
         risk_level: str = None,
     ) -> Tuple[List[ThreatRisk], int]:
-        query = self.db.query(ThreatRisk).filter(ThreatRisk.project_id == project_id)
+        query = self.db.query(ThreatRisk)
+
+        if project_id is not None:
+            query = query.filter(ThreatRisk.project_id == project_id)
 
         if asset_id:
             query = query.filter(ThreatRisk.asset_id == asset_id)

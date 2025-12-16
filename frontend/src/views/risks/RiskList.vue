@@ -77,24 +77,42 @@
       </div>
     </div>
 
-    <div class="risk-summary">
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载风险数据中...</p>
+    </div>
+
+    <div v-else-if="threats.length === 0" class="empty-container">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <h3>暂无风险数据</h3>
+      <p>使用一键生成报告功能自动进行风险评估</p>
+      <router-link to="/generator" class="tara-btn tara-btn-primary">
+        一键生成报告
+      </router-link>
+    </div>
+
+    <div v-else class="risk-summary">
       <div class="summary-card cal-4">
-        <div class="summary-value">8</div>
+        <div class="summary-value">{{ riskDistribution['CAL-4'] }}</div>
         <div class="summary-label">CAL-4 极高风险</div>
         <div class="summary-desc">需立即处理</div>
       </div>
       <div class="summary-card cal-3">
-        <div class="summary-value">15</div>
+        <div class="summary-value">{{ riskDistribution['CAL-3'] }}</div>
         <div class="summary-label">CAL-3 高风险</div>
         <div class="summary-desc">优先处理</div>
       </div>
       <div class="summary-card cal-2">
-        <div class="summary-value">32</div>
+        <div class="summary-value">{{ riskDistribution['CAL-2'] }}</div>
         <div class="summary-label">CAL-2 中风险</div>
         <div class="summary-desc">计划处理</div>
       </div>
       <div class="summary-card cal-1">
-        <div class="summary-value">72</div>
+        <div class="summary-value">{{ riskDistribution['CAL-1'] }}</div>
         <div class="summary-label">CAL-1 低风险</div>
         <div class="summary-desc">可接受</div>
       </div>
@@ -103,19 +121,90 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { threatApi, type Threat } from '@/api'
 
-const matrixData = ref([
-  [{ count: 0, level: 'cal-1' }, { count: 1, level: 'cal-1' }, { count: 2, level: 'cal-2' }, { count: 1, level: 'cal-3' }, { count: 0, level: 'cal-4' }],
-  [{ count: 1, level: 'cal-1' }, { count: 3, level: 'cal-2' }, { count: 4, level: 'cal-3' }, { count: 2, level: 'cal-4' }, { count: 1, level: 'cal-4' }],
-  [{ count: 2, level: 'cal-1' }, { count: 5, level: 'cal-2' }, { count: 8, level: 'cal-3' }, { count: 3, level: 'cal-4' }, { count: 1, level: 'cal-4' }],
-  [{ count: 1, level: 'cal-1' }, { count: 3, level: 'cal-1' }, { count: 4, level: 'cal-2' }, { count: 2, level: 'cal-3' }, { count: 0, level: 'cal-3' }],
-  [{ count: 0, level: 'cal-1' }, { count: 1, level: 'cal-1' }, { count: 1, level: 'cal-1' }, { count: 0, level: 'cal-2' }, { count: 0, level: 'cal-2' }]
-])
+const loading = ref(true)
+const threats = ref<Threat[]>([])
+
+const loadThreats = async () => {
+  loading.value = true
+  try {
+    const response = await threatApi.list({
+      page: 1,
+      page_size: 100,
+    })
+    if (response.success && response.data) {
+      threats.value = response.data.items || []
+    }
+  } catch (error) {
+    console.error('Failed to load threats:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Calculate risk distribution
+const riskDistribution = computed(() => {
+  const distribution = {
+    'CAL-4': 0,
+    'CAL-3': 0,
+    'CAL-2': 0,
+    'CAL-1': 0,
+  }
+  
+  threats.value.forEach(threat => {
+    const level = threat.risk_level as keyof typeof distribution
+    if (level && level in distribution) {
+      distribution[level]++
+    } else {
+      // Default to CAL-2 if no risk level
+      distribution['CAL-2']++
+    }
+  })
+  
+  return distribution
+})
+
+// Generate matrix data based on threats
+const matrixData = computed(() => {
+  // Create a 5x5 matrix based on impact_level and likelihood
+  const matrix: Array<Array<{ count: number; level: string }>> = []
+  
+  for (let i = 0; i < 5; i++) {
+    const row: Array<{ count: number; level: string }> = []
+    for (let j = 0; j < 5; j++) {
+      const impactLevel = 5 - i  // 5=极高, 1=极低
+      const likelihood = j + 1   // 1=极低, 5=极高
+      
+      // Count threats in this cell
+      const count = threats.value.filter(t => {
+        const tImpact = t.impact_level || 2
+        const tLikelihood = t.likelihood || 2
+        return Math.ceil(tImpact) === impactLevel && Math.ceil(tLikelihood) === likelihood
+      }).length
+      
+      // Determine risk level based on position
+      let level = 'cal-1'
+      if (impactLevel >= 4 && likelihood >= 4) level = 'cal-4'
+      else if (impactLevel >= 3 && likelihood >= 3) level = 'cal-3'
+      else if (impactLevel >= 2 && likelihood >= 2) level = 'cal-2'
+      
+      row.push({ count, level })
+    }
+    matrix.push(row)
+  }
+  
+  return matrix
+})
 
 const showCellDetails = (cell: any) => {
   console.log('Cell clicked:', cell)
 }
+
+onMounted(() => {
+  loadThreats()
+})
 </script>
 
 <style scoped>
@@ -309,5 +398,70 @@ const showCellDetails = (cell: any) => {
 .summary-desc {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.empty-icon svg {
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+}
+
+.empty-container h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.empty-container p {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-bottom: 20px;
 }
 </style>

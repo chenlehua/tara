@@ -40,7 +40,7 @@ async def create_asset(
 
 @router.get("", response_model=dict)
 async def list_assets(
-    project_id: int = Query(..., description="项目ID"),
+    project_id: Optional[int] = Query(default=None, description="项目ID，为空则返回所有项目的资产"),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     asset_type: Optional[str] = Query(default=None, description="资产类型"),
@@ -48,7 +48,7 @@ async def list_assets(
     keyword: Optional[str] = Query(default=None, description="搜索关键词"),
     service: AssetService = Depends(get_asset_service),
 ):
-    """List assets for a project."""
+    """List assets for a project or all projects if project_id is not provided."""
     assets, total = service.list_assets(
         project_id=project_id,
         page=page,
