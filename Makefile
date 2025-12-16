@@ -151,7 +151,7 @@ db-shell: ## 连接到MySQL (Docker)
 ## ==================== 测试 ====================
 # 安装共享模块（测试前必须安装）
 install-shared: ## 安装共享模块
-	pip install -e backend/shared/
+	pip install -i https://mirrors.aliyun.com/pypi/simple/ -e backend/shared/
 
 test: install-shared ## 运行所有测试
 	PYTHONPATH=backend/shared:backend/project-service:backend/document-service:backend/asset-service:backend/threat-risk-service:backend/diagram-service:backend/report-service:backend/agent-service \
