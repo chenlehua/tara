@@ -95,13 +95,26 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
+// Asset interface
+interface Asset {
+  id: string
+  name: string
+  type: string
+  securityLevel: string
+  securityClass: string
+  iconClass: string
+  interfaces: string[]
+  threats: number
+  connections: number
+}
+
 const showCreateModal = ref(false)
 const searchQuery = ref('')
 const filterType = ref('')
 const filterSecurityLevel = ref('')
-const selectedAsset = ref(null)
+const selectedAsset = ref<Asset | null>(null)
 
-const assets = ref([
+const assets = ref<Asset[]>([
   { id: '1', name: 'VCU (整车控制器)', type: 'ECU', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['CAN', 'Ethernet'], threats: 12, connections: 8 },
   { id: '2', name: 'BMS (电池管理系统)', type: 'ECU', securityLevel: 'CAL-4', securityClass: 'critical', iconClass: 'red', interfaces: ['CAN'], threats: 8, connections: 5 },
   { id: '3', name: 'MCU (电机控制器)', type: 'ECU', securityLevel: 'CAL-3', securityClass: 'high', iconClass: 'orange', interfaces: ['CAN'], threats: 6, connections: 4 },

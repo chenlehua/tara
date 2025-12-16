@@ -30,11 +30,11 @@ export const useUserStore = defineStore('user', () => {
     localStorage.setItem('auth_token', newToken)
   }
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, _password: string) => {
     isLoading.value = true
     try {
       // TODO: Call actual API
-      // const response = await authApi.login(email, password)
+      // const response = await authApi.login(email, _password)
       
       // Mock response for development
       const mockUser: User = {

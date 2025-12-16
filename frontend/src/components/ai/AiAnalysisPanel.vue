@@ -77,7 +77,7 @@
                   :key="level"
                   class="risk-item"
                 >
-                  <span class="risk-level" :style="{ color: getRiskColor(level) }">
+                  <span class="risk-level" :style="{ color: getRiskColor(String(level)) }">
                     {{ level }}
                   </span>
                   <span class="risk-count">{{ count }}</span>

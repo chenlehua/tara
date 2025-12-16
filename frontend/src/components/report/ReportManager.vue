@@ -77,7 +77,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps<{
+defineProps<{
   projectId: number
 }>()
 
@@ -145,15 +145,15 @@ const confirmGenerate = async () => {
   }
 }
 
-const previewReport = (report: any) => {
+const previewReport = (_report: any) => {
   ElMessage.info('预览功能开发中...')
 }
 
-const downloadReport = (report: any) => {
+const downloadReport = (_report: any) => {
   ElMessage.info('下载功能开发中...')
 }
 
-const deleteReport = async (id: number) => {
+const deleteReport = async (_id: number) => {
   ElMessage.success('删除成功')
   loadReports()
 }

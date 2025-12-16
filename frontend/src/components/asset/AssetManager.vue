@@ -114,7 +114,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 
-const props = defineProps<{
+defineProps<{
   projectId: number
 }>()
 
@@ -167,15 +167,15 @@ const discoverAssets = () => {
   ElMessage.info('AI资产识别功能开发中...')
 }
 
-const viewAsset = (asset: any) => {
+const viewAsset = (_asset: any) => {
   ElMessage.info('查看资产详情...')
 }
 
-const editAsset = (asset: any) => {
+const editAsset = (_asset: any) => {
   ElMessage.info('编辑资产...')
 }
 
-const deleteAsset = async (id: number) => {
+const deleteAsset = async (_id: number) => {
   ElMessage.success('删除成功')
   loadAssets()
 }

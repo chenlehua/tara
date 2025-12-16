@@ -184,16 +184,15 @@ const sendMessage = async () => {
   isLoading.value = true
 
   try {
-    const response = await chatApi.sendMessage({
-      message: userMessage,
-      project_id: props.projectId,
-      stream: false,
-    })
+    const response = await chatApi.sendMessage(
+      userMessage,
+      props.projectId ? String(props.projectId) : undefined
+    )
 
     // 添加AI回复
     messages.value.push({
       role: 'assistant',
-      content: response.data.message || response.data.content,
+      content: response.content,
       timestamp: new Date(),
     })
   } catch (error: any) {

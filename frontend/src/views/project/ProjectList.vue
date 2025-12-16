@@ -195,7 +195,7 @@ const goToProject = (id: number) => {
   router.push(`/projects/${id}`)
 }
 
-const editProject = (project: any) => {
+const editProject = (_project: any) => {
   // TODO: Implement edit
 }
 

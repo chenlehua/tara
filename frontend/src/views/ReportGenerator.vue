@@ -31,7 +31,7 @@
     <!-- Steps Indicator -->
     <div class="steps-indicator">
       <div 
-        v-for="(step, index) in steps" 
+        v-for="step in steps" 
         :key="step.number"
         class="step-item"
         :class="{ active: currentStep === step.number, completed: currentStep > step.number }"
@@ -286,7 +286,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()

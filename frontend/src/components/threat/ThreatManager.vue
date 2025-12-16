@@ -93,7 +93,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 
-const props = defineProps<{
+defineProps<{
   projectId: number
 }>()
 
@@ -182,15 +182,15 @@ const analyzeThreats = () => {
   ElMessage.info('STRIDE威胁分析功能开发中...')
 }
 
-const viewThreat = (threat: any) => {
+const viewThreat = (_threat: any) => {
   ElMessage.info('查看威胁详情...')
 }
 
-const editThreat = (threat: any) => {
+const editThreat = (_threat: any) => {
   ElMessage.info('编辑威胁...')
 }
 
-const deleteThreat = async (id: number) => {
+const deleteThreat = async (_id: number) => {
   ElMessage.success('删除成功')
   loadThreats()
 }

@@ -142,15 +142,15 @@ const loadDocuments = async () => {
   }
 }
 
-const parseDocument = async (id: number) => {
+const parseDocument = async (_id: number) => {
   ElMessage.info('开始解析文档...')
 }
 
-const viewDocument = (doc: any) => {
+const viewDocument = (_doc: any) => {
   ElMessage.info('查看文档功能开发中...')
 }
 
-const deleteDocument = async (id: number) => {
+const deleteDocument = async (_id: number) => {
   ElMessage.success('删除成功')
   loadDocuments()
 }

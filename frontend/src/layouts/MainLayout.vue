@@ -206,13 +206,22 @@ const userName = computed(() => userStore.user?.username || '张工程师')
 const userRole = computed(() => userStore.user?.role || '高级安全分析师')
 const userInitial = computed(() => userName.value.charAt(0))
 
+// Navigation item interface
+interface NavItem {
+  path: string
+  label: string
+  icon: { template: string }
+  badge?: string
+  badgeType?: string
+}
+
 // Navigation items
-const mainNavItems = [
+const mainNavItems: NavItem[] = [
   { path: '/', label: '工作台', icon: IconHome },
   { path: '/generator', label: '一键生成报告', icon: IconSparkles, badge: 'AI', badgeType: 'new' }
 ]
 
-const analysisNavItems = [
+const analysisNavItems: NavItem[] = [
   { path: '/projects', label: '项目管理', icon: IconFolder, badge: '3' },
   { path: '/assets', label: '资产识别', icon: IconCpu, badge: '48' },
   { path: '/threats', label: '威胁分析', icon: IconWarning, badge: '127', badgeType: 'danger' },
@@ -220,7 +229,7 @@ const analysisNavItems = [
   { path: '/measures', label: '安全措施', icon: IconShield, badge: '89', badgeType: 'success' }
 ]
 
-const outputNavItems = [
+const outputNavItems: NavItem[] = [
   { path: '/reports', label: '报告中心', icon: IconFile, badge: '2' },
   { path: '/knowledge', label: '知识库', icon: IconDatabase }
 ]
