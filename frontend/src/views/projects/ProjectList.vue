@@ -132,7 +132,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { projectApi, type Project } from '@/api'
+import { projectApi } from '@/api'
 
 const router = useRouter()
 
