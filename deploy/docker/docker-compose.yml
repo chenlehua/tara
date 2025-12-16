@@ -204,6 +204,7 @@ services:
       - REDIS_HOST=redis
       - NEO4J_HOST=neo4j
       - MINIO_HOST=minio
+      - MILVUS_HOST=milvus
     depends_on:
       mysql:
         condition: service_healthy
@@ -225,6 +226,7 @@ services:
       - REDIS_HOST=redis
       - MINIO_HOST=minio
       - ES_HOST=elasticsearch
+      - MILVUS_HOST=milvus
     depends_on:
       mysql:
         condition: service_healthy
@@ -247,6 +249,7 @@ services:
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - NEO4J_HOST=neo4j
+      - MILVUS_HOST=milvus
     depends_on:
       mysql:
         condition: service_healthy
@@ -268,6 +271,7 @@ services:
     environment:
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
+      - MILVUS_HOST=milvus
     depends_on:
       mysql:
         condition: service_healthy
@@ -288,6 +292,7 @@ services:
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MINIO_HOST=minio
+      - MILVUS_HOST=milvus
     depends_on:
       mysql:
         condition: service_healthy
@@ -308,6 +313,7 @@ services:
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MINIO_HOST=minio
+      - MILVUS_HOST=milvus
     depends_on:
       mysql:
         condition: service_healthy
