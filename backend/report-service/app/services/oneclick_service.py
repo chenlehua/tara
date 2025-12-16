@@ -689,10 +689,24 @@ class OneClickGenerateService:
         try:
             report = self.db.query(Report).filter(Report.id == report_id).first()
             if report:
+                # Get project info
+                project = self.db.query(Project).filter(Project.id == report.project_id).first()
+                project_info = {}
+                if project:
+                    project_info = {
+                        "id": project.id,
+                        "name": project.name,
+                        "description": project.description,
+                        "vehicle_type": project.vehicle_type,
+                        "vehicle_model": project.vehicle_model,
+                        "standard": project.standard,
+                    }
+
                 report.status = ReportStatus.COMPLETED.value
                 report.progress = 100
                 report.statistics = report_data.get("statistics", {})
                 report.content = {
+                    "project": project_info,
                     "assets": report_data.get("assets", []),
                     "threats": report_data.get("threats", []),
                     "risk_distribution": report_data.get("risk_distribution", {}),

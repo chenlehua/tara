@@ -294,8 +294,6 @@ class ReportService:
 
     async def _generate_pdf_from_content(self, report: Report) -> io.BytesIO:
         """Generate PDF from stored report content."""
-        buffer = io.BytesIO()
-        # Use PDF generator with stored content
         try:
             content = report.content or {}
             data = {
@@ -304,17 +302,18 @@ class ReportService:
                 "threats": content.get("threats", []),
                 "statistics": report.statistics or {},
             }
-            # Generate simple PDF
-            self.pdf_generator.generate_report(buffer, data)
-            buffer.seek(0)
+            # Generate PDF using the generator's generate method
+            buffer = await self.pdf_generator.generate(
+                data=data,
+                template=report.template or "iso21434",
+            )
+            return buffer
         except Exception as e:
             logger.error(f"PDF generation failed: {e}")
-            buffer = io.BytesIO(b"PDF generation failed")
-        return buffer
+            return io.BytesIO(b"PDF generation failed")
 
     async def _generate_word_from_content(self, report: Report) -> io.BytesIO:
         """Generate Word document from stored report content."""
-        buffer = io.BytesIO()
         try:
             content = report.content or {}
             data = {
@@ -323,12 +322,15 @@ class ReportService:
                 "threats": content.get("threats", []),
                 "statistics": report.statistics or {},
             }
-            self.word_generator.generate_report(buffer, data)
-            buffer.seek(0)
+            # Generate Word using the generator's generate method
+            buffer = await self.word_generator.generate(
+                data=data,
+                template=report.template or "iso21434",
+            )
+            return buffer
         except Exception as e:
             logger.error(f"Word generation failed: {e}")
-            buffer = io.BytesIO(b"Word generation failed")
-        return buffer
+            return io.BytesIO(b"Word generation failed")
 
     async def get_report_preview(self, report_id: int) -> dict:
         """Get report preview data."""
