@@ -36,6 +36,10 @@ from .report import (
     ReportUpdate,
     ReportResponse,
     ReportListResponse,
+    ReportGenerateRequest,
+    OneClickGenerateRequest,
+    OneClickGenerateResponse,
+    GenerationProgressResponse,
 )
 
 __all__ = [
@@ -74,4 +78,8 @@ __all__ = [
     "ReportUpdate",
     "ReportResponse",
     "ReportListResponse",
+    "ReportGenerateRequest",
+    "OneClickGenerateRequest",
+    "OneClickGenerateResponse",
+    "GenerationProgressResponse",
 ]

@@ -1,0 +1,11 @@
+资产ID,资产名称,资产类型,分类,接口类型,机密性,完整性,可用性,描述
+ASSET-001,整车控制器 (VCU),ECU,控制单元,"CAN,Ethernet",高,关键,关键,负责整车动力系统协调控制
+ASSET-002,电池管理系统 (BMS),ECU,控制单元,"CAN,LIN",高,关键,关键,负责电池包的状态监控和安全保护
+ASSET-003,电机控制器 (MCU),ECU,控制单元,CAN,中,关键,关键,控制驱动电机的转速和扭矩输出
+ASSET-004,智能网关 (CGW),Gateway,网络设备,"CAN,Ethernet,LIN",关键,关键,关键,负责车内各域网络之间的数据路由和安全隔离
+ASSET-005,远程通信单元 (T-Box),Gateway,通信设备,"4G/5G,WiFi,Bluetooth,CAN,Ethernet",关键,关键,高,提供车辆与云端的通信连接
+ASSET-006,智能驾驶控制器 (ADAS),ECU,控制单元,"Ethernet,CAN",高,关键,关键,处理传感器数据实现L2+级别自动驾驶
+ASSET-007,前视摄像头,Sensor,传感器,Ethernet,中,高,高,提供前方道路图像数据
+ASSET-008,毫米波雷达,Sensor,传感器,CAN,低,高,高,提供前方障碍物距离和速度信息
+ASSET-009,信息娱乐系统 (IVI),ECU,信息娱乐,"Ethernet,CAN,USB,Bluetooth",中,中,低,提供导航多媒体等人机交互功能
+ASSET-010,OBD-II诊断接口,Interface,诊断接口,CAN,高,关键,低,提供车辆诊断和标定功能的物理接口

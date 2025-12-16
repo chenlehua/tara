@@ -1,7 +1,10 @@
 """Report endpoints."""
-from typing import Optional
+import json
+import uuid
+from datetime import datetime
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, File, Form, Query, BackgroundTasks, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -12,13 +15,20 @@ from tara_shared.schemas import (
     ReportResponse,
     ReportListResponse,
     ReportGenerateRequest,
+    OneClickGenerateRequest,
+    OneClickGenerateResponse,
+    GenerationProgressResponse,
 )
 from tara_shared.utils import success_response, paginated_response
 
 from app.services.report_service import ReportService
+from app.services.oneclick_service import OneClickGenerateService
 from app.repositories.report_repo import ReportRepository
 
 router = APIRouter()
+
+# In-memory task storage (should be Redis in production)
+_generation_tasks = {}
 
 
 def get_report_service(db: Session = Depends(get_db)) -> ReportService:
@@ -124,3 +134,93 @@ async def preview_report(
     """Get report preview data."""
     preview = await service.get_report_preview(report_id)
     return success_response(preview)
+
+
+def get_oneclick_service(db: Session = Depends(get_db)) -> OneClickGenerateService:
+    """Get one-click generate service instance."""
+    return OneClickGenerateService(db)
+
+
+@router.post("/oneclick")
+async def oneclick_generate(
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(..., description="上传的文件列表"),
+    template: str = Form(default="full", description="报告模板"),
+    prompt: str = Form(default="", description="分析提示词"),
+    project_name: Optional[str] = Form(default=None, description="项目名称"),
+    service: OneClickGenerateService = Depends(get_oneclick_service),
+):
+    """
+    一键生成TARA报告
+    
+    支持上传:
+    - 资产清单文件: .xlsx, .xls, .csv, .json
+    - 系统架构图: .png, .jpg, .jpeg, .svg
+    - 配置文档: .pdf
+    """
+    # Generate task ID
+    task_id = str(uuid.uuid4())
+    
+    # Create project name
+    if not project_name:
+        project_name = f"TARA分析项目_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    
+    # Initialize task status
+    _generation_tasks[task_id] = {
+        "status": "processing",
+        "progress": 0,
+        "current_step": "初始化",
+        "steps": [
+            {"label": "解析文件", "completed": False, "active": True},
+            {"label": "识别资产", "completed": False, "active": False},
+            {"label": "威胁分析", "completed": False, "active": False},
+            {"label": "风险评估", "completed": False, "active": False},
+            {"label": "生成报告", "completed": False, "active": False},
+        ],
+        "result": None,
+        "error": None,
+    }
+    
+    # Start background task
+    result = await service.start_generation(
+        task_id=task_id,
+        files=files,
+        template=template,
+        prompt=prompt,
+        project_name=project_name,
+        task_storage=_generation_tasks,
+    )
+    
+    # Add background processing
+    background_tasks.add_task(
+        service.run_generation,
+        task_id=task_id,
+        project_id=result["project_id"],
+        report_id=result["report_id"],
+        file_paths=result["file_paths"],
+        template=template,
+        prompt=prompt,
+        task_storage=_generation_tasks,
+    )
+    
+    return success_response({
+        "task_id": task_id,
+        "report_id": result["report_id"],
+        "project_id": result["project_id"],
+        "status": "processing",
+        "message": "报告生成已启动",
+    })
+
+
+@router.get("/oneclick/{task_id}/progress")
+async def get_generation_progress(task_id: str):
+    """获取报告生成进度"""
+    if task_id not in _generation_tasks:
+        return success_response({
+            "task_id": task_id,
+            "status": "not_found",
+            "progress": 0,
+            "error": "任务不存在",
+        })
+    
+    return success_response(_generation_tasks[task_id])

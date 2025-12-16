@@ -128,3 +128,34 @@ class ReportGenerateRequest(BaseSchema):
                  "attack_paths", "risk_assessment", "risk_treatment"],
         description="包含的章节"
     )
+
+
+class OneClickGenerateRequest(BaseSchema):
+    """Request for one-click report generation from uploaded files."""
+
+    template: str = Field(default="full", description="报告模板: full, threat, risk, measure")
+    prompt: str = Field(default="", description="分析提示词")
+    formats: List[str] = Field(default=["pdf"], description="输出格式列表")
+    project_name: Optional[str] = Field(default=None, description="项目名称")
+
+
+class OneClickGenerateResponse(BaseSchema):
+    """Response for one-click report generation."""
+
+    task_id: str = Field(..., description="任务ID")
+    report_id: int = Field(..., description="报告ID")
+    project_id: int = Field(..., description="项目ID")
+    status: str = Field(default="processing", description="状态")
+    message: str = Field(default="报告生成已启动", description="消息")
+
+
+class GenerationProgressResponse(BaseSchema):
+    """Response for generation progress."""
+
+    task_id: str = Field(..., description="任务ID")
+    status: str = Field(..., description="状态: processing, completed, failed")
+    progress: int = Field(default=0, description="进度百分比")
+    current_step: str = Field(default="", description="当前步骤")
+    steps: List[Dict[str, Any]] = Field(default_factory=list, description="步骤列表")
+    result: Optional[Dict[str, Any]] = Field(default=None, description="结果数据")
+    error: Optional[str] = Field(default=None, description="错误信息")
