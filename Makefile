@@ -125,13 +125,16 @@ db-init: ## 初始化数据库 (通过Docker)
 	@echo "Initializing databases via Docker..."
 	@echo "Waiting for MySQL to be ready..."
 	@sleep 5
-	docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -p$(MYSQL_ROOT_PASSWORD) < database/mysql/init/01_create_database.sql || \
-		docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -proot_password < database/mysql/init/01_create_database.sql
+	@cat database/mysql/init/01_create_database.sql | docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -proot_password
 	@echo "Database initialized successfully!"
 
-db-init-local: ## 初始化数据库 (本地MySQL)
+db-init-local: ## 初始化数据库 (本地MySQL，需要输入密码)
 	@echo "Initializing databases locally..."
 	mysql -h 127.0.0.1 -P 3306 -u root -p < database/mysql/init/01_create_database.sql
+
+db-init-tcp: ## 初始化数据库 (通过TCP连接Docker MySQL)
+	@echo "Initializing databases via TCP..."
+	mysql -h 127.0.0.1 -P 3306 -u root -proot_password < database/mysql/init/01_create_database.sql
 
 db-migrate: ## 运行数据库迁移
 	cd backend/shared && alembic upgrade head
