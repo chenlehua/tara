@@ -34,7 +34,7 @@ class Document(BaseModel):
     title = Column(String(255), nullable=True)
     content = Column(Text, nullable=True)
     structure = Column(JSON, default=dict)
-    metadata = Column(JSON, default=dict)
+    doc_metadata = Column(JSON, default=dict)  # renamed from 'metadata' (reserved by SQLAlchemy)
     ocr_result = Column(JSON, default=dict)
     page_count = Column(Integer, nullable=True)
     
