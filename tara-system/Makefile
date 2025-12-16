@@ -45,7 +45,7 @@ setup-dev: ## 设置开发环境
 
 ## ==================== 开发 ====================
 frontend-dev: ## 启动前端开发服务器
-	cd frontend && pnpm dev
+	cd frontend && pnpm install --registry https://registry.npmmirror.com && pnpm dev
 
 backend-dev: ## 启动所有后端服务 (开发模式)
 	@echo "Starting all backend services..."
