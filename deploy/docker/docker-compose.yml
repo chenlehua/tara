@@ -200,6 +200,7 @@ services:
     ports:
       - "8001:8001"
     environment:
+      - PORT=8001
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - NEO4J_HOST=neo4j
@@ -222,6 +223,7 @@ services:
     ports:
       - "8002:8002"
     environment:
+      - PORT=8002
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MINIO_HOST=minio
@@ -246,6 +248,7 @@ services:
     ports:
       - "8003:8003"
     environment:
+      - PORT=8003
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - NEO4J_HOST=neo4j
@@ -269,6 +272,7 @@ services:
     ports:
       - "8004:8004"
     environment:
+      - PORT=8004
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MILVUS_HOST=milvus
@@ -289,6 +293,7 @@ services:
     ports:
       - "8005:8005"
     environment:
+      - PORT=8005
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MINIO_HOST=minio
@@ -310,6 +315,7 @@ services:
     ports:
       - "8006:8006"
     environment:
+      - PORT=8006
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MINIO_HOST=minio
@@ -331,6 +337,7 @@ services:
     ports:
       - "8007:8007"
     environment:
+      - PORT=8007
       - MYSQL_HOST=mysql
       - REDIS_HOST=redis
       - MILVUS_HOST=milvus
