@@ -1,0 +1,236 @@
+{
+  "version": "1.0.0",
+  "description": "汽车网络安全攻击模式库",
+  "attack_patterns": [
+    {
+      "id": "ATPAT-001",
+      "name": "CAN总线注入攻击",
+      "description": "通过物理访问或远程途径向CAN总线注入恶意消息",
+      "stride_type": "Tampering",
+      "attack_vector": "network",
+      "prerequisites": [
+        "获取对CAN总线的访问权限",
+        "了解目标车辆的CAN消息格式"
+      ],
+      "attack_steps": [
+        {
+          "order": 1,
+          "action": "获取CAN总线访问",
+          "technique": "物理接入OBD-II或远程漏洞利用"
+        },
+        {
+          "order": 2,
+          "action": "嗅探CAN消息",
+          "technique": "使用CAN分析工具记录正常消息"
+        },
+        {
+          "order": 3,
+          "action": "逆向分析消息格式",
+          "technique": "识别关键控制消息的ID和数据格式"
+        },
+        {
+          "order": 4,
+          "action": "注入恶意消息",
+          "technique": "发送伪造的控制命令"
+        }
+      ],
+      "impact": {
+        "safety": "severe",
+        "financial": "major",
+        "operational": "major"
+      },
+      "mitigations": ["CTRL-002", "CTRL-003", "CTRL-004"],
+      "capec_id": "CAPEC-594"
+    },
+    {
+      "id": "ATPAT-002",
+      "name": "OTA更新劫持",
+      "description": "篡改或伪造OTA软件更新包",
+      "stride_type": "Tampering",
+      "attack_vector": "network",
+      "prerequisites": [
+        "了解OTA更新机制",
+        "能够拦截或篡改更新通道"
+      ],
+      "attack_steps": [
+        {
+          "order": 1,
+          "action": "分析OTA通信协议",
+          "technique": "流量分析和逆向工程"
+        },
+        {
+          "order": 2,
+          "action": "获取更新服务器访问权限",
+          "technique": "服务器漏洞利用或中间人攻击"
+        },
+        {
+          "order": 3,
+          "action": "替换或修改更新包",
+          "technique": "注入恶意代码"
+        },
+        {
+          "order": 4,
+          "action": "触发车辆更新",
+          "technique": "伪造更新通知"
+        }
+      ],
+      "impact": {
+        "safety": "severe",
+        "financial": "major",
+        "operational": "major"
+      },
+      "mitigations": ["CTRL-006", "CTRL-007", "CTRL-001"],
+      "capec_id": "CAPEC-586"
+    },
+    {
+      "id": "ATPAT-003",
+      "name": "远程车辆解锁",
+      "description": "未经授权远程解锁车门",
+      "stride_type": "Spoofing",
+      "attack_vector": "network",
+      "prerequisites": [
+        "了解远程控制协议",
+        "获取车辆或用户凭证"
+      ],
+      "attack_steps": [
+        {
+          "order": 1,
+          "action": "获取用户凭证",
+          "technique": "钓鱼攻击或凭证填充"
+        },
+        {
+          "order": 2,
+          "action": "访问远程服务API",
+          "technique": "使用窃取的凭证"
+        },
+        {
+          "order": 3,
+          "action": "发送解锁命令",
+          "technique": "调用远程解锁API"
+        }
+      ],
+      "impact": {
+        "safety": "minor",
+        "financial": "major",
+        "operational": "moderate"
+      },
+      "mitigations": ["CTRL-005", "CTRL-007", "CTRL-009"],
+      "capec_id": "CAPEC-560"
+    },
+    {
+      "id": "ATPAT-004",
+      "name": "诊断服务滥用",
+      "description": "利用诊断接口执行未授权操作",
+      "stride_type": "Elevation of Privilege",
+      "attack_vector": "physical",
+      "prerequisites": [
+        "物理访问OBD-II接口",
+        "了解UDS协议"
+      ],
+      "attack_steps": [
+        {
+          "order": 1,
+          "action": "连接OBD-II接口",
+          "technique": "使用诊断工具"
+        },
+        {
+          "order": 2,
+          "action": "尝试安全访问",
+          "technique": "暴力破解或已知种子算法"
+        },
+        {
+          "order": 3,
+          "action": "获取扩展权限",
+          "technique": "进入扩展诊断会话"
+        },
+        {
+          "order": 4,
+          "action": "执行敏感操作",
+          "technique": "刷写ECU或修改配置"
+        }
+      ],
+      "impact": {
+        "safety": "major",
+        "financial": "moderate",
+        "operational": "major"
+      },
+      "mitigations": ["CTRL-005", "CTRL-008", "CTRL-010"],
+      "capec_id": "CAPEC-501"
+    },
+    {
+      "id": "ATPAT-005",
+      "name": "固件逆向与篡改",
+      "description": "提取和修改ECU固件",
+      "stride_type": "Tampering",
+      "attack_vector": "physical",
+      "prerequisites": [
+        "物理访问目标ECU",
+        "逆向工程能力"
+      ],
+      "attack_steps": [
+        {
+          "order": 1,
+          "action": "获取固件",
+          "technique": "通过JTAG/SWD或芯片读取"
+        },
+        {
+          "order": 2,
+          "action": "逆向分析固件",
+          "technique": "使用IDA Pro等工具"
+        },
+        {
+          "order": 3,
+          "action": "修改固件",
+          "technique": "注入后门或修改功能"
+        },
+        {
+          "order": 4,
+          "action": "刷写修改后的固件",
+          "technique": "通过诊断接口或直接编程"
+        }
+      ],
+      "impact": {
+        "safety": "severe",
+        "financial": "major",
+        "operational": "major"
+      },
+      "mitigations": ["CTRL-001", "CTRL-008", "CTRL-012"],
+      "capec_id": "CAPEC-188"
+    },
+    {
+      "id": "ATPAT-006",
+      "name": "V2X通信欺骗",
+      "description": "伪造V2X消息影响车辆决策",
+      "stride_type": "Spoofing",
+      "attack_vector": "wireless",
+      "prerequisites": [
+        "V2X通信设备",
+        "了解V2X协议(IEEE 1609/C-V2X)"
+      ],
+      "attack_steps": [
+        {
+          "order": 1,
+          "action": "设置V2X发射器",
+          "technique": "SDR或商用V2X设备"
+        },
+        {
+          "order": 2,
+          "action": "构造虚假消息",
+          "technique": "伪造BSM/SPaT/MAP消息"
+        },
+        {
+          "order": 3,
+          "action": "广播恶意消息",
+          "technique": "发送虚假交通信息"
+        }
+      ],
+      "impact": {
+        "safety": "severe",
+        "financial": "minor",
+        "operational": "moderate"
+      },
+      "mitigations": ["CTRL-002", "CTRL-008"],
+      "capec_id": "CAPEC-594"
+    }
+  ]
+}
