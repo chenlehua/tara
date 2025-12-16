@@ -22,48 +22,89 @@ class MinIOClient:
     """MinIO client wrapper."""
 
     _client: Optional[Minio] = None
+    _connection_error: Optional[str] = None
 
     @classmethod
-    def get_client(cls) -> Minio:
+    def get_client(cls) -> Optional[Minio]:
         """Get MinIO client instance (singleton)."""
-        if cls._client is None:
-            cls._client = Minio(
-                settings.minio_endpoint,
-                access_key=settings.minio_access_key,
-                secret_key=settings.minio_secret_key,
-                secure=False,  # Set to True in production with HTTPS
-            )
+        if cls._client is None and cls._connection_error is None:
+            try:
+                cls._client = Minio(
+                    settings.minio_endpoint,
+                    access_key=settings.minio_access_key,
+                    secret_key=settings.minio_secret_key,
+                    secure=False,  # Set to True in production with HTTPS
+                )
+                # Test connection by listing buckets
+                list(cls._client.list_buckets())
+                logger.info(f"Connected to MinIO at {settings.minio_endpoint}")
+            except Exception as e:
+                cls._connection_error = str(e)
+                logger.warning(f"Failed to connect to MinIO: {e}. File storage will be unavailable.")
+                cls._client = None
         return cls._client
+
+    @classmethod
+    def is_available(cls) -> bool:
+        """Check if MinIO is available."""
+        return cls.get_client() is not None
 
     @classmethod
     def init_buckets(cls) -> None:
         """Initialize required buckets."""
         client = cls.get_client()
-        buckets = [
-            settings.minio_bucket_documents,
-            settings.minio_bucket_reports,
-            settings.minio_bucket_diagrams,
-        ]
-        for bucket in buckets:
-            if not client.bucket_exists(bucket):
-                client.make_bucket(bucket)
-                logger.info(f"Created bucket: {bucket}")
+        if client is None:
+            logger.warning("MinIO not available, skipping bucket initialization")
+            return
+        
+        try:
+            buckets = [
+                settings.minio_bucket_documents,
+                settings.minio_bucket_reports,
+                settings.minio_bucket_diagrams,
+            ]
+            for bucket in buckets:
+                if not client.bucket_exists(bucket):
+                    client.make_bucket(bucket)
+                    logger.info(f"Created bucket: {bucket}")
+        except Exception as e:
+            logger.warning(f"Failed to initialize buckets: {e}")
 
 
-# Global client instance
-minio_client = MinIOClient.get_client()
-
-
-def get_minio_client() -> Minio:
+def get_minio_client() -> Optional[Minio]:
     """Get MinIO client for dependency injection."""
     return MinIOClient.get_client()
+
+
+# Lazy-initialized global client
+minio_client: Optional[Minio] = None
+
+
+def get_global_minio_client() -> Optional[Minio]:
+    """Get global MinIO client with lazy initialization."""
+    global minio_client
+    if minio_client is None:
+        minio_client = MinIOClient.get_client()
+    return minio_client
 
 
 class StorageService:
     """Service for file storage operations."""
 
     def __init__(self, client: Minio = None):
-        self.client = client or minio_client
+        self._client = client
+        self._lazy_client = client is None
+
+    @property
+    def client(self) -> Optional[Minio]:
+        """Get client with lazy initialization."""
+        if self._lazy_client and self._client is None:
+            self._client = get_minio_client()
+        return self._client
+
+    def is_available(self) -> bool:
+        """Check if storage service is available."""
+        return self.client is not None
 
     def upload_file(
         self,
@@ -75,6 +116,10 @@ class StorageService:
         metadata: Dict[str, str] = None,
     ) -> Dict[str, Any]:
         """Upload a file to bucket."""
+        if not self.is_available():
+            logger.warning("MinIO not available, skipping file upload")
+            return {"bucket": bucket, "object_name": object_name, "error": "Storage unavailable"}
+        
         try:
             result = self.client.put_object(
                 bucket_name=bucket,
@@ -206,5 +251,13 @@ class StorageService:
             raise
 
 
-# Global storage service
-storage_service = StorageService()
+# Lazy-initialized global storage service
+storage_service: Optional[StorageService] = None
+
+
+def get_storage_service() -> StorageService:
+    """Get global storage service with lazy initialization."""
+    global storage_service
+    if storage_service is None:
+        storage_service = StorageService()
+    return storage_service

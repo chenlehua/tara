@@ -1,133 +1,235 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="900" height="600" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800">
   <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1e293b; }
+      .subtitle { font: 14px sans-serif; fill: #64748b; }
+      .box { stroke-width: 2; rx: 8; ry: 8; }
+      .box-label { font: bold 12px sans-serif; fill: #1e293b; }
+      .box-desc { font: 10px sans-serif; fill: #64748b; }
+      .domain { stroke-width: 2; stroke-dasharray: 5,5; rx: 12; ry: 12; }
+      .domain-label { font: bold 14px sans-serif; }
+      .connection { stroke-width: 2; fill: none; }
+      .protocol { font: 10px sans-serif; fill: #0284c7; }
+    </style>
+    <!-- Gradient definitions -->
     <linearGradient id="ecuGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="gatewayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#6D28D9;stop-opacity:1" />
+    <linearGradient id="gwGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="sensorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    <linearGradient id="commGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f472b6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="adasGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
     </linearGradient>
     <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
     </linearGradient>
   </defs>
   
   <!-- Background -->
-  <rect width="900" height="600" fill="#0F172A"/>
+  <rect width="1200" height="800" fill="#f8fafc"/>
   
   <!-- Title -->
-  <text x="450" y="35" text-anchor="middle" fill="#F8FAFC" font-size="20" font-weight="bold" font-family="Arial, sans-serif">
-    zý5¨}f E/E ¶„þ
-  </text>
+  <text x="600" y="40" text-anchor="middle" class="title">????????????</text>
+  <text x="600" y="65" text-anchor="middle" class="subtitle">Smart Connected Vehicle E/E Architecture</text>
   
-  <!-- Cloud -->
-  <rect x="380" y="60" width="140" height="50" rx="10" fill="url(#cloudGrad)"/>
-  <text x="450" y="90" text-anchor="middle" fill="white" font-size="12" font-family="Arial, sans-serif">‘ï¡</text>
+  <!-- External Domain - Cloud/Backend -->
+  <rect x="50" y="90" width="280" height="180" fill="#fef3c7" stroke="#f59e0b" class="domain"/>
+  <text x="190" y="115" text-anchor="middle" class="domain-label" fill="#b45309">??? (External)</text>
+  
+  <!-- Cloud Backend -->
+  <rect x="70" y="130" width="120" height="60" fill="url(#cloudGrad)" stroke="#d97706" class="box"/>
+  <text x="130" y="155" text-anchor="middle" class="box-label" fill="white">????</text>
+  <text x="130" y="175" text-anchor="middle" class="box-desc" fill="white">TSP/OTA Server</text>
+  
+  <!-- Mobile App -->
+  <rect x="200" y="130" width="110" height="60" fill="url(#cloudGrad)" stroke="#d97706" class="box"/>
+  <text x="255" y="155" text-anchor="middle" class="box-label" fill="white">??APP</text>
+  <text x="255" y="175" text-anchor="middle" class="box-desc" fill="white">Remote Control</text>
+  
+  <!-- Charging -->
+  <rect x="70" y="200" width="120" height="50" fill="url(#cloudGrad)" stroke="#d97706" class="box"/>
+  <text x="130" y="225" text-anchor="middle" class="box-label" fill="white">???</text>
+  <text x="130" y="240" text-anchor="middle" class="box-desc" fill="white">EVSE</text>
+  
+  <!-- Telematics Domain -->
+  <rect x="370" y="90" width="200" height="180" fill="#fce7f3" stroke="#ec4899" class="domain"/>
+  <text x="470" y="115" text-anchor="middle" class="domain-label" fill="#be185d">?????</text>
   
   <!-- T-Box -->
-  <rect x="380" y="140" width="140" height="60" rx="8" fill="url(#gatewayGrad)"/>
-  <text x="450" y="165" text-anchor="middle" fill="white" font-size="11" font-weight="bold" font-family="Arial, sans-serif">T-Box</text>
-  <text x="450" y="180" text-anchor="middle" fill="#E0E7FF" font-size="9" font-family="Arial, sans-serif">4G/5G | WiFi | BT</text>
+  <rect x="390" y="135" width="160" height="70" fill="url(#commGrad)" stroke="#db2777" class="box"/>
+  <text x="470" y="165" text-anchor="middle" class="box-label" fill="white">T-Box</text>
+  <text x="470" y="185" text-anchor="middle" class="box-desc" fill="white">4G/5G, WiFi, BLE, GNSS</text>
   
-  <!-- Connection Cloud to T-Box -->
-  <line x1="450" y1="110" x2="450" y2="140" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5,5"/>
+  <!-- SECC -->
+  <rect x="390" y="215" width="160" height="45" fill="url(#commGrad)" stroke="#db2777" class="box"/>
+  <text x="470" y="243" text-anchor="middle" class="box-label" fill="white">SECC ????</text>
   
-  <!-- Central Gateway -->
-  <rect x="350" y="240" width="200" height="70" rx="10" fill="url(#gatewayGrad)"/>
-  <text x="450" y="270" text-anchor="middle" fill="white" font-size="14" font-weight="bold" font-family="Arial, sans-serif">zýQs (CGW)</text>
-  <text x="450" y="290" text-anchor="middle" fill="#E0E7FF" font-size="10" font-family="Arial, sans-serif">CAN | Ethernet | LIN</text>
+  <!-- Gateway Domain (Center) -->
+  <rect x="600" y="90" width="200" height="180" fill="#d1fae5" stroke="#10b981" class="domain"/>
+  <text x="700" y="115" text-anchor="middle" class="domain-label" fill="#047857">???</text>
   
-  <!-- Connection T-Box to Gateway -->
-  <line x1="450" y1="200" x2="450" y2="240" stroke="#8B5CF6" stroke-width="3"/>
-  
-  <!-- Powertrain Domain -->
-  <rect x="30" y="350" width="200" height="200" rx="10" fill="rgba(59,130,246,0.1)" stroke="#3B82F6" stroke-width="2"/>
-  <text x="130" y="375" text-anchor="middle" fill="#60A5FA" font-size="12" font-weight="bold" font-family="Arial, sans-serif">¨›ß</text>
-  
-  <!-- VCU -->
-  <rect x="50" y="390" width="80" height="45" rx="6" fill="url(#ecuGrad)"/>
-  <text x="90" y="410" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">VCU</text>
-  <text x="90" y="425" text-anchor="middle" fill="#BFDBFE" font-size="8" font-family="Arial, sans-serif">tf§6h</text>
-  
-  <!-- BMS -->
-  <rect x="50" y="445" width="80" height="45" rx="6" fill="url(#ecuGrad)"/>
-  <text x="90" y="465" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">BMS</text>
-  <text x="90" y="480" text-anchor="middle" fill="#BFDBFE" font-size="8" font-family="Arial, sans-serif">5`¡</text>
-  
-  <!-- MCU -->
-  <rect x="140" y="445" width="80" height="45" rx="6" fill="url(#ecuGrad)"/>
-  <text x="180" y="465" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">MCU</text>
-  <text x="180" y="480" text-anchor="middle" fill="#BFDBFE" font-size="8" font-family="Arial, sans-serif">5:§6</text>
-  
-  <!-- CAN Bus in Powertrain -->
-  <line x1="50" y1="505" x2="220" y2="505" stroke="#3B82F6" stroke-width="3"/>
-  <text x="135" y="525" text-anchor="middle" fill="#60A5FA" font-size="9" font-family="Arial, sans-serif">¨›CAN (500Kbps)</text>
-  
-  <!-- ADAS Domain -->
-  <rect x="670" y="350" width="200" height="200" rx="10" fill="rgba(16,185,129,0.1)" stroke="#10B981" stroke-width="2"/>
-  <text x="770" y="375" text-anchor="middle" fill="#34D399" font-size="12" font-weight="bold" font-family="Arial, sans-serif">ADASß</text>
-  
-  <!-- ADAS Controller -->
-  <rect x="690" y="390" width="80" height="45" rx="6" fill="url(#ecuGrad)"/>
-  <text x="730" y="410" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">ADAS</text>
-  <text x="730" y="425" text-anchor="middle" fill="#BFDBFE" font-size="8" font-family="Arial, sans-serif">zý~v</text>
-  
-  <!-- Camera -->
-  <rect x="780" y="390" width="80" height="45" rx="6" fill="url(#sensorGrad)"/>
-  <text x="820" y="410" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">Camera</text>
-  <text x="820" y="425" text-anchor="middle" fill="#A7F3D0" font-size="8" font-family="Arial, sans-serif">MÆDÏ4</text>
-  
-  <!-- Radar -->
-  <rect x="690" y="445" width="80" height="45" rx="6" fill="url(#sensorGrad)"/>
-  <text x="730" y="465" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">Radar</text>
-  <text x="730" y="480" text-anchor="middle" fill="#A7F3D0" font-size="8" font-family="Arial, sans-serif">ësâ÷¾</text>
-  
-  <!-- Ethernet in ADAS -->
-  <line x1="670" y1="505" x2="860" y2="505" stroke="#10B981" stroke-width="3"/>
-  <text x="765" y="525" text-anchor="middle" fill="#34D399" font-size="9" font-family="Arial, sans-serif">Ethernet (1Gbps)</text>
-  
-  <!-- Body Domain -->
-  <rect x="350" y="350" width="200" height="200" rx="10" fill="rgba(245,158,11,0.1)" stroke="#F59E0B" stroke-width="2"/>
-  <text x="450" y="375" text-anchor="middle" fill="#FBBF24" font-size="12" font-weight="bold" font-family="Arial, sans-serif">f«ß</text>
-  
-  <!-- IVI -->
-  <rect x="370" y="390" width="80" height="45" rx="6" fill="url(#ecuGrad)"/>
-  <text x="410" y="410" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">IVI</text>
-  <text x="410" y="425" text-anchor="middle" fill="#BFDBFE" font-size="8" font-family="Arial, sans-serif">áo1P</text>
+  <!-- CGW -->
+  <rect x="625" y="140" width="150" height="80" fill="url(#gwGrad)" stroke="#059669" class="box"/>
+  <text x="700" y="170" text-anchor="middle" class="box-label" fill="white">???? CGW</text>
+  <text x="700" y="190" text-anchor="middle" class="box-desc" fill="white">CAN FD, Ethernet, LIN</text>
+  <text x="700" y="205" text-anchor="middle" class="box-desc" fill="white">Firewall + IDS</text>
   
   <!-- OBD -->
-  <rect x="460" y="390" width="80" height="45" rx="6" fill="rgba(239,68,68,0.8)"/>
-  <text x="500" y="410" text-anchor="middle" fill="white" font-size="10" font-weight="bold" font-family="Arial, sans-serif">OBD-II</text>
-  <text x="500" y="425" text-anchor="middle" fill="#FECACA" font-size="8" font-family="Arial, sans-serif">Ê­¥ã</text>
+  <rect x="625" y="230" width="150" height="35" fill="url(#gwGrad)" stroke="#059669" class="box"/>
+  <text x="700" y="253" text-anchor="middle" class="box-label" fill="white">OBD ????</text>
   
-  <!-- CAN Bus in Body -->
-  <line x1="350" y1="505" x2="550" y2="505" stroke="#F59E0B" stroke-width="3"/>
-  <text x="450" y="525" text-anchor="middle" fill="#FBBF24" font-size="9" font-family="Arial, sans-serif">f«CAN (250Kbps)</text>
+  <!-- ADAS Domain -->
+  <rect x="840" y="90" width="310" height="180" fill="#ede9fe" stroke="#8b5cf6" class="domain"/>
+  <text x="995" y="115" text-anchor="middle" class="domain-label" fill="#5b21b6">?????</text>
   
-  <!-- Connections to Gateway -->
-  <line x1="230" y1="350" x2="350" y2="285" stroke="#3B82F6" stroke-width="2"/>
-  <line x1="450" y1="310" x2="450" y2="350" stroke="#F59E0B" stroke-width="2"/>
-  <line x1="550" y1="285" x2="670" y2="350" stroke="#10B981" stroke-width="2"/>
+  <!-- ADAS DCU -->
+  <rect x="860" y="135" width="140" height="70" fill="url(#adasGrad)" stroke="#7c3aed" class="box"/>
+  <text x="930" y="165" text-anchor="middle" class="box-label" fill="white">ADAS DCU</text>
+  <text x="930" y="185" text-anchor="middle" class="box-desc" fill="white">????</text>
+  
+  <!-- Sensors -->
+  <rect x="1010" y="135" width="120" height="45" fill="url(#adasGrad)" stroke="#7c3aed" class="box"/>
+  <text x="1070" y="163" text-anchor="middle" class="box-label" fill="white">?????</text>
+  
+  <rect x="1010" y="190" width="120" height="45" fill="url(#adasGrad)" stroke="#7c3aed" class="box"/>
+  <text x="1070" y="218" text-anchor="middle" class="box-label" fill="white">Camera/Lidar/Radar</text>
+  
+  <!-- Powertrain Domain -->
+  <rect x="50" y="300" width="330" height="220" fill="#dbeafe" stroke="#3b82f6" class="domain"/>
+  <text x="215" y="325" text-anchor="middle" class="domain-label" fill="#1d4ed8">??? (Powertrain)</text>
+  
+  <!-- VCU -->
+  <rect x="70" y="345" width="140" height="70" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="140" y="375" text-anchor="middle" class="box-label" fill="white">VCU ?????</text>
+  <text x="140" y="395" text-anchor="middle" class="box-desc" fill="white">CAN, Ethernet</text>
+  
+  <!-- BMS -->
+  <rect x="220" y="345" width="140" height="70" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="290" y="375" text-anchor="middle" class="box-label" fill="white">BMS ????</text>
+  <text x="290" y="395" text-anchor="middle" class="box-desc" fill="white">CAN, LIN</text>
+  
+  <!-- MCU -->
+  <rect x="70" y="430" width="140" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="140" y="460" text-anchor="middle" class="box-label" fill="white">MCU ????</text>
+  
+  <!-- DCDC -->
+  <rect x="220" y="430" width="140" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="290" y="460" text-anchor="middle" class="box-label" fill="white">DCDC ???</text>
+  
+  <!-- Chassis Domain -->
+  <rect x="420" y="300" width="330" height="220" fill="#dbeafe" stroke="#3b82f6" class="domain"/>
+  <text x="585" y="325" text-anchor="middle" class="domain-label" fill="#1d4ed8">??? (Chassis)</text>
+  
+  <!-- EPS -->
+  <rect x="440" y="345" width="140" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="510" y="378" text-anchor="middle" class="box-label" fill="white">EPS ??????</text>
+  
+  <!-- ESP -->
+  <rect x="590" y="345" width="140" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="660" y="378" text-anchor="middle" class="box-label" fill="white">ESP ????</text>
+  
+  <!-- iBooster -->
+  <rect x="440" y="415" width="140" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="510" y="448" text-anchor="middle" class="box-label" fill="white">iBooster ??</text>
+  
+  <!-- Air Suspension -->
+  <rect x="590" y="415" width="140" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="660" y="448" text-anchor="middle" class="box-label" fill="white">??????</text>
+  
+  <!-- Body/Comfort Domain -->
+  <rect x="790" y="300" width="360" height="220" fill="#dbeafe" stroke="#3b82f6" class="domain"/>
+  <text x="970" y="325" text-anchor="middle" class="domain-label" fill="#1d4ed8">??? (Body/Comfort)</text>
+  
+  <!-- IVI -->
+  <rect x="810" y="345" width="160" height="70" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="890" y="375" text-anchor="middle" class="box-label" fill="white">IVI ????</text>
+  <text x="890" y="395" text-anchor="middle" class="box-desc" fill="white">Ethernet, USB, BT</text>
+  
+  <!-- Cluster -->
+  <rect x="980" y="345" width="150" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="1055" y="378" text-anchor="middle" class="box-label" fill="white">???</text>
+  
+  <!-- BCM -->
+  <rect x="810" y="430" width="160" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="890" y="463" text-anchor="middle" class="box-label" fill="white">BCM ????</text>
+  
+  <!-- PEPS -->
+  <rect x="980" y="430" width="150" height="55" fill="url(#ecuGrad)" stroke="#2563eb" class="box"/>
+  <text x="1055" y="463" text-anchor="middle" class="box-label" fill="white">PEPS ?????</text>
+  
+  <!-- Bus Lines -->
+  <!-- CAN High Speed Bus -->
+  <line x1="100" y1="570" x2="1100" y2="570" stroke="#dc2626" stroke-width="4"/>
+  <text x="600" y="590" text-anchor="middle" class="protocol">CAN FD ???? (5Mbps)</text>
+  
+  <!-- CAN Low Speed Bus -->
+  <line x1="100" y1="620" x2="700" y2="620" stroke="#ea580c" stroke-width="3"/>
+  <text x="400" y="640" text-anchor="middle" class="protocol">CAN ???? (500Kbps)</text>
+  
+  <!-- Ethernet Backbone -->
+  <line x1="400" y1="660" x2="1100" y2="660" stroke="#0284c7" stroke-width="5"/>
+  <text x="750" y="680" text-anchor="middle" class="protocol">???????? (1Gbps / 10Gbps)</text>
+  
+  <!-- LIN Bus -->
+  <line x1="100" y1="700" x2="500" y2="700" stroke="#65a30d" stroke-width="2"/>
+  <text x="300" y="720" text-anchor="middle" class="protocol">LIN ?? (19.2Kbps)</text>
+  
+  <!-- Connections from ECUs to buses -->
+  <!-- VCU to CAN -->
+  <line x1="140" y1="415" x2="140" y2="570" stroke="#94a3b8" stroke-width="2"/>
+  <!-- BMS to CAN -->
+  <line x1="290" y1="415" x2="290" y2="570" stroke="#94a3b8" stroke-width="2"/>
+  <!-- CGW to all buses -->
+  <line x1="700" y1="265" x2="700" y2="570" stroke="#94a3b8" stroke-width="2"/>
+  <line x1="700" y1="570" x2="700" y2="660" stroke="#94a3b8" stroke-width="2"/>
+  <!-- T-Box to Ethernet -->
+  <line x1="470" y1="205" x2="470" y2="300" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3"/>
+  <line x1="470" y1="300" x2="600" y2="300" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,3"/>
+  
+  <!-- External connections -->
+  <!-- Cloud to T-Box -->
+  <line x1="190" y1="160" x2="390" y2="160" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="290" y="150" text-anchor="middle" class="protocol">4G/5G</text>
+  
+  <!-- Charger to SECC -->
+  <line x1="190" y1="225" x2="390" y2="237" stroke="#f59e0b" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="290" y="215" text-anchor="middle" class="protocol">PLC</text>
   
   <!-- Legend -->
-  <rect x="30" y="560" width="840" height="30" fill="rgba(255,255,255,0.05)" rx="5"/>
-  <circle cx="60" cy="575" r="8" fill="url(#ecuGrad)"/>
-  <text x="80" y="579" fill="#94A3B8" font-size="10" font-family="Arial, sans-serif">ECU</text>
-  <circle cx="150" cy="575" r="8" fill="url(#gatewayGrad)"/>
-  <text x="170" y="579" fill="#94A3B8" font-size="10" font-family="Arial, sans-serif">Gateway</text>
-  <circle cx="260" cy="575" r="8" fill="url(#sensorGrad)"/>
-  <text x="280" y="579" fill="#94A3B8" font-size="10" font-family="Arial, sans-serif">Sensor</text>
-  <line x1="370" y1="575" x2="400" y2="575" stroke="#3B82F6" stroke-width="3"/>
-  <text x="410" y="579" fill="#94A3B8" font-size="10" font-family="Arial, sans-serif">CAN</text>
-  <line x1="470" y1="575" x2="500" y2="575" stroke="#10B981" stroke-width="3"/>
-  <text x="510" y="579" fill="#94A3B8" font-size="10" font-family="Arial, sans-serif">Ethernet</text>
-  <line x1="600" y1="575" x2="630" y2="575" stroke="#F59E0B" stroke-width="2" stroke-dasharray="5,5"/>
-  <text x="640" y="579" fill="#94A3B8" font-size="10" font-family="Arial, sans-serif">Wireless</text>
+  <rect x="50" y="740" width="1100" height="50" fill="#f1f5f9" stroke="#cbd5e1" rx="8"/>
+  <text x="70" y="770" class="box-desc">??:</text>
+  
+  <rect x="120" y="755" width="20" height="15" fill="url(#ecuGrad)"/>
+  <text x="150" y="768" class="box-desc">ECU ???</text>
+  
+  <rect x="230" y="755" width="20" height="15" fill="url(#gwGrad)"/>
+  <text x="260" y="768" class="box-desc">??</text>
+  
+  <rect x="320" y="755" width="20" height="15" fill="url(#commGrad)"/>
+  <text x="350" y="768" class="box-desc">????</text>
+  
+  <rect x="430" y="755" width="20" height="15" fill="url(#adasGrad)"/>
+  <text x="460" y="768" class="box-desc">ADAS</text>
+  
+  <line x1="540" y1="762" x2="580" y2="762" stroke="#dc2626" stroke-width="4"/>
+  <text x="590" y="768" class="box-desc">CAN FD</text>
+  
+  <line x1="660" y1="762" x2="700" y2="762" stroke="#0284c7" stroke-width="4"/>
+  <text x="710" y="768" class="box-desc">Ethernet</text>
+  
+  <line x1="790" y1="762" x2="830" y2="762" stroke="#65a30d" stroke-width="2"/>
+  <text x="840" y="768" class="box-desc">LIN</text>
+  
+  <line x1="900" y1="762" x2="940" y2="762" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="950" y="768" class="box-desc">????</text>
 </svg>

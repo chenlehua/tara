@@ -20,18 +20,32 @@ class Neo4jDriver:
     """Neo4j driver wrapper with connection management."""
 
     _driver: Optional[Driver] = None
+    _connection_error: Optional[str] = None
 
     @classmethod
-    def get_driver(cls) -> Driver:
+    def get_driver(cls) -> Optional[Driver]:
         """Get Neo4j driver instance (singleton)."""
-        if cls._driver is None:
-            cls._driver = GraphDatabase.driver(
-                settings.neo4j_uri,
-                auth=(settings.neo4j_user, settings.neo4j_password),
-                max_connection_lifetime=3600,
-                max_connection_pool_size=50,
-            )
+        if cls._driver is None and cls._connection_error is None:
+            try:
+                cls._driver = GraphDatabase.driver(
+                    settings.neo4j_uri,
+                    auth=(settings.neo4j_user, settings.neo4j_password),
+                    max_connection_lifetime=3600,
+                    max_connection_pool_size=50,
+                )
+                # Verify connectivity
+                cls._driver.verify_connectivity()
+                logger.info(f"Connected to Neo4j at {settings.neo4j_uri}")
+            except Exception as e:
+                cls._connection_error = str(e)
+                logger.warning(f"Failed to connect to Neo4j: {e}. Graph operations will be unavailable.")
+                cls._driver = None
         return cls._driver
+
+    @classmethod
+    def is_available(cls) -> bool:
+        """Check if Neo4j is available."""
+        return cls.get_driver() is not None
 
     @classmethod
     def close(cls) -> None:
@@ -39,12 +53,15 @@ class Neo4jDriver:
         if cls._driver is not None:
             cls._driver.close()
             cls._driver = None
+            cls._connection_error = None
 
     @classmethod
     def verify_connectivity(cls) -> bool:
         """Verify Neo4j connectivity."""
+        driver = cls.get_driver()
+        if driver is None:
+            return False
         try:
-            driver = cls.get_driver()
             driver.verify_connectivity()
             return True
         except Neo4jError as e:
@@ -52,12 +69,25 @@ class Neo4jDriver:
             return False
 
 
-# Global driver instance
-neo4j_driver = Neo4jDriver.get_driver()
-
-
-def get_neo4j_driver() -> Driver:
+def get_neo4j_driver() -> Optional[Driver]:
     """Get Neo4j driver for dependency injection."""
+    return Neo4jDriver.get_driver()
+
+
+# Lazy-initialized global driver
+neo4j_driver: Optional[Driver] = None
+
+
+def get_global_neo4j_driver() -> Optional[Driver]:
+    """Get global Neo4j driver with lazy initialization."""
+    global neo4j_driver
+    if neo4j_driver is None:
+        neo4j_driver = Neo4jDriver.get_driver()
+    return neo4j_driver
+
+
+def _get_neo4j_driver_internal() -> Optional[Driver]:
+    """Internal function for getting driver."""
     return Neo4jDriver.get_driver()
 
 
@@ -65,7 +95,19 @@ class GraphService:
     """Service for graph database operations."""
 
     def __init__(self, driver: Driver = None):
-        self.driver = driver or neo4j_driver
+        self._driver = driver
+        self._lazy_driver = driver is None
+
+    @property
+    def driver(self) -> Optional[Driver]:
+        """Get driver with lazy initialization."""
+        if self._lazy_driver and self._driver is None:
+            self._driver = get_neo4j_driver()
+        return self._driver
+
+    def is_available(self) -> bool:
+        """Check if graph service is available."""
+        return self.driver is not None
 
     def execute_query(
         self,
@@ -74,6 +116,9 @@ class GraphService:
         database: str = "neo4j"
     ) -> List[Dict[str, Any]]:
         """Execute a Cypher query and return results."""
+        if not self.is_available():
+            logger.warning("Neo4j not available, returning empty results")
+            return []
         with self.driver.session(database=database) as session:
             result = session.run(query, parameters or {})
             return [record.data() for record in result]
@@ -85,6 +130,15 @@ class GraphService:
         database: str = "neo4j"
     ) -> Dict[str, Any]:
         """Execute a write query and return summary."""
+        if not self.is_available():
+            logger.warning("Neo4j not available, skipping write")
+            return {
+                "nodes_created": 0,
+                "nodes_deleted": 0,
+                "relationships_created": 0,
+                "relationships_deleted": 0,
+                "properties_set": 0,
+            }
         with self.driver.session(database=database) as session:
             result = session.run(query, parameters or {})
             summary = result.consume()
@@ -178,5 +232,13 @@ class GraphService:
         return self.execute_query(query, {"value": property_value}, database)
 
 
-# Global graph service
-graph_service = GraphService()
+# Lazy-initialized global graph service
+graph_service: Optional[GraphService] = None
+
+
+def get_graph_service() -> GraphService:
+    """Get global graph service with lazy initialization."""
+    global graph_service
+    if graph_service is None:
+        graph_service = GraphService()
+    return graph_service
