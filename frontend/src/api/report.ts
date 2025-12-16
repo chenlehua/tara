@@ -64,6 +64,12 @@ export interface Report {
   reviewer?: string
   created_at: string
   updated_at: string
+  statistics?: {
+    assets_count?: number
+    threats_count?: number
+    high_risk_count?: number
+    measures_count?: number
+  }
 }
 
 // API functions
