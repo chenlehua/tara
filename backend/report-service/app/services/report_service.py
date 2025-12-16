@@ -31,7 +31,7 @@ class ReportService:
         """Get report by ID."""
         report = self.repo.get_by_id(report_id)
         if not report:
-            raise NotFoundException(f"Report {report_id} not found")
+            raise NotFoundException("Report", report_id)
         return report
 
     async def list_reports(

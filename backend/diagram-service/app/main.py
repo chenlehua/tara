@@ -43,10 +43,10 @@ app.add_middleware(
 async def tara_exception_handler(request: Request, exc: TaraException):
     """Handle TARA exceptions."""
     return JSONResponse(
-        status_code=exc.status_code,
+        status_code=exc.code,
         content={
             "success": False,
-            "code": exc.error_code,
+            "code": exc.code,
             "message": exc.message,
             "data": None,
         },
