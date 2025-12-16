@@ -49,30 +49,46 @@ async def create_project(
     "",
     response_model=dict,
     summary="获取项目列表",
-    description="获取项目列表，支持分页和筛选",
+    description="获取项目列表，支持分页和筛选，默认包含统计信息",
 )
 async def list_projects(
     page: int = Query(default=1, ge=1, description="页码"),
     page_size: int = Query(default=20, ge=1, le=100, description="每页数量"),
     keyword: Optional[str] = Query(default=None, description="搜索关键词"),
     status: Optional[int] = Query(default=None, ge=0, le=3, description="项目状态"),
+    include_stats: bool = Query(default=True, description="是否包含统计信息"),
     service: ProjectService = Depends(get_project_service),
 ):
-    """List all projects with pagination."""
-    projects, total = service.list_projects(
-        page=page,
-        page_size=page_size,
-        keyword=keyword,
-        status=status,
-    )
-
-    items = [ProjectResponse.model_validate(p).model_dump() for p in projects]
-    return paginated_response(
-        items=items,
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
+    """List all projects with pagination and optional statistics."""
+    if include_stats:
+        # Return projects with statistics included
+        projects_with_stats, total = service.list_projects_with_stats(
+            page=page,
+            page_size=page_size,
+            keyword=keyword,
+            status=status,
+        )
+        return paginated_response(
+            items=projects_with_stats,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+    else:
+        # Return projects without statistics
+        projects, total = service.list_projects(
+            page=page,
+            page_size=page_size,
+            keyword=keyword,
+            status=status,
+        )
+        items = [ProjectResponse.model_validate(p).model_dump() for p in projects]
+        return paginated_response(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
 
 
 @router.get(

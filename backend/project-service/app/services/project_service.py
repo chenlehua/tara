@@ -73,6 +73,7 @@ class ProjectService:
         page_size: int = 20,
         keyword: Optional[str] = None,
         status: Optional[int] = None,
+        include_stats: bool = False,
     ) -> Tuple[List[Project], int]:
         """
         List projects with pagination and filtering.
@@ -82,6 +83,7 @@ class ProjectService:
             page_size: Items per page
             keyword: Search keyword
             status: Project status filter
+            include_stats: Whether to include statistics for each project
 
         Returns:
             Tuple of (projects list, total count)
@@ -92,6 +94,65 @@ class ProjectService:
             keyword=keyword,
             status=status,
         )
+
+    def list_projects_with_stats(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        keyword: Optional[str] = None,
+        status: Optional[int] = None,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """
+        List projects with statistics included.
+
+        Args:
+            page: Page number
+            page_size: Items per page
+            keyword: Search keyword
+            status: Project status filter
+
+        Returns:
+            Tuple of (projects with stats list, total count)
+        """
+        projects, total = self.repo.list_projects(
+            page=page,
+            page_size=page_size,
+            keyword=keyword,
+            status=status,
+        )
+
+        # Add stats to each project
+        projects_with_stats = []
+        for project in projects:
+            stats = self.repo.get_stats(project.id)
+            project_dict = {
+                "id": project.id,
+                "name": project.name,
+                "description": project.description,
+                "vehicle_type": project.vehicle_type,
+                "vehicle_model": project.vehicle_model,
+                "vehicle_year": project.vehicle_year,
+                "standard": project.standard,
+                "scope": project.scope,
+                "status": project.status,
+                "owner": project.owner,
+                "team": project.team or [],
+                "tags": project.tags or [],
+                "config": project.config or {},
+                "created_at": project.created_at.isoformat() if project.created_at else None,
+                "updated_at": project.updated_at.isoformat() if project.updated_at else None,
+                # Include statistics
+                "assets_count": stats.get("asset_count", 0),
+                "threats_count": stats.get("threat_count", 0),
+                "reports_count": stats.get("report_count", 0),
+                "documents_count": stats.get("document_count", 0),
+                "high_risk_count": (
+                    stats.get("critical_risk_count", 0) + stats.get("high_risk_count", 0)
+                ),
+            }
+            projects_with_stats.append(project_dict)
+
+        return projects_with_stats, total
 
     def update_project(
         self,
