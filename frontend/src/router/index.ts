@@ -61,6 +61,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '报告中心' }
       },
       {
+        path: 'reports/:id',
+        name: 'ReportDetail',
+        component: () => import('@/views/reports/ReportDetail.vue'),
+        meta: { title: '报告详情' }
+      },
+      {
         path: 'knowledge',
         name: 'KnowledgeBase',
         component: () => import('@/views/knowledge/KnowledgeBase.vue'),
