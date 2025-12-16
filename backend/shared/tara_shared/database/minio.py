@@ -40,7 +40,9 @@ class MinIOClient:
                 logger.info(f"Connected to MinIO at {settings.minio_endpoint}")
             except Exception as e:
                 cls._connection_error = str(e)
-                logger.warning(f"Failed to connect to MinIO: {e}. File storage will be unavailable.")
+                logger.warning(
+                    f"Failed to connect to MinIO: {e}. File storage will be unavailable."
+                )
                 cls._client = None
         return cls._client
 
@@ -56,7 +58,7 @@ class MinIOClient:
         if client is None:
             logger.warning("MinIO not available, skipping bucket initialization")
             return
-        
+
         try:
             buckets = [
                 settings.minio_bucket_documents,
@@ -118,8 +120,12 @@ class StorageService:
         """Upload a file to bucket."""
         if not self.is_available():
             logger.warning("MinIO not available, skipping file upload")
-            return {"bucket": bucket, "object_name": object_name, "error": "Storage unavailable"}
-        
+            return {
+                "bucket": bucket,
+                "object_name": object_name,
+                "error": "Storage unavailable",
+            }
+
         try:
             result = self.client.put_object(
                 bucket_name=bucket,

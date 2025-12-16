@@ -9,8 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
-
-from tara_shared.models import Project, Document, Asset, ThreatRisk, Report
+from tara_shared.models import Asset, Document, Project, Report, ThreatRisk
 
 
 class ProjectRepository:
@@ -43,12 +42,12 @@ class ProjectRepository:
     ) -> Tuple[List[Project], int]:
         """
         List projects with pagination and filtering.
-        
+
         Returns:
             Tuple of (projects list, total count)
         """
         query = self.db.query(Project)
-        
+
         # Apply filters
         if keyword:
             query = query.filter(
@@ -58,23 +57,22 @@ class ProjectRepository:
                     Project.vehicle_type.ilike(f"%{keyword}%"),
                 )
             )
-        
+
         if status is not None:
             query = query.filter(Project.status == status)
-        
+
         # Get total count
         total = query.count()
-        
+
         # Apply pagination and ordering
         offset = (page - 1) * page_size
         projects = (
-            query
-            .order_by(Project.updated_at.desc())
+            query.order_by(Project.updated_at.desc())
             .offset(offset)
             .limit(page_size)
             .all()
         )
-        
+
         return projects, total
 
     def update(self, project: Project) -> Project:
@@ -96,14 +94,14 @@ class ProjectRepository:
             .filter(Document.project_id == project_id)
             .scalar()
         )
-        
+
         # Asset count
         asset_count = (
             self.db.query(func.count(Asset.id))
             .filter(Asset.project_id == project_id)
             .scalar()
         )
-        
+
         # Threat counts by risk level
         threat_query = (
             self.db.query(ThreatRisk.risk_level, func.count(ThreatRisk.id))
@@ -111,17 +109,17 @@ class ProjectRepository:
             .group_by(ThreatRisk.risk_level)
             .all()
         )
-        
+
         threat_count = sum(count for _, count in threat_query)
         risk_counts = {level: count for level, count in threat_query if level}
-        
+
         # Report count
         report_count = (
             self.db.query(func.count(Report.id))
             .filter(Report.project_id == project_id)
             .scalar()
         )
-        
+
         return {
             "document_count": doc_count or 0,
             "asset_count": asset_count or 0,
@@ -139,5 +137,6 @@ class ProjectRepository:
         return (
             self.db.query(func.count(Project.id))
             .filter(Project.id == project_id)
-            .scalar() > 0
+            .scalar()
+            > 0
         )

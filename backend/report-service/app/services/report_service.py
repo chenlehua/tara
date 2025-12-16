@@ -1,16 +1,16 @@
 """Report service."""
+
 import io
 from datetime import datetime
-from typing import Optional, Tuple, Any
+from typing import Any, Optional, Tuple
 
+from app.generators import PDFGenerator, WordGenerator
+from app.repositories.report_repo import ReportRepository
+from tara_shared.constants import ReportStatus
 from tara_shared.models import Report
 from tara_shared.schemas import ReportCreate, ReportGenerateRequest
-from tara_shared.constants import ReportStatus
 from tara_shared.utils import get_logger
 from tara_shared.utils.exceptions import NotFoundException
-
-from app.repositories.report_repo import ReportRepository
-from app.generators import PDFGenerator, WordGenerator
 
 logger = get_logger(__name__)
 
@@ -59,7 +59,8 @@ class ReportService:
         # Create report record
         report_data = {
             "project_id": request.project_id,
-            "name": request.name or f"TARA Report - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            "name": request.name
+            or f"TARA Report - {datetime.now().strftime('%Y-%m-%d %H:%M')}",
             "template": request.template or "iso21434",
             "status": ReportStatus.GENERATING.value,
         }
@@ -73,13 +74,13 @@ class ReportService:
         """Run report generation (background task)."""
         try:
             logger.info(f"Generating report {report_id}...")
-            
+
             # Collect data (TODO: call other services)
             report_data = await self._collect_report_data(request.project_id)
-            
+
             # Generate files
             file_paths = {}
-            
+
             for fmt in request.formats:
                 if fmt == "pdf":
                     path = await self._generate_pdf(report_id, report_data, request)
@@ -87,7 +88,7 @@ class ReportService:
                 elif fmt == "docx":
                     path = await self._generate_word(report_id, report_data, request)
                     file_paths["docx"] = path
-            
+
             # Update report status
             self.repo.update(
                 self.repo.get_by_id(report_id),
@@ -97,9 +98,9 @@ class ReportService:
                     "statistics": report_data.get("statistics", {}),
                 },
             )
-            
+
             logger.info(f"Report {report_id} generated successfully")
-            
+
         except Exception as e:
             logger.error(f"Report generation failed: {e}")
             self.repo.update(
@@ -156,17 +157,17 @@ class ReportService:
     ) -> Tuple[io.BytesIO, str]:
         """Get report file for download."""
         report = await self.get_report(report_id)
-        
+
         # TODO: Download from MinIO
         buffer = io.BytesIO(b"Report content placeholder")
         filename = f"{report.name}.{format}"
-        
+
         return buffer, filename
 
     async def get_report_preview(self, report_id: int) -> dict:
         """Get report preview data."""
         report = await self.get_report(report_id)
-        
+
         return {
             "id": report.id,
             "name": report.name,

@@ -10,10 +10,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
 from tara_shared.config import settings
 from tara_shared.database import init_db
-from tara_shared.utils import setup_logging, get_logger
+from tara_shared.utils import get_logger, setup_logging
 from tara_shared.utils.exceptions import TaraException
 
 from .api.v1.router import api_router

@@ -8,10 +8,10 @@ Business logic for attack path management.
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
-
-from tara_shared.models import AttackPath, ControlMeasure
-from tara_shared.schemas.threat_risk import AttackPathCreate, ControlMeasureCreate
 from tara_shared.constants.tara import ATTACK_POTENTIAL_TO_FEASIBILITY
+from tara_shared.models import AttackPath, ControlMeasure
+from tara_shared.schemas.threat_risk import (AttackPathCreate,
+                                             ControlMeasureCreate)
 from tara_shared.utils import get_logger
 
 logger = get_logger(__name__)
@@ -38,14 +38,14 @@ class AttackPathService:
             prerequisites=data.prerequisites,
             attack_techniques=data.attack_techniques,
         )
-        
+
         # Calculate attack potential
         path.calculate_attack_potential()
-        
+
         self.db.add(path)
         self.db.commit()
         self.db.refresh(path)
-        
+
         return path
 
     def get_attack_path(self, path_id: int) -> Optional[AttackPath]:
@@ -57,7 +57,7 @@ class AttackPathService:
         path = self.get_attack_path(path_id)
         if not path:
             return False
-        
+
         self.db.delete(path)
         self.db.commit()
         return True
@@ -67,11 +67,11 @@ class AttackPathService:
         path = self.get_attack_path(path_id)
         if not path:
             return None
-        
+
         # Calculate attack potential
         path.calculate_attack_potential()
         self.db.commit()
-        
+
         return {
             "path_id": path_id,
             "attack_potential": path.attack_potential,
@@ -102,15 +102,17 @@ class AttackPathService:
             cost_estimate=data.cost_estimate,
             iso21434_ref=data.iso21434_ref,
         )
-        
+
         self.db.add(control)
         self.db.commit()
         self.db.refresh(control)
-        
+
         return control
 
     def list_control_measures(self, path_id: int) -> List[ControlMeasure]:
         """List control measures for an attack path."""
-        return self.db.query(ControlMeasure).filter(
-            ControlMeasure.attack_path_id == path_id
-        ).all()
+        return (
+            self.db.query(ControlMeasure)
+            .filter(ControlMeasure.attack_path_id == path_id)
+            .all()
+        )

@@ -1,7 +1,8 @@
 """Unit tests for asset service."""
-import pytest
-from unittest.mock import MagicMock, AsyncMock
 
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from app.services.asset_service import AssetService
 from tara_shared.schemas import AssetCreate
 

@@ -7,13 +7,7 @@ Milvus client for vector similarity search.
 
 from typing import Any, Dict, List, Optional
 
-from pymilvus import (
-    MilvusClient,
-    DataType,
-    Collection,
-    connections,
-    utility,
-)
+from pymilvus import Collection, DataType, MilvusClient, connections, utility
 
 from ..config import settings
 from ..utils.logger import get_logger
@@ -37,10 +31,14 @@ class MilvusManager:
                     user=settings.milvus_user or None,
                     password=settings.milvus_password or None,
                 )
-                logger.info(f"Connected to Milvus at {settings.milvus_host}:{settings.milvus_port}")
+                logger.info(
+                    f"Connected to Milvus at {settings.milvus_host}:{settings.milvus_port}"
+                )
             except Exception as e:
                 cls._connection_error = str(e)
-                logger.warning(f"Failed to connect to Milvus: {e}. Vector search will be unavailable.")
+                logger.warning(
+                    f"Failed to connect to Milvus: {e}. Vector search will be unavailable."
+                )
                 return None
         return cls._client
 
@@ -66,11 +64,11 @@ def get_milvus_client() -> Optional[MilvusClient]:
 def init_milvus() -> None:
     """Initialize Milvus collections."""
     client = get_milvus_client()
-    
+
     if client is None:
         logger.warning("Milvus not available, skipping collection initialization")
         return
-    
+
     try:
         # Document embeddings collection
         if not client.has_collection("doc_embeddings"):
@@ -81,7 +79,7 @@ def init_milvus() -> None:
                 auto_id=True,
             )
             logger.info("Created collection: doc_embeddings")
-        
+
         # Threat embeddings collection
         if not client.has_collection("threat_embeddings"):
             client.create_collection(
@@ -123,14 +121,14 @@ class VectorService:
         if not self.is_available():
             logger.warning("Milvus not available, skipping vector insert")
             return {"insert_count": 0}
-        
+
         data = []
         for i, vector in enumerate(vectors):
             record = {"vector": vector}
             if metadata and i < len(metadata):
                 record.update(metadata[i])
             data.append(record)
-        
+
         result = self.client.insert(
             collection_name=collection_name,
             data=data,
@@ -149,7 +147,7 @@ class VectorService:
         if not self.is_available():
             logger.warning("Milvus not available, returning empty search results")
             return []
-        
+
         return self.client.search(
             collection_name=collection_name,
             data=query_vectors,
@@ -167,7 +165,7 @@ class VectorService:
         if not self.is_available():
             logger.warning("Milvus not available, skipping vector delete")
             return {"delete_count": 0}
-        
+
         result = self.client.delete(
             collection_name=collection_name,
             filter=filter_expr,
@@ -178,7 +176,7 @@ class VectorService:
         """Get collection statistics."""
         if not self.is_available():
             return {"row_count": 0}
-        
+
         stats = self.client.get_collection_stats(collection_name)
         return stats
 

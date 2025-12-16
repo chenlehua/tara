@@ -24,10 +24,10 @@ class ServiceConfig(BaseSettings):
     service_name: str = "tara-project-service"
     service_version: str = "0.1.0"
     service_port: int = 8001
-    
+
     # API settings
     api_prefix: str = "/api/v1"
-    
+
     # Pagination defaults
     default_page_size: int = 20
     max_page_size: int = 100

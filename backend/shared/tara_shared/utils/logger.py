@@ -17,7 +17,7 @@ from ..config import settings
 
 def setup_logging() -> None:
     """Configure structured logging."""
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
@@ -37,9 +37,7 @@ def setup_logging() -> None:
     if settings.app_env == "development":
         # Development: pretty console output
         structlog.configure(
-            processors=shared_processors + [
-                structlog.dev.ConsoleRenderer(colors=True)
-            ],
+            processors=shared_processors + [structlog.dev.ConsoleRenderer(colors=True)],
             wrapper_class=structlog.make_filtering_bound_logger(
                 getattr(logging, settings.app_log_level.upper())
             ),
@@ -50,7 +48,8 @@ def setup_logging() -> None:
     else:
         # Production: JSON output
         structlog.configure(
-            processors=shared_processors + [
+            processors=shared_processors
+            + [
                 structlog.processors.format_exc_info,
                 structlog.processors.JSONRenderer(),
             ],
@@ -66,10 +65,10 @@ def setup_logging() -> None:
 def get_logger(name: str = None) -> structlog.stdlib.BoundLogger:
     """
     Get a structured logger instance.
-    
+
     Args:
         name: Logger name (usually __name__)
-        
+
     Returns:
         Configured logger instance
     """
@@ -78,7 +77,7 @@ def get_logger(name: str = None) -> structlog.stdlib.BoundLogger:
 
 class LoggerMixin:
     """Mixin class to add logging capability."""
-    
+
     @property
     def logger(self) -> structlog.stdlib.BoundLogger:
         """Get logger for this class."""
@@ -86,11 +85,7 @@ class LoggerMixin:
 
 
 def log_request(
-    method: str,
-    path: str,
-    status_code: int,
-    duration_ms: float,
-    **extra: Any
+    method: str, path: str, status_code: int, duration_ms: float, **extra: Any
 ) -> None:
     """Log HTTP request."""
     logger = get_logger("http")
@@ -105,11 +100,7 @@ def log_request(
 
 
 def log_service_call(
-    service: str,
-    method: str,
-    success: bool,
-    duration_ms: float,
-    **extra: Any
+    service: str, method: str, success: bool, duration_ms: float, **extra: Any
 ) -> None:
     """Log service method call."""
     logger = get_logger("service")

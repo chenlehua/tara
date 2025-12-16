@@ -1,8 +1,9 @@
 """Unit tests for diagram service."""
-import pytest
-from unittest.mock import MagicMock, patch
-from io import BytesIO
 
+from io import BytesIO
+from unittest.mock import MagicMock, patch
+
+import pytest
 from app.services.diagram_service import DiagramService
 
 
@@ -19,22 +20,24 @@ class TestDiagramService:
         mock_fig = MagicMock()
         mock_plt.figure.return_value = mock_fig
         mock_plt.subplots.return_value = (mock_fig, MagicMock())
-        
+
         result = service.generate_risk_matrix(sample_risk_matrix_data)
-        
+
         assert result is not None
 
     @patch("app.services.diagram_service.nx")
     @patch("app.services.diagram_service.plt")
-    def test_generate_asset_graph(self, mock_plt, mock_nx, service, sample_asset_graph_data):
+    def test_generate_asset_graph(
+        self, mock_plt, mock_nx, service, sample_asset_graph_data
+    ):
         """Test generating asset graph diagram."""
         mock_graph = MagicMock()
         mock_nx.DiGraph.return_value = mock_graph
         mock_fig = MagicMock()
         mock_plt.figure.return_value = mock_fig
-        
+
         result = service.generate_asset_graph(sample_asset_graph_data)
-        
+
         assert result is not None
 
     @patch("app.services.diagram_service.plt")
@@ -43,9 +46,9 @@ class TestDiagramService:
         mock_fig = MagicMock()
         mock_plt.figure.return_value = mock_fig
         mock_plt.subplots.return_value = (mock_fig, MagicMock())
-        
+
         result = service.generate_attack_tree(sample_attack_tree_data)
-        
+
         assert result is not None
 
     @patch("app.services.diagram_service.plt")
@@ -53,7 +56,7 @@ class TestDiagramService:
         """Test generating risk distribution chart."""
         mock_fig = MagicMock()
         mock_plt.figure.return_value = mock_fig
-        
+
         data = {
             "critical": 2,
             "high": 5,
@@ -61,9 +64,9 @@ class TestDiagramService:
             "low": 8,
             "negligible": 3,
         }
-        
+
         result = service.generate_risk_distribution(data)
-        
+
         assert result is not None
 
     @patch("app.services.diagram_service.plt")
@@ -71,7 +74,7 @@ class TestDiagramService:
         """Test generating STRIDE distribution chart."""
         mock_fig = MagicMock()
         mock_plt.figure.return_value = mock_fig
-        
+
         data = {
             "Spoofing": 3,
             "Tampering": 5,
@@ -80,9 +83,9 @@ class TestDiagramService:
             "Denial of Service": 6,
             "Elevation of Privilege": 2,
         }
-        
+
         result = service.generate_stride_chart(data)
-        
+
         assert result is not None
 
     def test_get_color_for_risk_level(self, service):

@@ -35,26 +35,28 @@ class DocumentAgent(BaseAgent):
     ) -> Dict[str, Any]:
         """Process multiple documents and extract content."""
         self.logger.info(f"Processing {len(document_ids)} documents")
-        
+
         results = {
             "documents": [],
             "content": "",
             "summary": "",
             "entities": [],
         }
-        
+
         # In production, this would:
         # 1. Fetch documents from document-service
         # 2. Use OCR for images
         # 3. Extract structured content
         # 4. Generate embeddings
-        
+
         for doc_id in document_ids:
-            results["documents"].append({
-                "id": doc_id,
-                "status": "processed",
-            })
-        
+            results["documents"].append(
+                {
+                    "id": doc_id,
+                    "status": "processed",
+                }
+            )
+
         return results
 
     async def extract_structure(self, content: str) -> Dict[str, Any]:
@@ -78,10 +80,11 @@ class DocumentAgent(BaseAgent):
             system_prompt=self.SYSTEM_PROMPT,
             temperature=0.3,
         )
-        
+
         # Parse JSON response
         try:
             import json
+
             return json.loads(response)
         except Exception:
             return {"raw_response": response}
@@ -98,7 +101,7 @@ class DocumentAgent(BaseAgent):
             prompt=prompt,
             image_data=image_data,
         )
-        
+
         return {
             "description": response,
             "type": "technical_diagram",

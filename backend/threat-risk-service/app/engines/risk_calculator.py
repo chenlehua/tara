@@ -7,11 +7,8 @@ Engine for risk calculation based on ISO 21434.
 
 from typing import Dict, Tuple
 
-from tara_shared.constants.tara import (
-    RISK_MATRIX,
-    ATTACK_POTENTIAL_TO_FEASIBILITY,
-    RISK_LEVEL_TO_CAL,
-)
+from tara_shared.constants.tara import (ATTACK_POTENTIAL_TO_FEASIBILITY,
+                                        RISK_LEVEL_TO_CAL, RISK_MATRIX)
 
 
 class RiskCalculator:
@@ -37,21 +34,21 @@ class RiskCalculator:
     ) -> Tuple[int, str]:
         """
         Calculate attack potential and feasibility rating.
-        
+
         Returns:
             Tuple of (attack_potential, feasibility_rating)
         """
         attack_potential = (
             expertise + elapsed_time + equipment + knowledge + window_of_opportunity
         )
-        
+
         # Determine feasibility rating
         feasibility = "very_low"
         for min_val, max_val, rating in ATTACK_POTENTIAL_TO_FEASIBILITY:
             if min_val <= attack_potential <= max_val:
                 feasibility = rating
                 break
-        
+
         return attack_potential, feasibility
 
     @staticmethod
@@ -69,18 +66,18 @@ class RiskCalculator:
     def calculate_risk(impact: int, likelihood: int) -> Tuple[int, str]:
         """
         Calculate risk value and level.
-        
+
         Returns:
             Tuple of (risk_value, risk_level)
         """
         risk_value = impact * likelihood
-        
+
         # Get risk level from matrix
         if 0 <= impact <= 4 and 0 <= likelihood <= 4:
             risk_level = RISK_MATRIX[impact][likelihood]
         else:
             risk_level = "unknown"
-        
+
         return risk_value, risk_level
 
     @staticmethod
@@ -103,28 +100,28 @@ class RiskCalculator:
     ) -> Dict[str, any]:
         """
         Perform full risk assessment.
-        
+
         Returns comprehensive risk assessment result.
         """
         # Calculate impact
         impact = cls.calculate_impact(
             safety_impact, financial_impact, operational_impact, privacy_impact
         )
-        
+
         # Calculate attack potential and feasibility
         attack_potential, feasibility = cls.calculate_attack_potential(
             expertise, elapsed_time, equipment, knowledge, window_of_opportunity
         )
-        
+
         # Convert feasibility to likelihood
         likelihood = cls.feasibility_to_likelihood(feasibility)
-        
+
         # Calculate risk
         risk_value, risk_level = cls.calculate_risk(impact, likelihood)
-        
+
         # Determine CAL
         cal = cls.determine_cal(risk_level)
-        
+
         return {
             "impact_level": impact,
             "impact_breakdown": {

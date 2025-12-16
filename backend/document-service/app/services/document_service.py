@@ -6,17 +6,17 @@ Business logic for document management and parsing.
 """
 
 from typing import List, Optional, Tuple
+
 import httpx
-
 from sqlalchemy.orm import Session
-
 from tara_shared.config import settings
-from tara_shared.models import Document
 from tara_shared.database.minio import storage_service
-from tara_shared.utils import get_logger, get_file_extension, get_mime_type, generate_file_path
+from tara_shared.models import Document
+from tara_shared.utils import (generate_file_path, get_file_extension,
+                               get_logger, get_mime_type)
 
-from ..repositories.document_repo import DocumentRepository
 from ..parsers import get_parser
+from ..repositories.document_repo import DocumentRepository
 
 logger = get_logger(__name__)
 
@@ -38,7 +38,7 @@ class DocumentService:
     ) -> Document:
         """Upload a document to storage and create database record."""
         logger.info(f"Uploading document: {filename} for project {project_id}")
-        
+
         # Generate storage path
         file_extension = get_file_extension(filename)
         file_path = generate_file_path(
@@ -46,7 +46,7 @@ class DocumentService:
             project_id=project_id,
             filename=filename,
         )
-        
+
         # Upload to MinIO
         storage_service.upload_bytes(
             bucket=settings.minio_bucket_documents,
@@ -54,7 +54,7 @@ class DocumentService:
             data=content,
             content_type=content_type or get_mime_type(filename),
         )
-        
+
         # Create database record
         document = Document(
             project_id=project_id,
@@ -66,7 +66,7 @@ class DocumentService:
             doc_type=doc_type,
             parse_status=0,  # Pending
         )
-        
+
         created = self.repo.create(document)
         logger.info(f"Document uploaded: id={created.id}")
         return created
@@ -101,24 +101,24 @@ class DocumentService:
         document = self.repo.get_by_id(document_id)
         if not document:
             raise ValueError(f"Document {document_id} not found")
-        
+
         logger.info(f"Starting parse for document {document_id}")
-        
+
         # Update status to parsing
         document.parse_status = 1
         document.parse_progress = 0
         self.repo.update(document)
-        
+
         try:
             # Download file from storage
             file_content = storage_service.download_file(
                 bucket=settings.minio_bucket_documents,
                 object_name=document.file_path,
             )
-            
+
             # Get appropriate parser
             parser = get_parser(document.file_extension)
-            
+
             # Parse document
             parse_result = await parser.parse(
                 content=file_content,
@@ -126,7 +126,7 @@ class DocumentService:
                 enable_ocr=enable_ocr,
                 enable_structure=enable_structure,
             )
-            
+
             # Update document with parsed content
             document.title = parse_result.get("title")
             document.content = parse_result.get("content")
@@ -136,22 +136,22 @@ class DocumentService:
             document.ocr_result = parse_result.get("ocr_result", {})
             document.parse_status = 2  # Completed
             document.parse_progress = 100
-            
+
             # Generate embeddings if requested
             if enable_embedding and document.content:
                 await self._generate_embeddings(document)
                 document.embedding_status = 1
-            
+
             self.repo.update(document)
             logger.info(f"Document {document_id} parsed successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to parse document {document_id}: {e}")
             document.parse_status = 3  # Failed
             document.parse_error = str(e)
             self.repo.update(document)
             raise
-        
+
         return document
 
     async def _generate_embeddings(self, document: Document) -> None:
@@ -177,7 +177,7 @@ class DocumentService:
         document = self.repo.get_by_id(document_id)
         if not document:
             return False
-        
+
         # Delete from storage
         try:
             storage_service.delete_file(
@@ -186,7 +186,7 @@ class DocumentService:
             )
         except Exception as e:
             logger.error(f"Failed to delete file from storage: {e}")
-        
+
         # Delete from database
         self.repo.delete(document)
         logger.info(f"Document deleted: id={document_id}")

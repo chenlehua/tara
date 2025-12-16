@@ -10,10 +10,10 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
-from .base import BaseSchema, TimestampMixin, IDMixin, PaginatedResponse
-
+from .base import BaseSchema, IDMixin, PaginatedResponse, TimestampMixin
 
 # ==================== Control Measure ====================
+
 
 class ControlMeasureBase(BaseSchema):
     """Base schema for ControlMeasure."""
@@ -44,6 +44,7 @@ class ControlMeasureResponse(ControlMeasureBase, IDMixin, TimestampMixin):
 
 # ==================== Attack Path ====================
 
+
 class AttackStep(BaseSchema):
     """Attack step in attack path."""
 
@@ -60,14 +61,14 @@ class AttackPathBase(BaseSchema):
     name: str = Field(..., max_length=200, description="攻击路径名称")
     description: Optional[str] = Field(default=None, description="描述")
     steps: List[AttackStep] = Field(default_factory=list, description="攻击步骤")
-    
+
     # Attack potential parameters
     expertise: int = Field(default=0, ge=0, le=8, description="专业知识")
     elapsed_time: int = Field(default=0, ge=0, le=19, description="时间")
     equipment: int = Field(default=0, ge=0, le=10, description="设备")
     knowledge: int = Field(default=0, ge=0, le=7, description="信息获取")
     window_of_opportunity: int = Field(default=0, ge=0, le=10, description="机会窗口")
-    
+
     prerequisites: List[str] = Field(default_factory=list, description="前置条件")
     attack_techniques: List[str] = Field(default_factory=list, description="ATT&CK技术")
 
@@ -91,6 +92,7 @@ class AttackPathResponse(AttackPathBase, IDMixin, TimestampMixin):
 
 # ==================== Threat Risk ====================
 
+
 class ThreatRiskBase(BaseSchema):
     """Base schema for ThreatRisk."""
 
@@ -109,13 +111,13 @@ class ThreatRiskCreate(ThreatRiskBase):
     project_id: int = Field(..., description="项目ID")
     asset_id: int = Field(..., description="资产ID")
     damage_scenario_id: Optional[int] = Field(default=None, description="损害场景ID")
-    
+
     # Impact
     safety_impact: int = Field(default=0, ge=0, le=4, description="安全影响")
     financial_impact: int = Field(default=0, ge=0, le=4, description="财务影响")
     operational_impact: int = Field(default=0, ge=0, le=4, description="运营影响")
     privacy_impact: int = Field(default=0, ge=0, le=4, description="隐私影响")
-    
+
     # External references
     cwe_ids: List[str] = Field(default_factory=list, description="CWE ID列表")
     capec_ids: List[str] = Field(default_factory=list, description="CAPEC ID列表")
@@ -131,21 +133,21 @@ class ThreatRiskUpdate(BaseSchema):
     attack_surface: Optional[str] = None
     threat_source: Optional[str] = None
     threat_agent: Optional[str] = None
-    
+
     # Impact
     safety_impact: Optional[int] = Field(default=None, ge=0, le=4)
     financial_impact: Optional[int] = Field(default=None, ge=0, le=4)
     operational_impact: Optional[int] = Field(default=None, ge=0, le=4)
     privacy_impact: Optional[int] = Field(default=None, ge=0, le=4)
     impact_level: Optional[int] = Field(default=None, ge=0, le=4)
-    
+
     # Likelihood and Risk
     likelihood: Optional[int] = Field(default=None, ge=0, le=4)
-    
+
     # Treatment
     treatment: Optional[str] = None
     treatment_desc: Optional[str] = None
-    
+
     # CAL
     cal: Optional[int] = Field(default=None, ge=1, le=4)
 
@@ -157,32 +159,32 @@ class ThreatRiskResponse(ThreatRiskBase, IDMixin, TimestampMixin):
     asset_id: int = Field(..., description="资产ID")
     asset_name: Optional[str] = Field(default=None, description="资产名称")
     damage_scenario_id: Optional[int] = Field(default=None, description="损害场景ID")
-    
+
     # Impact
     safety_impact: int = Field(default=0, description="安全影响")
     financial_impact: int = Field(default=0, description="财务影响")
     operational_impact: int = Field(default=0, description="运营影响")
     privacy_impact: int = Field(default=0, description="隐私影响")
     impact_level: Optional[int] = Field(default=None, description="综合影响等级")
-    
+
     # Risk
     likelihood: Optional[int] = Field(default=None, description="可能性等级")
     risk_value: Optional[int] = Field(default=None, description="风险值")
     risk_level: Optional[str] = Field(default=None, description="风险等级")
-    
+
     # Treatment
     treatment: Optional[str] = Field(default=None, description="处置决策")
     treatment_desc: Optional[str] = Field(default=None, description="处置说明")
     residual_risk: Optional[int] = Field(default=None, description="残余风险")
     cal: Optional[int] = Field(default=None, description="网络安全保障等级")
-    
+
     # Source
     source: str = Field(default="manual", description="来源")
-    
+
     # References
     cwe_ids: List[str] = Field(default_factory=list, description="CWE ID列表")
     capec_ids: List[str] = Field(default_factory=list, description="CAPEC ID列表")
-    
+
     # Attack paths count
     attack_path_count: int = Field(default=0, description="攻击路径数量")
 
@@ -197,10 +199,12 @@ class ThreatRiskDetailResponse(ThreatRiskResponse):
 
 class ThreatRiskListResponse(PaginatedResponse[ThreatRiskResponse]):
     """Paginated list of ThreatRisks."""
+
     pass
 
 
 # ==================== Risk Assessment ====================
+
 
 class RiskAssessmentRequest(BaseSchema):
     """Request for risk assessment."""
@@ -224,6 +228,7 @@ class RiskMatrixData(BaseSchema):
 
 # ==================== STRIDE Analysis ====================
 
+
 class STRIDEAnalysisRequest(BaseSchema):
     """Request for STRIDE threat analysis."""
 
@@ -236,11 +241,14 @@ class STRIDEAnalysisResult(BaseSchema):
 
     asset_id: int = Field(..., description="资产ID")
     asset_name: str = Field(..., description="资产名称")
-    threats: List[ThreatRiskCreate] = Field(default_factory=list, description="识别的威胁")
+    threats: List[ThreatRiskCreate] = Field(
+        default_factory=list, description="识别的威胁"
+    )
     confidence: float = Field(default=0.0, description="置信度")
 
 
 # ==================== Attack Tree ====================
+
 
 class AttackTreeNode(BaseSchema):
     """Node in attack tree."""

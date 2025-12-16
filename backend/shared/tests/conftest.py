@@ -1,13 +1,13 @@
 """Pytest configuration and fixtures for shared module tests."""
+
 import os
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-
 from tara_shared.database.mysql import Base
-from tara_shared.models import Project, Document, Asset, ThreatRisk, Report
-
+from tara_shared.models import Asset, Document, Project, Report, ThreatRisk
 
 # Use SQLite for testing
 TEST_DATABASE_URL = "sqlite:///:memory:"

@@ -37,10 +37,14 @@ class RedisClient:
                 )
                 # Test connection
                 cls._instance.ping()
-                logger.info(f"Connected to Redis at {settings.redis_host}:{settings.redis_port}")
+                logger.info(
+                    f"Connected to Redis at {settings.redis_host}:{settings.redis_port}"
+                )
             except Exception as e:
                 cls._connection_error = str(e)
-                logger.warning(f"Failed to connect to Redis: {e}. Caching will be unavailable.")
+                logger.warning(
+                    f"Failed to connect to Redis: {e}. Caching will be unavailable."
+                )
                 cls._instance = None
         return cls._instance
 
@@ -142,11 +146,13 @@ class CacheService:
     def set_json(self, key: str, data: dict, expire: int = 3600) -> bool:
         """Set JSON data in cache."""
         import json
+
         return self.set(key, json.dumps(data), expire)
 
     def get_json(self, key: str) -> Optional[dict]:
         """Get JSON data from cache."""
         import json
+
         data = self.get(key)
         if data:
             return json.loads(data)

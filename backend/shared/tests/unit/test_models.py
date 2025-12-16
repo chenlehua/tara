@@ -1,6 +1,8 @@
 """Unit tests for SQLAlchemy models."""
+
 import pytest
-from tara_shared.models import Project, Document, Asset, DamageScenario, ThreatRisk, AttackPath, Report
+from tara_shared.models import (Asset, AttackPath, DamageScenario, Document,
+                                Project, Report, ThreatRisk)
 
 
 class TestProjectModel:
@@ -47,7 +49,9 @@ class TestAssetModel:
         assert asset.name == sample_asset_data["name"]
         assert asset.asset_type == sample_asset_data["asset_type"]
 
-    def test_asset_security_attrs(self, db_session, sample_project_data, sample_asset_data):
+    def test_asset_security_attrs(
+        self, db_session, sample_project_data, sample_asset_data
+    ):
         """Test asset security attributes JSON field."""
         project = Project(**sample_project_data)
         db_session.add(project)

@@ -5,11 +5,10 @@ Project Service
 Business logic for project management.
 """
 
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
-
-from tara_shared.models import Project, Document, Asset, ThreatRisk, Report
+from tara_shared.models import Asset, Document, Project, Report, ThreatRisk
 from tara_shared.schemas import ProjectCreate, ProjectUpdate
 from tara_shared.utils import get_logger
 
@@ -28,15 +27,15 @@ class ProjectService:
     def create_project(self, data: ProjectCreate) -> Project:
         """
         Create a new project.
-        
+
         Args:
             data: Project creation data
-            
+
         Returns:
             Created project
         """
         logger.info(f"Creating project: {data.name}")
-        
+
         project = Project(
             name=data.name,
             description=data.description,
@@ -51,7 +50,7 @@ class ProjectService:
             tags=data.tags,
             status=0,  # Draft
         )
-        
+
         created = self.repo.create(project)
         logger.info(f"Project created: id={created.id}")
         return created
@@ -59,10 +58,10 @@ class ProjectService:
     def get_project(self, project_id: int) -> Optional[Project]:
         """
         Get project by ID.
-        
+
         Args:
             project_id: Project ID
-            
+
         Returns:
             Project or None
         """
@@ -77,13 +76,13 @@ class ProjectService:
     ) -> Tuple[List[Project], int]:
         """
         List projects with pagination and filtering.
-        
+
         Args:
             page: Page number
             page_size: Items per page
             keyword: Search keyword
             status: Project status filter
-            
+
         Returns:
             Tuple of (projects list, total count)
         """
@@ -101,22 +100,22 @@ class ProjectService:
     ) -> Optional[Project]:
         """
         Update a project.
-        
+
         Args:
             project_id: Project ID
             data: Update data
-            
+
         Returns:
             Updated project or None
         """
         project = self.repo.get_by_id(project_id)
         if not project:
             return None
-        
+
         update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(project, key, value)
-        
+
         updated = self.repo.update(project)
         logger.info(f"Project updated: id={project_id}")
         return updated
@@ -124,17 +123,17 @@ class ProjectService:
     def delete_project(self, project_id: int) -> bool:
         """
         Delete a project and all related data.
-        
+
         Args:
             project_id: Project ID
-            
+
         Returns:
             True if deleted, False if not found
         """
         project = self.repo.get_by_id(project_id)
         if not project:
             return False
-        
+
         # Cascade delete is handled by SQLAlchemy relationships
         self.repo.delete(project)
         logger.info(f"Project deleted: id={project_id}")
@@ -147,18 +146,18 @@ class ProjectService:
     ) -> Optional[Project]:
         """
         Update project status.
-        
+
         Args:
             project_id: Project ID
             status: New status
-            
+
         Returns:
             Updated project or None
         """
         project = self.repo.get_by_id(project_id)
         if not project:
             return None
-        
+
         project.status = status
         updated = self.repo.update(project)
         logger.info(f"Project status updated: id={project_id}, status={status}")
@@ -167,10 +166,10 @@ class ProjectService:
     def get_project_stats(self, project_id: int) -> Dict[str, Any]:
         """
         Get project statistics.
-        
+
         Args:
             project_id: Project ID
-            
+
         Returns:
             Statistics dictionary
         """
@@ -186,21 +185,21 @@ class ProjectService:
     ) -> Optional[Project]:
         """
         Clone an existing project.
-        
+
         Args:
             project_id: Source project ID
             new_name: Name for the cloned project
             include_documents: Clone documents
             include_assets: Clone assets
             include_threats: Clone threats
-            
+
         Returns:
             Cloned project or None
         """
         source = self.repo.get_by_id(project_id)
         if not source:
             return None
-        
+
         # Create new project with source data
         new_project = Project(
             name=new_name,
@@ -216,9 +215,9 @@ class ProjectService:
             tags=source.tags.copy() if source.tags else [],
             status=0,  # Start as draft
         )
-        
+
         created = self.repo.create(new_project)
-        
+
         # Clone related entities if requested
         if include_assets and source.assets:
             asset_id_map = {}  # Map old ID to new ID
@@ -232,7 +231,9 @@ class ProjectService:
                     version=asset.version,
                     vendor=asset.vendor,
                     model_number=asset.model_number,
-                    security_attrs=asset.security_attrs.copy() if asset.security_attrs else {},
+                    security_attrs=(
+                        asset.security_attrs.copy() if asset.security_attrs else {}
+                    ),
                     interfaces=asset.interfaces.copy() if asset.interfaces else [],
                     data_types=asset.data_types.copy() if asset.data_types else [],
                     location=asset.location,
@@ -245,18 +246,20 @@ class ProjectService:
                 self.db.add(new_asset)
                 self.db.flush()
                 asset_id_map[asset.id] = new_asset.id
-            
+
             # Update parent references
             for asset in source.assets:
                 if asset.parent_id and asset.parent_id in asset_id_map:
                     new_asset_id = asset_id_map[asset.id]
                     new_asset = self.db.query(Asset).get(new_asset_id)
                     new_asset.parent_id = asset_id_map[asset.parent_id]
-        
+
         if include_threats and source.threat_risks:
             for threat in source.threat_risks:
                 # Only clone if the related asset was cloned
-                new_asset_id = asset_id_map.get(threat.asset_id) if include_assets else None
+                new_asset_id = (
+                    asset_id_map.get(threat.asset_id) if include_assets else None
+                )
                 if new_asset_id:
                     new_threat = ThreatRisk(
                         project_id=created.id,
@@ -281,8 +284,8 @@ class ProjectService:
                         capec_ids=threat.capec_ids.copy() if threat.capec_ids else [],
                     )
                     self.db.add(new_threat)
-        
+
         self.db.commit()
         logger.info(f"Project cloned: source={project_id}, new={created.id}")
-        
+
         return created

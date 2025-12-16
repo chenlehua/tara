@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
-from .base import BaseSchema, TimestampMixin, IDMixin, PaginatedResponse
+from .base import BaseSchema, IDMixin, PaginatedResponse, TimestampMixin
 
 
 class ReportSection(BaseSchema):
@@ -20,7 +20,9 @@ class ReportSection(BaseSchema):
     title: str = Field(..., description="章节标题")
     order: int = Field(..., description="顺序")
     content: Optional[str] = Field(default=None, description="内容")
-    subsections: List["ReportSection"] = Field(default_factory=list, description="子章节")
+    subsections: List["ReportSection"] = Field(
+        default_factory=list, description="子章节"
+    )
 
 
 class ReportStatistics(BaseSchema):
@@ -52,7 +54,7 @@ class ReportCreate(ReportBase):
     project_id: int = Field(..., description="项目ID")
     sections: List[str] = Field(
         default_factory=list,
-        description="包含的章节: scope, assets, threats, risks, controls, etc."
+        description="包含的章节: scope, assets, threats, risks, controls, etc.",
     )
     file_format: str = Field(default="pdf", description="输出格式: pdf, docx, html")
     author: Optional[str] = Field(default=None, description="作者")
@@ -95,6 +97,7 @@ class ReportDetailResponse(ReportResponse):
 
 class ReportListResponse(PaginatedResponse[ReportResponse]):
     """Paginated list of Reports."""
+
     pass
 
 
@@ -116,24 +119,33 @@ class ReportGenerateRequest(BaseSchema):
     template_id: str = Field(default="iso21434_tara", description="模板ID")
     name: str = Field(..., description="报告名称")
     file_format: str = Field(default="pdf", description="输出格式")
-    
+
     # Options
     include_charts: bool = Field(default=True, description="包含图表")
     include_appendix: bool = Field(default=True, description="包含附录")
     language: str = Field(default="zh", description="语言")
-    
+
     # Sections to include
     sections: List[str] = Field(
-        default=["scope", "assets", "damage_scenarios", "threats", 
-                 "attack_paths", "risk_assessment", "risk_treatment"],
-        description="包含的章节"
+        default=[
+            "scope",
+            "assets",
+            "damage_scenarios",
+            "threats",
+            "attack_paths",
+            "risk_assessment",
+            "risk_treatment",
+        ],
+        description="包含的章节",
     )
 
 
 class OneClickGenerateRequest(BaseSchema):
     """Request for one-click report generation from uploaded files."""
 
-    template: str = Field(default="full", description="报告模板: full, threat, risk, measure")
+    template: str = Field(
+        default="full", description="报告模板: full, threat, risk, measure"
+    )
     prompt: str = Field(default="", description="分析提示词")
     formats: List[str] = Field(default=["pdf"], description="输出格式列表")
     project_name: Optional[str] = Field(default=None, description="项目名称")

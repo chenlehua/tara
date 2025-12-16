@@ -38,10 +38,10 @@ class AssetAgent(BaseAgent):
     ) -> Dict[str, Any]:
         """Discover assets from document content."""
         self.logger.info(f"Discovering assets for project {project_id}")
-        
+
         if not document_content:
             return {"assets": [], "relations": []}
-        
+
         prompt = f"""分析以下汽车技术文档，识别其中的电子电气资产。
 
 文档内容：
@@ -75,9 +75,10 @@ class AssetAgent(BaseAgent):
             temperature=0.3,
             max_tokens=4000,
         )
-        
+
         try:
             import json
+
             result = json.loads(response)
             return result
         except Exception:
@@ -102,9 +103,10 @@ class AssetAgent(BaseAgent):
 }}"""
 
         response = await self.call_llm(prompt=prompt, temperature=0.3)
-        
+
         try:
             import json
+
             return json.loads(response)
         except Exception:
             return {"type": "Unknown", "category": "Unknown"}

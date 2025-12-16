@@ -1,16 +1,10 @@
 """Unit tests for Pydantic schemas."""
+
 import pytest
 from pydantic import ValidationError
-
-from tara_shared.schemas import (
-    ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
-    AssetCreate,
-    AssetUpdate,
-    ThreatRiskCreate,
-    ReportCreate,
-)
+from tara_shared.schemas import (AssetCreate, AssetUpdate, ProjectCreate,
+                                 ProjectResponse, ProjectUpdate, ReportCreate,
+                                 ThreatRiskCreate)
 
 
 class TestProjectSchemas:

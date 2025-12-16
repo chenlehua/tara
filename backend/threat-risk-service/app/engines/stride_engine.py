@@ -36,17 +36,19 @@ class STRIDEEngine:
     ) -> List[Dict[str, Any]]:
         """
         Analyze an asset for STRIDE threats.
-        
+
         Returns list of identified threats.
         """
         threats = []
-        
+
         # Get applicable threat types for this asset type
-        applicable_types = self.ASSET_TYPE_THREATS.get(asset_type, ["S", "T", "R", "I", "D", "E"])
-        
+        applicable_types = self.ASSET_TYPE_THREATS.get(
+            asset_type, ["S", "T", "R", "I", "D", "E"]
+        )
+
         for threat_type in applicable_types:
             stride_info = STRIDE_TYPES[threat_type]
-            
+
             threat = {
                 "threat_name": f"{stride_info['name_zh']} - {asset_name}",
                 "threat_type": threat_type,
@@ -55,7 +57,7 @@ class STRIDEEngine:
                 ),
                 "violated_property": stride_info["violated_property"],
             }
-            
+
             # Add interface-specific threats
             if interfaces:
                 for interface in interfaces:
@@ -64,9 +66,9 @@ class STRIDEEngine:
                     )
                     if interface_threat:
                         threats.append(interface_threat)
-            
+
             threats.append(threat)
-        
+
         return threats
 
     def _generate_threat_description(
@@ -85,8 +87,10 @@ class STRIDEEngine:
             "D": f"攻击者可能使{asset_name}的服务不可用",
             "E": f"攻击者可能在{asset_name}上获取未授权的权限",
         }
-        
-        return templates.get(threat_type, f"针对{asset_name}的{stride_info['name_zh']}威胁")
+
+        return templates.get(
+            threat_type, f"针对{asset_name}的{stride_info['name_zh']}威胁"
+        )
 
     def _analyze_interface_threat(
         self,
@@ -98,7 +102,7 @@ class STRIDEEngine:
         """Analyze interface-specific threat."""
         interface_name = interface.get("name", "Unknown")
         interface_type = interface.get("interface_type", "Unknown")
-        
+
         # Only generate specific threats for network interfaces
         if interface_type in ["network", "wireless", "bus"]:
             return {
@@ -107,5 +111,5 @@ class STRIDEEngine:
                 "threat_desc": f"通过{interface_name}接口对{asset_name}进行{stride_info['description']}",
                 "attack_surface": interface_name,
             }
-        
+
         return None

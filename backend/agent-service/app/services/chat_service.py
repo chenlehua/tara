@@ -8,7 +8,6 @@ Service for AI chat functionality.
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import httpx
-
 from tara_shared.config import settings
 from tara_shared.utils import get_logger
 
@@ -34,19 +33,20 @@ class ChatService:
     ) -> str:
         """Send chat messages and get response."""
         # Prepare messages with system prompt
-        full_messages = [
-            {"role": "system", "content": self.SYSTEM_PROMPT}
-        ] + messages
-        
+        full_messages = [{"role": "system", "content": self.SYSTEM_PROMPT}] + messages
+
         # Add project context if provided
         if project_id:
             context = await self._get_project_context(project_id)
             if context:
-                full_messages.insert(1, {
-                    "role": "system",
-                    "content": f"当前项目上下文：\n{context}",
-                })
-        
+                full_messages.insert(
+                    1,
+                    {
+                        "role": "system",
+                        "content": f"当前项目上下文：\n{context}",
+                    },
+                )
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -62,7 +62,7 @@ class ChatService:
                 response.raise_for_status()
                 result = response.json()
                 return result["choices"][0]["message"]["content"]
-                
+
         except Exception as e:
             logger.error(f"Chat request failed: {e}")
             return "抱歉，AI服务暂时不可用，请稍后再试。"
@@ -73,18 +73,19 @@ class ChatService:
         project_id: Optional[int] = None,
     ) -> AsyncGenerator[str, None]:
         """Stream chat response."""
-        full_messages = [
-            {"role": "system", "content": self.SYSTEM_PROMPT}
-        ] + messages
-        
+        full_messages = [{"role": "system", "content": self.SYSTEM_PROMPT}] + messages
+
         if project_id:
             context = await self._get_project_context(project_id)
             if context:
-                full_messages.insert(1, {
-                    "role": "system",
-                    "content": f"当前项目上下文：\n{context}",
-                })
-        
+                full_messages.insert(
+                    1,
+                    {
+                        "role": "system",
+                        "content": f"当前项目上下文：\n{context}",
+                    },
+                )
+
         try:
             async with httpx.AsyncClient() as client:
                 async with client.stream(
@@ -106,13 +107,18 @@ class ChatService:
                                 break
                             try:
                                 import json
+
                                 chunk = json.loads(data)
-                                content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                                content = (
+                                    chunk.get("choices", [{}])[0]
+                                    .get("delta", {})
+                                    .get("content", "")
+                                )
                                 if content:
                                     yield content
                             except Exception:
                                 continue
-                                
+
         except Exception as e:
             logger.error(f"Stream chat failed: {e}")
             yield "抱歉，AI服务暂时不可用，请稍后再试。"
@@ -133,5 +139,5 @@ class ChatService:
 范围: {data.get('scope', 'N/A')}"""
         except Exception as e:
             logger.error(f"Failed to get project context: {e}")
-        
+
         return None

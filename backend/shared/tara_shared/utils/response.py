@@ -20,12 +20,12 @@ def success_response(
 ) -> Dict[str, Any]:
     """
     Create a standard success response.
-    
+
     Args:
         data: Response data
         message: Success message
         code: HTTP status code
-        
+
     Returns:
         Standard response dictionary
     """
@@ -44,12 +44,12 @@ def error_response(
 ) -> Dict[str, Any]:
     """
     Create a standard error response.
-    
+
     Args:
         message: Error message
         code: HTTP status code
         details: Additional error details
-        
+
     Returns:
         Standard error response dictionary
     """
@@ -73,19 +73,19 @@ def paginated_response(
 ) -> Dict[str, Any]:
     """
     Create a paginated response.
-    
+
     Args:
         items: List of items
         total: Total number of items
         page: Current page number
         page_size: Items per page
         message: Success message
-        
+
     Returns:
         Paginated response dictionary
     """
     pages = (total + page_size - 1) // page_size if page_size > 0 else 0
-    
+
     return {
         "success": True,
         "code": 200,
@@ -107,12 +107,12 @@ def json_error_response(
 ) -> JSONResponse:
     """
     Create a JSON error response.
-    
+
     Args:
         message: Error message
         status_code: HTTP status code
         details: Additional error details
-        
+
     Returns:
         FastAPI JSONResponse
     """
@@ -127,12 +127,12 @@ def json_success_response(
 ) -> JSONResponse:
     """
     Create a JSON success response.
-    
+
     Args:
         data: Response data
         message: Success message
         status_code: HTTP status code
-        
+
     Returns:
         FastAPI JSONResponse
     """

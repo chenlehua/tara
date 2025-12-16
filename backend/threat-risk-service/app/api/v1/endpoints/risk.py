@@ -9,9 +9,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas.threat_risk import RiskAssessmentRequest, RiskMatrixData
+from tara_shared.schemas.threat_risk import (RiskAssessmentRequest,
+                                             RiskMatrixData)
 from tara_shared.utils import success_response
 from tara_shared.utils.exceptions import NotFoundException
 
@@ -36,10 +36,10 @@ async def assess_risk(
         likelihood=request.likelihood,
         justification=request.justification,
     )
-    
+
     if not result:
         raise NotFoundException("ThreatRisk", request.threat_risk_id)
-    
+
     return success_response(data=result, message="风险评估完成")
 
 
@@ -76,10 +76,10 @@ async def set_risk_treatment(
         treatment=treatment,
         treatment_desc=treatment_desc,
     )
-    
+
     if not result:
         raise NotFoundException("ThreatRisk", threat_id)
-    
+
     return success_response(data=result, message="风险处置决策已设置")
 
 

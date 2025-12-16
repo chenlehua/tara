@@ -7,18 +7,15 @@ REST API endpoints for threat management and STRIDE analysis.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas.threat_risk import (
-    ThreatRiskCreate,
-    ThreatRiskUpdate,
-    ThreatRiskResponse,
-    ThreatRiskDetailResponse,
-    STRIDEAnalysisRequest,
-)
-from tara_shared.utils import success_response, paginated_response
+from tara_shared.schemas.threat_risk import (STRIDEAnalysisRequest,
+                                             ThreatRiskCreate,
+                                             ThreatRiskDetailResponse,
+                                             ThreatRiskResponse,
+                                             ThreatRiskUpdate)
+from tara_shared.utils import paginated_response, success_response
 from tara_shared.utils.exceptions import NotFoundException
 
 from ....services.threat_service import ThreatService
@@ -62,7 +59,7 @@ async def list_threats(
         threat_type=threat_type,
         risk_level=risk_level,
     )
-    
+
     items = [ThreatRiskResponse.model_validate(t).model_dump() for t in threats]
     return paginated_response(items=items, total=total, page=page, page_size=page_size)
 
@@ -77,12 +74,12 @@ async def get_threat(
     threat = service.get_threat(threat_id)
     if not threat:
         raise NotFoundException("ThreatRisk", threat_id)
-    
+
     if include_attack_paths:
         response = ThreatRiskDetailResponse.model_validate(threat)
     else:
         response = ThreatRiskResponse.model_validate(threat)
-    
+
     return success_response(data=response.model_dump())
 
 
@@ -96,7 +93,7 @@ async def update_threat(
     threat = service.update_threat(threat_id, threat_data)
     if not threat:
         raise NotFoundException("ThreatRisk", threat_id)
-    
+
     return success_response(
         data=ThreatRiskResponse.model_validate(threat).model_dump(),
         message="威胁更新成功",
@@ -112,7 +109,7 @@ async def delete_threat(
     success = service.delete_threat(threat_id)
     if not success:
         raise NotFoundException("ThreatRisk", threat_id)
-    
+
     return success_response(message="威胁删除成功")
 
 
@@ -127,14 +124,14 @@ async def analyze_threats(
         asset_ids=request.asset_ids,
         include_attack_paths=request.include_attack_paths,
     )
-    
+
     background_tasks.add_task(
         service.run_stride_analysis,
         task_id=task_id,
         asset_ids=request.asset_ids,
         include_attack_paths=request.include_attack_paths,
     )
-    
+
     return success_response(
         data={"task_id": task_id, "status": "processing"},
         message="STRIDE分析任务已启动",
@@ -150,6 +147,6 @@ async def get_attack_tree(
     threat = service.get_threat(threat_id)
     if not threat:
         raise NotFoundException("ThreatRisk", threat_id)
-    
+
     attack_tree = service.generate_attack_tree(threat_id)
     return success_response(data=attack_tree)

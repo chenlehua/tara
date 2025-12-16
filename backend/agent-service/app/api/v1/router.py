@@ -1,6 +1,7 @@
 """API Router for agent service."""
 
 from fastapi import APIRouter
+
 from .endpoints import agent, chat
 
 api_router = APIRouter()

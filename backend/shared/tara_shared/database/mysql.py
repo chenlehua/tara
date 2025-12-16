@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from typing import Generator
 
 from sqlalchemy import create_engine, event
-from sqlalchemy.orm import Session, sessionmaker, declarative_base
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 
 from ..config import settings
@@ -39,10 +39,10 @@ Base = declarative_base()
 def get_db() -> Generator[Session, None, None]:
     """
     Get database session.
-    
+
     Yields:
         Session: SQLAlchemy session
-    
+
     Usage:
         @router.get("/items")
         def get_items(db: Session = Depends(get_db)):
@@ -59,7 +59,7 @@ def get_db() -> Generator[Session, None, None]:
 def get_db_context() -> Generator[Session, None, None]:
     """
     Get database session as context manager.
-    
+
     Usage:
         with get_db_context() as db:
             db.query(Item).all()
@@ -78,12 +78,11 @@ def get_db_context() -> Generator[Session, None, None]:
 def init_db() -> None:
     """Initialize database tables."""
     # Import all models to ensure they are registered
-    from ..models import (  # noqa: F401
-        Project, Document, Asset, DamageScenario,
-        ThreatRisk, AttackPath, ControlMeasure, Report
-    )
+    from ..models import (Asset, AttackPath, ControlMeasure,  # noqa: F401
+                          DamageScenario, Document, Project, Report,
+                          ThreatRisk)
     from ..models.base import Base as ModelBase
-    
+
     # Create all tables
     ModelBase.metadata.create_all(bind=engine)
 

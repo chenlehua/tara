@@ -7,17 +7,14 @@ REST API endpoints for document management and parsing.
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, BackgroundTasks, status
+from fastapi import (APIRouter, BackgroundTasks, Depends, File, Form, Query,
+                     UploadFile, status)
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas.document import (
-    DocumentResponse,
-    DocumentDetailResponse,
-    DocumentUploadResponse,
-    ParseRequest,
-)
-from tara_shared.utils import success_response, paginated_response
+from tara_shared.schemas.document import (DocumentDetailResponse,
+                                          DocumentResponse,
+                                          DocumentUploadResponse, ParseRequest)
+from tara_shared.utils import paginated_response, success_response
 from tara_shared.utils.exceptions import NotFoundException, ValidationException
 
 from ....services.document_service import DocumentService
@@ -40,12 +37,12 @@ async def upload_document(
     # Validate file
     if not file.filename:
         raise ValidationException("文件名不能为空")
-    
+
     # Read file content
     content = await file.read()
     if len(content) == 0:
         raise ValidationException("文件内容为空")
-    
+
     document = await service.upload_document(
         project_id=project_id,
         filename=file.filename,
@@ -53,7 +50,7 @@ async def upload_document(
         content_type=file.content_type,
         doc_type=doc_type,
     )
-    
+
     return success_response(
         data=DocumentUploadResponse(
             document_id=document.id,
@@ -76,7 +73,7 @@ async def parse_document(
     document = service.get_document(document_id)
     if not document:
         raise NotFoundException("Document", document_id)
-    
+
     # Start parsing in background
     background_tasks.add_task(
         service.parse_document,
@@ -85,7 +82,7 @@ async def parse_document(
         enable_structure=parse_request.enable_structure,
         enable_embedding=parse_request.enable_embedding,
     )
-    
+
     return success_response(
         data={"document_id": document_id, "status": "parsing"},
         message="文档解析已开始",
@@ -107,7 +104,7 @@ async def list_documents(
         page_size=page_size,
         doc_type=doc_type,
     )
-    
+
     items = [DocumentResponse.model_validate(d).model_dump() for d in documents]
     return paginated_response(items=items, total=total, page=page, page_size=page_size)
 
@@ -122,12 +119,12 @@ async def get_document(
     document = service.get_document(document_id)
     if not document:
         raise NotFoundException("Document", document_id)
-    
+
     if include_content:
         response = DocumentDetailResponse.model_validate(document)
     else:
         response = DocumentResponse.model_validate(document)
-    
+
     return success_response(data=response.model_dump())
 
 
@@ -140,14 +137,16 @@ async def get_document_content(
     document = service.get_document(document_id)
     if not document:
         raise NotFoundException("Document", document_id)
-    
-    return success_response(data={
-        "document_id": document_id,
-        "title": document.title,
-        "content": document.content,
-        "structure": document.structure,
-        "metadata": document.metadata,
-    })
+
+    return success_response(
+        data={
+            "document_id": document_id,
+            "title": document.title,
+            "content": document.content,
+            "structure": document.structure,
+            "metadata": document.metadata,
+        }
+    )
 
 
 @router.delete("/{document_id}", response_model=dict)
@@ -159,5 +158,5 @@ async def delete_document(
     success = service.delete_document(document_id)
     if not success:
         raise NotFoundException("Document", document_id)
-    
+
     return success_response(message="文档删除成功")

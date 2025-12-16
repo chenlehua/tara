@@ -1,9 +1,10 @@
 """Pytest configuration for agent service tests."""
-import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch, AsyncMock
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="function")

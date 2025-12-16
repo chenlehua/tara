@@ -1,9 +1,10 @@
 """Pytest configuration for diagram service tests."""
-import pytest
-from fastapi.testclient import TestClient
+
 from unittest.mock import MagicMock
 
+import pytest
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture(scope="function")

@@ -7,19 +7,13 @@ REST API endpoints for asset management.
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, BackgroundTasks, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas.asset import (
-    AssetCreate,
-    AssetUpdate,
-    AssetResponse,
-    AssetDetailResponse,
-    AssetDiscoveryRequest,
-    AssetGraph,
-)
-from tara_shared.utils import success_response, paginated_response
+from tara_shared.schemas.asset import (AssetCreate, AssetDetailResponse,
+                                       AssetDiscoveryRequest, AssetGraph,
+                                       AssetResponse, AssetUpdate)
+from tara_shared.utils import paginated_response, success_response
 from tara_shared.utils.exceptions import NotFoundException
 
 from ....services.asset_service import AssetService
@@ -63,7 +57,7 @@ async def list_assets(
         category=category,
         keyword=keyword,
     )
-    
+
     items = [AssetResponse.model_validate(a).model_dump() for a in assets]
     return paginated_response(items=items, total=total, page=page, page_size=page_size)
 
@@ -89,18 +83,19 @@ async def get_asset(
     asset = service.get_asset(asset_id)
     if not asset:
         raise NotFoundException("Asset", asset_id)
-    
+
     response = AssetDetailResponse.model_validate(asset)
-    
+
     if include_children:
         response.children = [AssetResponse.model_validate(c) for c in asset.children]
-    
+
     if include_scenarios:
         from tara_shared.schemas.asset import DamageScenarioResponse
+
         response.damage_scenarios = [
             DamageScenarioResponse.model_validate(s) for s in asset.damage_scenarios
         ]
-    
+
     return success_response(data=response.model_dump())
 
 
@@ -114,7 +109,7 @@ async def update_asset(
     asset = service.update_asset(asset_id, asset_data)
     if not asset:
         raise NotFoundException("Asset", asset_id)
-    
+
     return success_response(
         data=AssetResponse.model_validate(asset).model_dump(),
         message="资产更新成功",
@@ -130,7 +125,7 @@ async def delete_asset(
     success = service.delete_asset(asset_id)
     if not success:
         raise NotFoundException("Asset", asset_id)
-    
+
     return success_response(message="资产删除成功")
 
 
@@ -145,14 +140,14 @@ async def discover_assets(
         document_ids=request.document_ids,
         include_relations=request.include_relations,
     )
-    
+
     background_tasks.add_task(
         service.run_asset_discovery,
         task_id=task_id,
         document_ids=request.document_ids,
         include_relations=request.include_relations,
     )
-    
+
     return success_response(
         data={"task_id": task_id, "status": "processing"},
         message="资产识别任务已启动",
@@ -172,8 +167,8 @@ async def add_asset_relation(
         target_id=target_asset_id,
         relation_type=relation_type,
     )
-    
+
     if not success:
         raise NotFoundException("Asset", asset_id)
-    
+
     return success_response(message="资产关系添加成功")

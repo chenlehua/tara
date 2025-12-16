@@ -1,17 +1,13 @@
 """Unit tests for utility functions."""
+
 import pytest
-from tara_shared.utils.helpers import (
-    generate_uuid,
-    get_file_extension,
-    get_mime_type,
-    calculate_hash,
-    truncate_string,
-    sanitize_filename,
-    parse_page_params,
-    dict_to_snake_case,
-    deep_merge,
-)
-from tara_shared.utils.response import success_response, error_response, paginated_response
+from tara_shared.utils.helpers import (calculate_hash, deep_merge,
+                                       dict_to_snake_case, generate_uuid,
+                                       get_file_extension, get_mime_type,
+                                       parse_page_params, sanitize_filename,
+                                       truncate_string)
+from tara_shared.utils.response import (error_response, paginated_response,
+                                        success_response)
 
 
 class TestHelperFunctions:
@@ -21,7 +17,7 @@ class TestHelperFunctions:
         """Test UUID generation."""
         uuid1 = generate_uuid()
         uuid2 = generate_uuid()
-        
+
         assert len(uuid1) == 36  # Standard UUID format
         assert uuid1 != uuid2  # Should be unique
 
@@ -36,21 +32,24 @@ class TestHelperFunctions:
         """Test MIME type detection."""
         assert get_mime_type("document.pdf") == "application/pdf"
         assert get_mime_type("image.png") == "image/png"
-        assert get_mime_type("document.docx") == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        assert (
+            get_mime_type("document.docx")
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
 
     def test_calculate_hash(self):
         """Test content hash calculation."""
         content = b"test content"
         hash1 = calculate_hash(content)
         hash2 = calculate_hash(content)
-        
+
         assert hash1 == hash2  # Same content = same hash
         assert len(hash1) == 64  # SHA256 hex length
 
     def test_truncate_string(self):
         """Test string truncation."""
         long_text = "This is a very long text that should be truncated"
-        
+
         truncated = truncate_string(long_text, 20)
         assert len(truncated) <= 23  # 20 + "..."
         assert truncated.endswith("...")
@@ -83,7 +82,7 @@ class TestHelperFunctions:
             "emailAddress": "john@example.com",
         }
         result = dict_to_snake_case(data)
-        
+
         assert "first_name" in result
         assert "last_name" in result
         assert "email_address" in result
@@ -92,9 +91,9 @@ class TestHelperFunctions:
         """Test deep dictionary merge."""
         dict1 = {"a": 1, "b": {"c": 2, "d": 3}}
         dict2 = {"b": {"c": 4, "e": 5}, "f": 6}
-        
+
         result = deep_merge(dict1, dict2)
-        
+
         assert result["a"] == 1
         assert result["b"]["c"] == 4  # Overwritten
         assert result["b"]["d"] == 3  # Preserved
@@ -109,7 +108,7 @@ class TestResponseFunctions:
         """Test success response format."""
         data = {"id": 1, "name": "Test"}
         response = success_response(data)
-        
+
         assert response["success"] is True
         assert response["code"] == 0
         assert response["data"] == data
@@ -117,14 +116,14 @@ class TestResponseFunctions:
     def test_success_response_with_message(self):
         """Test success response with custom message."""
         response = success_response(None, message="Operation completed")
-        
+
         assert response["success"] is True
         assert response["message"] == "Operation completed"
 
     def test_error_response(self):
         """Test error response format."""
         response = error_response("Something went wrong", code=400)
-        
+
         assert response["success"] is False
         assert response["code"] == 400
         assert response["message"] == "Something went wrong"
@@ -134,7 +133,7 @@ class TestResponseFunctions:
         """Test paginated response format."""
         items = [{"id": 1}, {"id": 2}]
         response = paginated_response(items, total=100, page=2, page_size=20)
-        
+
         assert response["success"] is True
         assert response["data"]["items"] == items
         assert response["data"]["total"] == 100

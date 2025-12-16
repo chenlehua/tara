@@ -1,7 +1,8 @@
 """Unit tests for project service business logic."""
-import pytest
-from unittest.mock import MagicMock, AsyncMock
 
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from app.services.project_service import ProjectService
 from tara_shared.schemas import ProjectCreate, ProjectUpdate
 

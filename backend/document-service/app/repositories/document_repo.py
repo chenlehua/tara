@@ -9,7 +9,6 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
 from tara_shared.models import Document
 
 
@@ -36,20 +35,19 @@ class DocumentRepository:
         doc_type: str = None,
     ) -> Tuple[List[Document], int]:
         query = self.db.query(Document).filter(Document.project_id == project_id)
-        
+
         if doc_type:
             query = query.filter(Document.doc_type == doc_type)
-        
+
         total = query.count()
         offset = (page - 1) * page_size
         documents = (
-            query
-            .order_by(Document.created_at.desc())
+            query.order_by(Document.created_at.desc())
             .offset(offset)
             .limit(page_size)
             .all()
         )
-        
+
         return documents, total
 
     def update(self, document: Document) -> Document:

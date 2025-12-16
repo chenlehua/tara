@@ -1,8 +1,8 @@
 """Report repository."""
+
 from typing import Optional, Tuple
 
 from sqlalchemy.orm import Session
-
 from tara_shared.models import Report
 
 
@@ -33,19 +33,19 @@ class ReportRepository:
     ) -> Tuple[list[Report], int]:
         """List reports with pagination."""
         query = self.db.query(Report).filter(Report.project_id == project_id)
-        
+
         if status is not None:
             query = query.filter(Report.status == status)
-        
+
         total = query.count()
-        
+
         reports = (
             query.order_by(Report.created_at.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
-        
+
         return reports, total
 
     def update(self, report: Report, data: dict) -> Report:

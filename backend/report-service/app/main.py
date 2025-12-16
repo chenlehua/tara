@@ -1,16 +1,15 @@
 """Report Service main application."""
+
 from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-
-from tara_shared.database import init_db
-from tara_shared.utils import get_logger
-from tara_shared.utils.exceptions import TaraException
 
 from app.api.v1.router import api_router
 from app.config import settings
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from tara_shared.database import init_db
+from tara_shared.utils import get_logger
+from tara_shared.utils.exceptions import TaraException
 
 logger = get_logger(__name__)
 

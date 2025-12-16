@@ -1,4 +1,5 @@
 """Unit tests for STRIDE analysis engine."""
+
 import pytest
 from app.engines.stride_engine import STRIDEEngine
 
@@ -19,12 +20,12 @@ class TestSTRIDEEngine:
             "asset_type": "ecu",
             "description": "Engine control unit",
         }
-        
+
         threats = engine.analyze_asset(asset)
-        
+
         assert len(threats) > 0
         threat_types = [t["threat_type"] for t in threats]
-        
+
         # ECUs should have multiple threat types
         assert "Tampering" in threat_types
         assert "Spoofing" in threat_types
@@ -37,9 +38,9 @@ class TestSTRIDEEngine:
             "asset_type": "gateway",
             "description": "Vehicle central gateway",
         }
-        
+
         threats = engine.analyze_asset(asset)
-        
+
         assert len(threats) > 0
         # Gateways are critical and should have multiple threats
         threat_types = [t["threat_type"] for t in threats]
@@ -53,9 +54,9 @@ class TestSTRIDEEngine:
             "asset_type": "external_interface",
             "description": "Diagnostic interface",
         }
-        
+
         threats = engine.analyze_asset(asset)
-        
+
         assert len(threats) > 0
         # External interfaces should have spoofing and elevation threats
         threat_types = [t["threat_type"] for t in threats]
@@ -68,9 +69,9 @@ class TestSTRIDEEngine:
             "name": "Test Asset",
             "asset_type": "ecu",
         }
-        
+
         threats = engine.analyze_asset(asset)
-        
+
         for threat in threats:
             assert "threat_name" in threat
             assert "threat_type" in threat
@@ -82,7 +83,7 @@ class TestSTRIDEEngine:
         # Use different asset types to cover all STRIDE
         asset_types = ["ecu", "gateway", "bus", "external_interface", "telematics"]
         all_threat_types = set()
-        
+
         for asset_type in asset_types:
             asset = {
                 "id": 1,
@@ -92,7 +93,7 @@ class TestSTRIDEEngine:
             threats = engine.analyze_asset(asset)
             for t in threats:
                 all_threat_types.add(t["threat_type"])
-        
+
         # Should cover most STRIDE categories
         expected_types = {
             "Spoofing",

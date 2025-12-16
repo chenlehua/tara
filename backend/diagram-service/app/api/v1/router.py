@@ -1,7 +1,7 @@
 """API v1 router."""
-from fastapi import APIRouter
 
 from app.api.v1.endpoints import diagram
+from fastapi import APIRouter
 
 api_router = APIRouter()
 

@@ -9,7 +9,6 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
 from tara_shared.models import ThreatRisk
 
 
@@ -38,20 +37,25 @@ class ThreatRepository:
         risk_level: str = None,
     ) -> Tuple[List[ThreatRisk], int]:
         query = self.db.query(ThreatRisk).filter(ThreatRisk.project_id == project_id)
-        
+
         if asset_id:
             query = query.filter(ThreatRisk.asset_id == asset_id)
-        
+
         if threat_type:
             query = query.filter(ThreatRisk.threat_type == threat_type)
-        
+
         if risk_level:
             query = query.filter(ThreatRisk.risk_level == risk_level)
-        
+
         total = query.count()
         offset = (page - 1) * page_size
-        threats = query.order_by(ThreatRisk.created_at.desc()).offset(offset).limit(page_size).all()
-        
+        threats = (
+            query.order_by(ThreatRisk.created_at.desc())
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
         return threats, total
 
     def update(self, threat: ThreatRisk) -> ThreatRisk:

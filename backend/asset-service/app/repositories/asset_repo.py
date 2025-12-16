@@ -9,7 +9,6 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
-
 from tara_shared.models import Asset
 
 
@@ -41,13 +40,13 @@ class AssetRepository:
         keyword: str = None,
     ) -> Tuple[List[Asset], int]:
         query = self.db.query(Asset).filter(Asset.project_id == project_id)
-        
+
         if asset_type:
             query = query.filter(Asset.asset_type == asset_type)
-        
+
         if category:
             query = query.filter(Asset.category == category)
-        
+
         if keyword:
             query = query.filter(
                 or_(
@@ -55,11 +54,16 @@ class AssetRepository:
                     Asset.description.ilike(f"%{keyword}%"),
                 )
             )
-        
+
         total = query.count()
         offset = (page - 1) * page_size
-        assets = query.order_by(Asset.created_at.desc()).offset(offset).limit(page_size).all()
-        
+        assets = (
+            query.order_by(Asset.created_at.desc())
+            .offset(offset)
+            .limit(page_size)
+            .all()
+        )
+
         return assets, total
 
     def update(self, asset: Asset) -> Asset:

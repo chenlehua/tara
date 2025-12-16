@@ -227,14 +227,14 @@ docs-serve: ## 启动文档服务
 	cd docs && mkdocs serve
 
 ## ==================== 工具 ====================
-shell-mysql: ## 连接MySQL
-	mysql -h localhost -u tara -p tara_db
+shell-mysql: ## 连接MySQL (Docker)
+	docker compose -f deploy/docker/docker-compose.yml exec mysql mysql -u tara -ptara_password tara_db
 
-shell-redis: ## 连接Redis
-	redis-cli
+shell-redis: ## 连接Redis (Docker)
+	docker compose -f deploy/docker/docker-compose.yml exec redis redis-cli
 
-shell-neo4j: ## 打开Neo4j浏览器
-	@echo "Open http://localhost:7474 in your browser"
+shell-neo4j: ## 连接Neo4j (Docker)
+	docker compose -f deploy/docker/docker-compose.yml exec neo4j cypher-shell -u neo4j -p neo4j_password
 
 generate-api-client: ## 生成前端API客户端
 	./scripts/tools/generate-api-client.sh

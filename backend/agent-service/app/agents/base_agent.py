@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
 import httpx
-
 from tara_shared.config import settings
 from tara_shared.utils import get_logger
 
@@ -38,7 +37,7 @@ class BaseAgent(ABC):
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -66,20 +65,24 @@ class BaseAgent(ABC):
     ) -> str:
         """Call the vision-language model."""
         messages = [{"role": "user", "content": prompt}]
-        
+
         if image_data:
             import base64
+
             image_b64 = base64.b64encode(image_data).decode()
             messages[0]["content"] = [
                 {"type": "text", "text": prompt},
-                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_b64}"}},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/png;base64,{image_b64}"},
+                },
             ]
         elif image_url:
             messages[0]["content"] = [
                 {"type": "text", "text": prompt},
                 {"type": "image_url", "image_url": {"url": image_url}},
             ]
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(

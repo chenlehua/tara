@@ -21,7 +21,7 @@ class BaseParser(ABC):
     ) -> Dict[str, Any]:
         """
         Parse document content.
-        
+
         Returns:
             Dictionary with parsed content:
             - title: Document title

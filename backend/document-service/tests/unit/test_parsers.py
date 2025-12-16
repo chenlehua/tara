@@ -1,8 +1,9 @@
 """Unit tests for document parsers."""
-import pytest
-from unittest.mock import MagicMock, patch
-from io import BytesIO
 
+from io import BytesIO
+from unittest.mock import MagicMock, patch
+
+import pytest
 from app.parsers import get_parser
 from app.parsers.pdf_parser import PDFParser
 from app.parsers.word_parser import WordParser
@@ -51,10 +52,10 @@ class TestPDFParser:
         mock_page = MagicMock()
         mock_page.extract_text.return_value = "Test content from PDF"
         mock_reader.return_value.pages = [mock_page]
-        
+
         content = BytesIO(b"%PDF-1.4 test")
         result = parser.parse(content)
-        
+
         assert "Test content from PDF" in result["text"]
 
     @patch("app.parsers.pdf_parser.PdfReader")
@@ -65,12 +66,12 @@ class TestPDFParser:
             page = MagicMock()
             page.extract_text.return_value = f"Page {i+1} content"
             mock_pages.append(page)
-        
+
         mock_reader.return_value.pages = mock_pages
-        
+
         content = BytesIO(b"%PDF-1.4 test")
         result = parser.parse(content)
-        
+
         assert result["page_count"] == 3
 
 
@@ -96,8 +97,8 @@ class TestWordParser:
         mock_para.style.name = "Normal"
         mock_document.return_value.paragraphs = [mock_para]
         mock_document.return_value.tables = []
-        
+
         content = BytesIO(b"PK test")
         result = parser.parse(content)
-        
+
         assert "Test paragraph content" in result["text"]

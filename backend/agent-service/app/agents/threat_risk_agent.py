@@ -45,15 +45,17 @@ STRIDE类型：
     ) -> Dict[str, Any]:
         """Analyze threats for assets using STRIDE."""
         self.logger.info(f"Analyzing threats for {len(assets)} assets")
-        
+
         if not assets:
             return {"threats": [], "attack_paths": []}
-        
-        assets_desc = "\n".join([
-            f"- {a.get('name', 'Unknown')}: {a.get('type', 'Unknown')} - {a.get('description', '')}"
-            for a in assets[:20]  # Limit to 20 assets
-        ])
-        
+
+        assets_desc = "\n".join(
+            [
+                f"- {a.get('name', 'Unknown')}: {a.get('type', 'Unknown')} - {a.get('description', '')}"
+                for a in assets[:20]  # Limit to 20 assets
+            ]
+        )
+
         prompt = f"""对以下汽车电子资产进行STRIDE威胁分析：
 
 资产列表：
@@ -93,9 +95,10 @@ STRIDE类型：
             temperature=0.5,
             max_tokens=4000,
         )
-        
+
         try:
             import json
+
             return json.loads(response)
         except Exception:
             self.logger.error("Failed to parse threat analysis result")
@@ -128,9 +131,10 @@ STRIDE类型：
 }}"""
 
         response = await self.call_llm(prompt=prompt, temperature=0.3)
-        
+
         try:
             import json
+
             return json.loads(response)
         except Exception:
             return {"feasibility_rating": "unknown"}

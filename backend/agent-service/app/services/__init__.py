@@ -1,4 +1,6 @@
 """Service layer."""
-from .orchestrator import AgentOrchestrator
+
 from .chat_service import ChatService
+from .orchestrator import AgentOrchestrator
+
 __all__ = ["AgentOrchestrator", "ChatService"]

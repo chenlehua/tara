@@ -7,14 +7,11 @@ REST API endpoints for attack path management.
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas.threat_risk import (
-    AttackPathCreate,
-    AttackPathResponse,
-    ControlMeasureCreate,
-    ControlMeasureResponse,
-)
+from tara_shared.schemas.threat_risk import (AttackPathCreate,
+                                             AttackPathResponse,
+                                             ControlMeasureCreate,
+                                             ControlMeasureResponse)
 from tara_shared.utils import success_response
 from tara_shared.utils.exceptions import NotFoundException
 
@@ -49,7 +46,7 @@ async def get_attack_path(
     path = service.get_attack_path(path_id)
     if not path:
         raise NotFoundException("AttackPath", path_id)
-    
+
     return success_response(data=AttackPathResponse.model_validate(path).model_dump())
 
 
@@ -62,7 +59,7 @@ async def delete_attack_path(
     success = service.delete_attack_path(path_id)
     if not success:
         raise NotFoundException("AttackPath", path_id)
-    
+
     return success_response(message="攻击路径删除成功")
 
 
@@ -75,11 +72,13 @@ async def calculate_feasibility(
     result = service.calculate_attack_feasibility(path_id)
     if not result:
         raise NotFoundException("AttackPath", path_id)
-    
+
     return success_response(data=result, message="攻击可行性计算完成")
 
 
-@router.post("/{path_id}/controls", response_model=dict, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{path_id}/controls", response_model=dict, status_code=status.HTTP_201_CREATED
+)
 async def add_control_measure(
     path_id: int,
     control_data: ControlMeasureCreate,

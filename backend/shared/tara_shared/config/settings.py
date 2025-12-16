@@ -25,14 +25,18 @@ class Settings(BaseSettings):
     # ===== 通用配置 =====
     app_env: str = Field(default="development", alias="APP_ENV")
     app_debug: bool = Field(default=True, alias="APP_DEBUG")
-    app_secret_key: str = Field(default="change-me-in-production", alias="APP_SECRET_KEY")
+    app_secret_key: str = Field(
+        default="change-me-in-production", alias="APP_SECRET_KEY"
+    )
     app_log_level: str = Field(default="INFO", alias="APP_LOG_LEVEL")
 
     # ===== 服务端口 =====
     project_service_port: int = Field(default=8001, alias="PROJECT_SERVICE_PORT")
     document_service_port: int = Field(default=8002, alias="DOCUMENT_SERVICE_PORT")
     asset_service_port: int = Field(default=8003, alias="ASSET_SERVICE_PORT")
-    threat_risk_service_port: int = Field(default=8004, alias="THREAT_RISK_SERVICE_PORT")
+    threat_risk_service_port: int = Field(
+        default=8004, alias="THREAT_RISK_SERVICE_PORT"
+    )
     diagram_service_port: int = Field(default=8005, alias="DIAGRAM_SERVICE_PORT")
     report_service_port: int = Field(default=8006, alias="REPORT_SERVICE_PORT")
     agent_service_port: int = Field(default=8007, alias="AGENT_SERVICE_PORT")
@@ -106,9 +110,13 @@ class Settings(BaseSettings):
     minio_port: int = Field(default=9000, alias="MINIO_PORT")
     minio_access_key: str = Field(default="minio_access_key", alias="MINIO_ACCESS_KEY")
     minio_secret_key: str = Field(default="minio_secret_key", alias="MINIO_SECRET_KEY")
-    minio_bucket_documents: str = Field(default="documents", alias="MINIO_BUCKET_DOCUMENTS")
+    minio_bucket_documents: str = Field(
+        default="documents", alias="MINIO_BUCKET_DOCUMENTS"
+    )
     minio_bucket_reports: str = Field(default="reports", alias="MINIO_BUCKET_REPORTS")
-    minio_bucket_diagrams: str = Field(default="diagrams", alias="MINIO_BUCKET_DIAGRAMS")
+    minio_bucket_diagrams: str = Field(
+        default="diagrams", alias="MINIO_BUCKET_DIAGRAMS"
+    )
 
     @property
     def minio_endpoint(self) -> str:
@@ -162,15 +170,14 @@ class Settings(BaseSettings):
 
     # ===== CORS 配置 =====
     cors_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:5173"],
-        alias="CORS_ORIGINS"
+        default=["http://localhost:3000", "http://localhost:5173"], alias="CORS_ORIGINS"
     )
 
     # ===== 文件上传配置 =====
     max_upload_size_mb: int = Field(default=100, alias="MAX_UPLOAD_SIZE_MB")
     allowed_extensions: str = Field(
         default="pdf,doc,docx,xls,xlsx,ppt,pptx,txt,dbc,json",
-        alias="ALLOWED_EXTENSIONS"
+        alias="ALLOWED_EXTENSIONS",
     )
 
     @property

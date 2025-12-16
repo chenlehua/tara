@@ -9,16 +9,11 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas import (
-    ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
-    ProjectListResponse,
-)
+from tara_shared.schemas import (ProjectCreate, ProjectListResponse,
+                                 ProjectResponse, ProjectUpdate)
 from tara_shared.schemas.project import ProjectCloneRequest, ProjectStats
-from tara_shared.utils import success_response, paginated_response
+from tara_shared.utils import paginated_response, success_response
 from tara_shared.utils.exceptions import NotFoundException
 
 from ....services.project_service import ProjectService
@@ -70,7 +65,7 @@ async def list_projects(
         keyword=keyword,
         status=status,
     )
-    
+
     items = [ProjectResponse.model_validate(p).model_dump() for p in projects]
     return paginated_response(
         items=items,
@@ -95,13 +90,13 @@ async def get_project(
     project = service.get_project(project_id)
     if not project:
         raise NotFoundException("Project", project_id)
-    
+
     response_data = ProjectResponse.model_validate(project).model_dump()
-    
+
     if include_stats:
         stats = service.get_project_stats(project_id)
         response_data["stats"] = stats
-    
+
     return success_response(data=response_data)
 
 
@@ -120,7 +115,7 @@ async def update_project(
     project = service.update_project(project_id, project_data)
     if not project:
         raise NotFoundException("Project", project_id)
-    
+
     return success_response(
         data=ProjectResponse.model_validate(project).model_dump(),
         message="项目更新成功",
@@ -141,7 +136,7 @@ async def delete_project(
     success = service.delete_project(project_id)
     if not success:
         raise NotFoundException("Project", project_id)
-    
+
     return success_response(message="项目删除成功")
 
 
@@ -167,7 +162,7 @@ async def clone_project(
     )
     if not project:
         raise NotFoundException("Project", project_id)
-    
+
     return success_response(
         data=ProjectResponse.model_validate(project).model_dump(),
         message="项目克隆成功",
@@ -188,7 +183,7 @@ async def get_project_stats(
     project = service.get_project(project_id)
     if not project:
         raise NotFoundException("Project", project_id)
-    
+
     stats = service.get_project_stats(project_id)
     return success_response(data=stats)
 
@@ -208,7 +203,7 @@ async def update_project_status(
     project = service.update_project_status(project_id, status)
     if not project:
         raise NotFoundException("Project", project_id)
-    
+
     return success_response(
         data=ProjectResponse.model_validate(project).model_dump(),
         message="项目状态更新成功",

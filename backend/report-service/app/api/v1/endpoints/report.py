@@ -1,29 +1,24 @@
 """Report endpoints."""
+
 import json
 import uuid
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, Query, BackgroundTasks, UploadFile
+from app.repositories.report_repo import ReportRepository
+from app.services.oneclick_service import OneClickGenerateService
+from app.services.report_service import ReportService
+from fastapi import (APIRouter, BackgroundTasks, Depends, File, Form, Query,
+                     UploadFile)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-
 from tara_shared.database import get_db
-from tara_shared.schemas import (
-    ReportCreate,
-    ReportUpdate,
-    ReportResponse,
-    ReportListResponse,
-    ReportGenerateRequest,
-    OneClickGenerateRequest,
-    OneClickGenerateResponse,
-    GenerationProgressResponse,
-)
-from tara_shared.utils import success_response, paginated_response
-
-from app.services.report_service import ReportService
-from app.services.oneclick_service import OneClickGenerateService
-from app.repositories.report_repo import ReportRepository
+from tara_shared.schemas import (GenerationProgressResponse,
+                                 OneClickGenerateRequest,
+                                 OneClickGenerateResponse, ReportCreate,
+                                 ReportGenerateRequest, ReportListResponse,
+                                 ReportResponse, ReportUpdate)
+from tara_shared.utils import paginated_response, success_response
 
 router = APIRouter()
 
@@ -98,10 +93,12 @@ async def generate_report(
     """Generate a new report (async)."""
     report = await service.start_report_generation(request)
     background_tasks.add_task(service.run_report_generation, report.id, request)
-    return success_response({
-        "report_id": report.id,
-        "message": "Report generation started",
-    })
+    return success_response(
+        {
+            "report_id": report.id,
+            "message": "Report generation started",
+        }
+    )
 
 
 @router.get("/{report_id}/download")
@@ -112,13 +109,13 @@ async def download_report(
 ):
     """Download report file."""
     file_data, filename = await service.get_report_file(report_id, format)
-    
+
     media_types = {
         "pdf": "application/pdf",
         "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     }
-    
+
     return StreamingResponse(
         file_data,
         media_type=media_types.get(format, "application/octet-stream"),
@@ -152,7 +149,7 @@ async def oneclick_generate(
 ):
     """
     一键生成TARA报告
-    
+
     支持上传:
     - 资产清单文件: .xlsx, .xls, .csv, .json
     - 系统架构图: .png, .jpg, .jpeg, .svg
@@ -160,11 +157,11 @@ async def oneclick_generate(
     """
     # Generate task ID
     task_id = str(uuid.uuid4())
-    
+
     # Create project name
     if not project_name:
         project_name = f"TARA分析项目_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
+
     # Initialize task status
     _generation_tasks[task_id] = {
         "status": "processing",
@@ -180,7 +177,7 @@ async def oneclick_generate(
         "result": None,
         "error": None,
     }
-    
+
     # Start background task
     result = await service.start_generation(
         task_id=task_id,
@@ -190,7 +187,7 @@ async def oneclick_generate(
         project_name=project_name,
         task_storage=_generation_tasks,
     )
-    
+
     # Add background processing
     background_tasks.add_task(
         service.run_generation,
@@ -202,25 +199,29 @@ async def oneclick_generate(
         prompt=prompt,
         task_storage=_generation_tasks,
     )
-    
-    return success_response({
-        "task_id": task_id,
-        "report_id": result["report_id"],
-        "project_id": result["project_id"],
-        "status": "processing",
-        "message": "报告生成已启动",
-    })
+
+    return success_response(
+        {
+            "task_id": task_id,
+            "report_id": result["report_id"],
+            "project_id": result["project_id"],
+            "status": "processing",
+            "message": "报告生成已启动",
+        }
+    )
 
 
 @router.get("/oneclick/{task_id}/progress")
 async def get_generation_progress(task_id: str):
     """获取报告生成进度"""
     if task_id not in _generation_tasks:
-        return success_response({
-            "task_id": task_id,
-            "status": "not_found",
-            "progress": 0,
-            "error": "任务不存在",
-        })
-    
+        return success_response(
+            {
+                "task_id": task_id,
+                "status": "not_found",
+                "progress": 0,
+                "error": "任务不存在",
+            }
+        )
+
     return success_response(_generation_tasks[task_id])

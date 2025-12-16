@@ -5,14 +5,13 @@ Asset Service
 Business logic for asset management.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
 import uuid
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
-
+from tara_shared.database.neo4j import graph_service
 from tara_shared.models import Asset
 from tara_shared.schemas.asset import AssetCreate, AssetUpdate
-from tara_shared.database.neo4j import graph_service
 from tara_shared.utils import get_logger
 
 from ..repositories.asset_repo import AssetRepository
@@ -30,7 +29,7 @@ class AssetService:
     def create_asset(self, data: AssetCreate) -> Asset:
         """Create a new asset."""
         logger.info(f"Creating asset: {data.name}")
-        
+
         asset = Asset(
             project_id=data.project_id,
             parent_id=data.parent_id,
@@ -41,7 +40,9 @@ class AssetService:
             version=data.version,
             vendor=data.vendor,
             model_number=data.model_number,
-            security_attrs=data.security_attrs.model_dump() if data.security_attrs else {},
+            security_attrs=(
+                data.security_attrs.model_dump() if data.security_attrs else {}
+            ),
             interfaces=[i.model_dump() for i in data.interfaces],
             data_types=data.data_types,
             location=data.location,
@@ -51,15 +52,15 @@ class AssetService:
             criticality=data.criticality,
             source="manual",
         )
-        
+
         created = self.repo.create(asset)
-        
+
         # Create node in Neo4j
         try:
             self._create_graph_node(created)
         except Exception as e:
             logger.error(f"Failed to create graph node: {e}")
-        
+
         return created
 
     def get_asset(self, asset_id: int) -> Optional[Asset]:
@@ -90,18 +91,25 @@ class AssetService:
         asset = self.repo.get_by_id(asset_id)
         if not asset:
             return None
-        
+
         update_data = data.model_dump(exclude_unset=True)
-        
+
         # Handle nested objects
         if "security_attrs" in update_data and update_data["security_attrs"]:
-            update_data["security_attrs"] = update_data["security_attrs"].model_dump() if hasattr(update_data["security_attrs"], 'model_dump') else update_data["security_attrs"]
+            update_data["security_attrs"] = (
+                update_data["security_attrs"].model_dump()
+                if hasattr(update_data["security_attrs"], "model_dump")
+                else update_data["security_attrs"]
+            )
         if "interfaces" in update_data and update_data["interfaces"]:
-            update_data["interfaces"] = [i.model_dump() if hasattr(i, 'model_dump') else i for i in update_data["interfaces"]]
-        
+            update_data["interfaces"] = [
+                i.model_dump() if hasattr(i, "model_dump") else i
+                for i in update_data["interfaces"]
+            ]
+
         for key, value in update_data.items():
             setattr(asset, key, value)
-        
+
         return self.repo.update(asset)
 
     def delete_asset(self, asset_id: int) -> bool:
@@ -109,46 +117,50 @@ class AssetService:
         asset = self.repo.get_by_id(asset_id)
         if not asset:
             return False
-        
+
         # Delete from Neo4j
         try:
             self._delete_graph_node(asset)
         except Exception as e:
             logger.error(f"Failed to delete graph node: {e}")
-        
+
         self.repo.delete(asset)
         return True
 
     def get_asset_graph(self, project_id: int) -> Dict[str, Any]:
         """Get asset relationship graph."""
         assets = self.repo.get_all_by_project(project_id)
-        
+
         nodes = []
         edges = []
-        
+
         for asset in assets:
-            nodes.append({
-                "id": asset.id,
-                "name": asset.name,
-                "asset_type": asset.asset_type,
-                "category": asset.category,
-            })
-            
+            nodes.append(
+                {
+                    "id": asset.id,
+                    "name": asset.name,
+                    "asset_type": asset.asset_type,
+                    "category": asset.category,
+                }
+            )
+
             # Parent-child relationships
             if asset.parent_id:
-                edges.append({
-                    "source": asset.parent_id,
-                    "target": asset.id,
-                    "relation_type": "contains",
-                })
-        
+                edges.append(
+                    {
+                        "source": asset.parent_id,
+                        "target": asset.id,
+                        "relation_type": "contains",
+                    }
+                )
+
         # Get relationships from Neo4j
         try:
             neo4j_edges = self._get_graph_relations(project_id)
             edges.extend(neo4j_edges)
         except Exception as e:
             logger.error(f"Failed to get graph relations: {e}")
-        
+
         return {"nodes": nodes, "edges": edges}
 
     def add_asset_relation(
@@ -160,10 +172,10 @@ class AssetService:
         """Add a relationship between two assets."""
         source = self.repo.get_by_id(source_id)
         target = self.repo.get_by_id(target_id)
-        
+
         if not source or not target:
             return False
-        
+
         try:
             graph_service.create_relationship(
                 from_label="Asset",

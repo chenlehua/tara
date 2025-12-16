@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
-from .base import BaseSchema, TimestampMixin, IDMixin, PaginatedResponse
+from .base import BaseSchema, IDMixin, PaginatedResponse, TimestampMixin
 
 
 class DocumentBase(BaseSchema):
@@ -18,7 +18,9 @@ class DocumentBase(BaseSchema):
 
     filename: str = Field(..., max_length=255, description="文件名")
     doc_type: Optional[str] = Field(default=None, max_length=50, description="文档类型")
-    doc_category: Optional[str] = Field(default=None, max_length=50, description="文档分类")
+    doc_category: Optional[str] = Field(
+        default=None, max_length=50, description="文档分类"
+    )
 
 
 class DocumentCreate(DocumentBase):
@@ -27,8 +29,12 @@ class DocumentCreate(DocumentBase):
     project_id: int = Field(..., description="项目ID")
     file_path: str = Field(..., max_length=500, description="文件存储路径")
     file_size: Optional[int] = Field(default=None, description="文件大小")
-    file_type: Optional[str] = Field(default=None, max_length=50, description="MIME类型")
-    file_extension: Optional[str] = Field(default=None, max_length=20, description="扩展名")
+    file_type: Optional[str] = Field(
+        default=None, max_length=50, description="MIME类型"
+    )
+    file_extension: Optional[str] = Field(
+        default=None, max_length=20, description="扩展名"
+    )
 
 
 class DocumentUpdate(BaseSchema):
@@ -77,6 +83,7 @@ class DocumentDetailResponse(DocumentResponse):
 
 class DocumentListResponse(PaginatedResponse[DocumentResponse]):
     """Paginated list of Documents."""
+
     pass
 
 

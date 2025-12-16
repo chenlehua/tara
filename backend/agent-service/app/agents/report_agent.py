@@ -30,13 +30,13 @@ class ReportAgent(BaseAgent):
     async def generate_report(self, project_id: int) -> Dict[str, Any]:
         """Generate TARA report for a project."""
         self.logger.info(f"Generating report for project {project_id}")
-        
+
         # In production, this would:
         # 1. Fetch all project data
         # 2. Generate each section
         # 3. Create charts and diagrams
         # 4. Export to PDF/Word
-        
+
         return {
             "report_id": None,
             "status": "generated",
@@ -65,7 +65,7 @@ class ReportAgent(BaseAgent):
             "risk_assessment": "撰写风险评估章节，说明风险等级和评估依据。",
             "risk_treatment": "撰写风险处置章节，提出处置建议和措施。",
         }
-        
+
         prompt = f"""{prompts.get(section_type, '撰写报告章节')}
 
 数据：

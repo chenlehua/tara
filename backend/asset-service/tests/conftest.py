@@ -1,16 +1,15 @@
 """Pytest configuration for asset service tests."""
+
+from unittest.mock import MagicMock, patch
+
 import pytest
+from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from unittest.mock import MagicMock, patch
-
 from tara_shared.database.mysql import Base, get_db
-from tara_shared.models import Project, Asset
-
-from app.main import app
-
+from tara_shared.models import Asset, Project
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -41,6 +40,7 @@ def db_session(engine):
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create test client."""
+
     def override_get_db():
         try:
             yield db_session
@@ -48,10 +48,10 @@ def client(db_session):
             pass
 
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     app.dependency_overrides.clear()
 
 

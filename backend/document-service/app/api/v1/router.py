@@ -1,6 +1,7 @@
 """API Router for document service."""
 
 from fastapi import APIRouter
+
 from .endpoints import document
 
 api_router = APIRouter()

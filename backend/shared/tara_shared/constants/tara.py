@@ -149,11 +149,11 @@ LIKELIHOOD_LEVELS: Dict[int, Dict[str, str]] = {
 # Risk Matrix: RISK_MATRIX[impact][likelihood] = risk_level
 RISK_MATRIX: List[List[str]] = [
     # Likelihood:  0      1      2        3        4
-    ["negligible", "negligible", "negligible", "negligible", "low"],       # Impact 0
-    ["negligible", "negligible", "low",        "low",        "medium"],    # Impact 1
-    ["negligible", "low",        "low",        "medium",     "high"],      # Impact 2
-    ["negligible", "low",        "medium",     "high",       "high"],      # Impact 3
-    ["low",        "medium",     "high",       "high",       "critical"],  # Impact 4
+    ["negligible", "negligible", "negligible", "negligible", "low"],  # Impact 0
+    ["negligible", "negligible", "low", "low", "medium"],  # Impact 1
+    ["negligible", "low", "low", "medium", "high"],  # Impact 2
+    ["negligible", "low", "medium", "high", "high"],  # Impact 3
+    ["low", "medium", "high", "high", "critical"],  # Impact 4
 ]
 
 # Risk level to numeric value mapping
@@ -169,11 +169,23 @@ RISK_LEVEL_VALUES: Dict[str, int] = {
 
 # Expertise levels
 ATTACK_POTENTIAL_EXPERTISE: Dict[int, Dict[str, str]] = {
-    0: {"level": "Multiple Experts", "level_zh": "多名专家", "description": "需要多个领域的专家"},
+    0: {
+        "level": "Multiple Experts",
+        "level_zh": "多名专家",
+        "description": "需要多个领域的专家",
+    },
     2: {"level": "Expert", "level_zh": "专家", "description": "需要特定领域专家"},
-    4: {"level": "Proficient", "level_zh": "熟练者", "description": "需要熟练的技术人员"},
+    4: {
+        "level": "Proficient",
+        "level_zh": "熟练者",
+        "description": "需要熟练的技术人员",
+    },
     6: {"level": "Layman", "level_zh": "普通人", "description": "普通人即可执行"},
-    8: {"level": "No Expertise", "level_zh": "无需专业知识", "description": "无需任何专业知识"},
+    8: {
+        "level": "No Expertise",
+        "level_zh": "无需专业知识",
+        "description": "无需任何专业知识",
+    },
 }
 
 # Elapsed time
@@ -188,18 +200,38 @@ ATTACK_POTENTIAL_TIME: Dict[int, Dict[str, str]] = {
 
 # Equipment
 ATTACK_POTENTIAL_EQUIPMENT: Dict[int, Dict[str, str]] = {
-    0: {"level": "Multiple Bespoke", "level_zh": "多个定制设备", "description": "需要多个定制设备"},
+    0: {
+        "level": "Multiple Bespoke",
+        "level_zh": "多个定制设备",
+        "description": "需要多个定制设备",
+    },
     2: {"level": "Bespoke", "level_zh": "定制设备", "description": "需要定制/专用设备"},
-    4: {"level": "Specialized", "level_zh": "专业设备", "description": "需要专业但可获取的设备"},
-    6: {"level": "Standard", "level_zh": "标准设备", "description": "需要标准工具/设备"},
+    4: {
+        "level": "Specialized",
+        "level_zh": "专业设备",
+        "description": "需要专业但可获取的设备",
+    },
+    6: {
+        "level": "Standard",
+        "level_zh": "标准设备",
+        "description": "需要标准工具/设备",
+    },
     10: {"level": "None", "level_zh": "无需设备", "description": "无需特殊设备"},
 }
 
 # Knowledge of target
 ATTACK_POTENTIAL_KNOWLEDGE: Dict[int, Dict[str, str]] = {
-    0: {"level": "Critical", "level_zh": "关键信息", "description": "需要关键/受限信息"},
+    0: {
+        "level": "Critical",
+        "level_zh": "关键信息",
+        "description": "需要关键/受限信息",
+    },
     2: {"level": "Sensitive", "level_zh": "敏感信息", "description": "需要敏感信息"},
-    4: {"level": "Restricted", "level_zh": "受限信息", "description": "需要受限但可获取的信息"},
+    4: {
+        "level": "Restricted",
+        "level_zh": "受限信息",
+        "description": "需要受限但可获取的信息",
+    },
     7: {"level": "Public", "level_zh": "公开信息", "description": "仅需公开信息"},
 }
 
@@ -214,9 +246,9 @@ ATTACK_POTENTIAL_WINDOW: Dict[int, Dict[str, str]] = {
 
 # Attack potential to feasibility mapping
 ATTACK_POTENTIAL_TO_FEASIBILITY: List[Tuple[int, int, str]] = [
-    (0, 9, "high"),      # 0-9: High feasibility
+    (0, 9, "high"),  # 0-9: High feasibility
     (10, 17, "medium"),  # 10-17: Medium feasibility
-    (18, 24, "low"),     # 18-24: Low feasibility
+    (18, 24, "low"),  # 18-24: Low feasibility
     (25, 100, "very_low"),  # 25+: Very low feasibility
 ]
 

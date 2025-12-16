@@ -41,7 +41,9 @@ class ESClient:
                     raise Exception("Ping failed")
             except Exception as e:
                 cls._connection_error = str(e)
-                logger.warning(f"Failed to connect to ElasticSearch: {e}. Search will be unavailable.")
+                logger.warning(
+                    f"Failed to connect to ElasticSearch: {e}. Search will be unavailable."
+                )
                 cls._client = None
         return cls._client
 
@@ -150,7 +152,9 @@ class SearchService:
     def init_indices(self) -> None:
         """Initialize all required indices."""
         if not self.is_available():
-            logger.warning("ElasticSearch not available, skipping indices initialization")
+            logger.warning(
+                "ElasticSearch not available, skipping indices initialization"
+            )
             return
         self.create_index("tara_documents", self.DOCUMENT_INDEX_MAPPING)
         self.create_index("tara_threats", self.THREAT_INDEX_MAPPING)
@@ -182,9 +186,11 @@ class SearchService:
     ) -> List[Dict[str, Any]]:
         """Full-text search."""
         if not self.is_available():
-            logger.warning("ElasticSearch not available, returning empty search results")
+            logger.warning(
+                "ElasticSearch not available, returning empty search results"
+            )
             return []
-        
+
         body = {
             "query": {
                 "bool": {

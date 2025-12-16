@@ -5,14 +5,13 @@ Threat Service
 Business logic for threat management and STRIDE analysis.
 """
 
-from typing import Any, Dict, List, Optional, Tuple
 import uuid
+from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
-
-from tara_shared.models import ThreatRisk, Asset
-from tara_shared.schemas.threat_risk import ThreatRiskCreate, ThreatRiskUpdate
 from tara_shared.constants import STRIDE_TYPES
+from tara_shared.models import Asset, ThreatRisk
+from tara_shared.schemas.threat_risk import ThreatRiskCreate, ThreatRiskUpdate
 from tara_shared.utils import get_logger
 
 from ..repositories.threat_repo import ThreatRepository
@@ -48,7 +47,7 @@ class ThreatService:
             capec_ids=data.capec_ids,
             source="manual",
         )
-        
+
         # Calculate impact level
         threat.impact_level = max(
             threat.safety_impact,
@@ -56,7 +55,7 @@ class ThreatService:
             threat.operational_impact,
             threat.privacy_impact,
         )
-        
+
         return self.repo.create(threat)
 
     def get_threat(self, threat_id: int) -> Optional[ThreatRisk]:
@@ -91,24 +90,32 @@ class ThreatService:
         threat = self.repo.get_by_id(threat_id)
         if not threat:
             return None
-        
+
         update_data = data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(threat, key, value)
-        
+
         # Recalculate impact if any impact changed
-        if any(k in update_data for k in ['safety_impact', 'financial_impact', 'operational_impact', 'privacy_impact']):
+        if any(
+            k in update_data
+            for k in [
+                "safety_impact",
+                "financial_impact",
+                "operational_impact",
+                "privacy_impact",
+            ]
+        ):
             threat.impact_level = max(
                 threat.safety_impact or 0,
                 threat.financial_impact or 0,
                 threat.operational_impact or 0,
                 threat.privacy_impact or 0,
             )
-        
+
         # Recalculate risk if impact or likelihood changed
-        if 'likelihood' in update_data or 'impact_level' in update_data:
+        if "likelihood" in update_data or "impact_level" in update_data:
             threat.calculate_risk()
-        
+
         return self.repo.update(threat)
 
     def delete_threat(self, threat_id: int) -> bool:
@@ -116,7 +123,7 @@ class ThreatService:
         threat = self.repo.get_by_id(threat_id)
         if not threat:
             return False
-        
+
         self.repo.delete(threat)
         return True
 
@@ -136,12 +143,12 @@ class ThreatService:
     ) -> None:
         """Run STRIDE analysis on assets."""
         logger.info(f"Running STRIDE analysis task {task_id}")
-        
+
         for asset_id in asset_ids:
             asset = self.db.query(Asset).filter(Asset.id == asset_id).first()
             if not asset:
                 continue
-            
+
             # Analyze each STRIDE category
             for stride_type, stride_info in STRIDE_TYPES.items():
                 # This would call AI service in production
@@ -155,7 +162,7 @@ class ThreatService:
                     source="ai_analyzed",
                 )
                 self.db.add(threat)
-        
+
         self.db.commit()
         logger.info(f"STRIDE analysis completed for task {task_id}")
 
@@ -164,7 +171,7 @@ class ThreatService:
         threat = self.repo.get_by_id(threat_id)
         if not threat:
             return {}
-        
+
         # Build attack tree structure
         root = {
             "id": "root",
@@ -172,7 +179,7 @@ class ThreatService:
             "node_type": "goal",
             "children": [],
         }
-        
+
         # Add attack paths as branches
         for path in threat.attack_paths:
             path_node = {
@@ -182,9 +189,9 @@ class ThreatService:
                 "attack_potential": path.attack_potential,
                 "children": [],
             }
-            
+
             # Add steps as leaves
-            for step in (path.steps or []):
+            for step in path.steps or []:
                 step_node = {
                     "id": f"step_{path.id}_{step.get('order', 0)}",
                     "label": step.get("action", "Unknown"),
@@ -192,9 +199,9 @@ class ThreatService:
                     "children": [],
                 }
                 path_node["children"].append(step_node)
-            
+
             root["children"].append(path_node)
-        
+
         return {
             "threat_id": threat_id,
             "threat_name": threat.threat_name,

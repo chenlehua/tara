@@ -7,7 +7,7 @@ Neo4j driver for knowledge graph operations.
 
 from typing import Any, Dict, List, Optional
 
-from neo4j import GraphDatabase, Driver, Session
+from neo4j import Driver, GraphDatabase, Session
 from neo4j.exceptions import Neo4jError
 
 from ..config import settings
@@ -38,7 +38,9 @@ class Neo4jDriver:
                 logger.info(f"Connected to Neo4j at {settings.neo4j_uri}")
             except Exception as e:
                 cls._connection_error = str(e)
-                logger.warning(f"Failed to connect to Neo4j: {e}. Graph operations will be unavailable.")
+                logger.warning(
+                    f"Failed to connect to Neo4j: {e}. Graph operations will be unavailable."
+                )
                 cls._driver = None
         return cls._driver
 
@@ -110,10 +112,7 @@ class GraphService:
         return self.driver is not None
 
     def execute_query(
-        self,
-        query: str,
-        parameters: Dict[str, Any] = None,
-        database: str = "neo4j"
+        self, query: str, parameters: Dict[str, Any] = None, database: str = "neo4j"
     ) -> List[Dict[str, Any]]:
         """Execute a Cypher query and return results."""
         if not self.is_available():
@@ -124,10 +123,7 @@ class GraphService:
             return [record.data() for record in result]
 
     def execute_write(
-        self,
-        query: str,
-        parameters: Dict[str, Any] = None,
-        database: str = "neo4j"
+        self, query: str, parameters: Dict[str, Any] = None, database: str = "neo4j"
     ) -> Dict[str, Any]:
         """Execute a write query and return summary."""
         if not self.is_available():
@@ -151,10 +147,7 @@ class GraphService:
             }
 
     def create_node(
-        self,
-        label: str,
-        properties: Dict[str, Any],
-        database: str = "neo4j"
+        self, label: str, properties: Dict[str, Any], database: str = "neo4j"
     ) -> Dict[str, Any]:
         """Create a node with given label and properties."""
         query = f"""
@@ -169,7 +162,7 @@ class GraphService:
         label: str,
         property_name: str,
         property_value: Any,
-        database: str = "neo4j"
+        database: str = "neo4j",
     ) -> Optional[Dict[str, Any]]:
         """Find a node by property."""
         query = f"""
@@ -189,7 +182,7 @@ class GraphService:
         to_value: Any,
         rel_type: str,
         rel_properties: Dict[str, Any] = None,
-        database: str = "neo4j"
+        database: str = "neo4j",
     ) -> Dict[str, Any]:
         """Create a relationship between two nodes."""
         query = f"""
@@ -203,9 +196,9 @@ class GraphService:
             {
                 "from_val": from_value,
                 "to_val": to_value,
-                "properties": rel_properties or {}
+                "properties": rel_properties or {},
             },
-            database
+            database,
         )
 
     def get_neighbors(
@@ -215,7 +208,7 @@ class GraphService:
         property_value: Any,
         rel_type: str = None,
         direction: str = "both",
-        database: str = "neo4j"
+        database: str = "neo4j",
     ) -> List[Dict[str, Any]]:
         """Get neighboring nodes."""
         if direction == "outgoing":

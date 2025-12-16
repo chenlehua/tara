@@ -1,23 +1,14 @@
 """Unit tests for constants and enums."""
+
 import pytest
-from tara_shared.constants import (
-    ProjectStatus,
-    DocumentParseStatus,
-    AssetType,
-    ThreatType,
-    RiskLevel,
-    TreatmentDecision,
-    FeasibilityRating,
-    ReportStatus,
-    CAL,
-)
-from tara_shared.constants.tara import (
-    STRIDE_TYPES,
-    IMPACT_LEVELS,
-    RISK_MATRIX,
-    ATTACK_POTENTIAL_EXPERTISE,
-    ATTACK_POTENTIAL_TO_FEASIBILITY,
-)
+from tara_shared.constants import (CAL, AssetType, DocumentParseStatus,
+                                   FeasibilityRating, ProjectStatus,
+                                   ReportStatus, RiskLevel, ThreatType,
+                                   TreatmentDecision)
+from tara_shared.constants.tara import (ATTACK_POTENTIAL_EXPERTISE,
+                                        ATTACK_POTENTIAL_TO_FEASIBILITY,
+                                        IMPACT_LEVELS, RISK_MATRIX,
+                                        STRIDE_TYPES)
 
 
 class TestEnums:
@@ -95,7 +86,7 @@ class TestTaraConstants:
         # Risk matrix should cover all impact-likelihood combinations
         assert ("severe", "very_high") in RISK_MATRIX
         assert ("negligible", "low") in RISK_MATRIX
-        
+
         # Check some expected values
         assert RISK_MATRIX[("severe", "very_high")] == 5  # Critical
         assert RISK_MATRIX[("negligible", "low")] == 1  # Negligible
@@ -112,7 +103,7 @@ class TestTaraConstants:
         # Low attack potential = High feasibility
         assert ATTACK_POTENTIAL_TO_FEASIBILITY[0] == "very_high"
         assert ATTACK_POTENTIAL_TO_FEASIBILITY[5] == "very_high"
-        
+
         # High attack potential = Low feasibility
         assert ATTACK_POTENTIAL_TO_FEASIBILITY[20] == "low"
         assert ATTACK_POTENTIAL_TO_FEASIBILITY[25] == "very_low"

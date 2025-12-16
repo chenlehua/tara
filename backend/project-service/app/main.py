@@ -10,14 +10,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-
 from tara_shared.config import settings
 from tara_shared.database import init_db
-from tara_shared.utils import setup_logging, get_logger
+from tara_shared.utils import get_logger, setup_logging
 from tara_shared.utils.exceptions import TaraException
 
-from .config import config
 from .api.v1.router import api_router
+from .config import config
 
 # Setup logging
 setup_logging()
@@ -31,9 +30,9 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {config.service_name} v{config.service_version}")
     init_db()
     logger.info("Database initialized")
-    
+
     yield
-    
+
     # Shutdown
     logger.info(f"Shutting down {config.service_name}")
 

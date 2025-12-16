@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
-from .base import BaseSchema, TimestampMixin, IDMixin, PaginatedResponse
+from .base import BaseSchema, IDMixin, PaginatedResponse, TimestampMixin
 
 
 class ProjectBase(BaseSchema):
@@ -18,8 +18,12 @@ class ProjectBase(BaseSchema):
 
     name: str = Field(..., min_length=1, max_length=200, description="项目名称")
     description: Optional[str] = Field(default=None, description="项目描述")
-    vehicle_type: Optional[str] = Field(default=None, max_length=50, description="车辆类型")
-    vehicle_model: Optional[str] = Field(default=None, max_length=100, description="车型")
+    vehicle_type: Optional[str] = Field(
+        default=None, max_length=50, description="车辆类型"
+    )
+    vehicle_model: Optional[str] = Field(
+        default=None, max_length=100, description="车型"
+    )
     vehicle_year: Optional[str] = Field(default=None, max_length=10, description="年份")
     standard: str = Field(default="ISO/SAE 21434", description="参考标准")
     scope: Optional[str] = Field(default=None, description="分析范围")
@@ -72,6 +76,7 @@ class ProjectResponse(ProjectBase, IDMixin, TimestampMixin):
 
 class ProjectListResponse(PaginatedResponse[ProjectResponse]):
     """Paginated list of Projects."""
+
     pass
 
 

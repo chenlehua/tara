@@ -92,7 +92,10 @@ class ExternalServiceException(TaraException):
         super().__init__(
             message=f"{service} error: {message}",
             code=502,
-            details={"service": service, "original_error": str(original_error) if original_error else None},
+            details={
+                "service": service,
+                "original_error": str(original_error) if original_error else None,
+            },
         )
         self.service = service
         self.original_error = original_error

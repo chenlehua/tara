@@ -5,12 +5,12 @@ TARA Models
 SQLAlchemy ORM models for TARA system.
 """
 
-from .base import Base, BaseModel, TimestampMixin
-from .project import Project
-from .document import Document
 from .asset import Asset, DamageScenario
-from .threat_risk import ThreatRisk, AttackPath, ControlMeasure
+from .base import Base, BaseModel, TimestampMixin
+from .document import Document
+from .project import Project
 from .report import Report
+from .threat_risk import AttackPath, ControlMeasure, ThreatRisk
 
 __all__ = [
     # Base
