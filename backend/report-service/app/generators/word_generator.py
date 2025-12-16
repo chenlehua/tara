@@ -1,12 +1,15 @@
 """Word document report generator."""
 
 import io
-from typing import Any
+from datetime import datetime
+from typing import Any, List
 
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from docx.shared import Cm, Inches, Pt
+from docx.shared import Cm, Inches, Pt, RGBColor
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
 from tara_shared.utils import get_logger
 
 logger = get_logger(__name__)
@@ -14,6 +17,42 @@ logger = get_logger(__name__)
 
 class WordGenerator:
     """Generate Word document reports."""
+
+    def _set_cell_shading(self, cell, color: str):
+        """Set cell background color."""
+        shading = OxmlElement('w:shd')
+        shading.set(qn('w:fill'), color)
+        cell._tc.get_or_add_tcPr().append(shading)
+
+    def _create_styled_table(self, doc: Document, headers: List[str], rows: List[List[str]]) -> any:
+        """Create a styled table with headers."""
+        table = doc.add_table(rows=len(rows) + 1, cols=len(headers))
+        table.style = "Table Grid"
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+        # Header row
+        header_row = table.rows[0]
+        for i, header in enumerate(headers):
+            cell = header_row.cells[i]
+            cell.text = header
+            self._set_cell_shading(cell, "4F46E5")
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.bold = True
+                    run.font.color.rgb = RGBColor(255, 255, 255)
+                    run.font.size = Pt(10)
+
+        # Data rows
+        for row_idx, row_data in enumerate(rows):
+            row = table.rows[row_idx + 1]
+            for col_idx, cell_text in enumerate(row_data):
+                cell = row.cells[col_idx]
+                cell.text = str(cell_text) if cell_text else "-"
+                # Alternate row colors
+                if row_idx % 2 == 0:
+                    self._set_cell_shading(cell, "F8FAFC")
+
+        return table
 
     async def generate(
         self,
@@ -24,19 +63,20 @@ class WordGenerator:
         """Generate Word document."""
         doc = Document()
 
+        # Get content from data
+        content = data.get("content", {})
+        project = content.get("project", data.get("project", {}))
+
         # Set document properties
         core_properties = doc.core_properties
         core_properties.author = "TARA System"
-        core_properties.title = (
-            f"TARA Report - {data.get('project', {}).get('name', 'Unknown')}"
-        )
+        core_properties.title = f"TARA Report - {project.get('name', 'Unknown')}"
 
         # Title
         title = doc.add_heading("TARA Analysis Report", 0)
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         # Project info
-        project = data.get("project", {})
         doc.add_paragraph()
         info_para = doc.add_paragraph()
         info_para.add_run("Project: ").bold = True
@@ -48,13 +88,23 @@ class WordGenerator:
 
         info_para = doc.add_paragraph()
         info_para.add_run("Standard: ").bold = True
-        info_para.add_run("ISO/SAE 21434")
+        info_para.add_run(project.get("standard", "ISO/SAE 21434"))
+
+        info_para = doc.add_paragraph()
+        info_para.add_run("Generated: ").bold = True
+        info_para.add_run(datetime.now().strftime("%Y-%m-%d %H:%M"))
 
         doc.add_paragraph()
 
         # Table of contents placeholder
         doc.add_heading("Table of Contents", 1)
-        doc.add_paragraph("(Table of contents will be generated in final document)")
+        doc.add_paragraph("1. Executive Summary")
+        doc.add_paragraph("2. Scope Definition")
+        doc.add_paragraph("3. Asset Identification")
+        doc.add_paragraph("4. Threat Analysis")
+        doc.add_paragraph("5. Risk Assessment")
+        doc.add_paragraph("6. Control Measures")
+        doc.add_paragraph("Appendices")
         doc.add_page_break()
 
         # Generate sections
@@ -77,6 +127,14 @@ class WordGenerator:
         sections: list[str] = None,
     ):
         """Generate ISO 21434 format sections."""
+        content = data.get("content", {})
+        assets = content.get("assets", [])
+        threats = content.get("threats", [])
+        measures = content.get("control_measures", [])
+        risk_dist = content.get("risk_distribution", {})
+        
+        high_risk = risk_dist.get("CAL-4", 0) + risk_dist.get("CAL-3", 0)
+
         # 1. Executive Summary
         doc.add_heading("1. Executive Summary", 1)
         doc.add_paragraph(
@@ -85,27 +143,16 @@ class WordGenerator:
             "requirements for road vehicles."
         )
 
-        # Statistics table
-        stats = data.get("statistics", {})
         doc.add_paragraph()
         doc.add_paragraph("Summary Statistics:", style="Intense Quote")
 
-        table = doc.add_table(rows=5, cols=2)
-        table.style = "Table Grid"
-        table.alignment = WD_TABLE_ALIGNMENT.CENTER
-
-        rows = [
-            ("Total Assets", str(stats.get("total_assets", 0))),
-            ("Total Threats", str(stats.get("total_threats", 0))),
-            ("Attack Paths", str(stats.get("total_attack_paths", 0))),
-            ("Control Measures", str(stats.get("total_controls", 0))),
-            ("High Risk Items", str(stats.get("high_risk_count", 0))),
+        stats_rows = [
+            ["Total Assets", str(len(assets))],
+            ["Total Threats", str(len(threats))],
+            ["High Risk Items (CAL-3/4)", str(high_risk)],
+            ["Control Measures", str(len(measures))],
         ]
-
-        for i, (label, value) in enumerate(rows):
-            row = table.rows[i]
-            row.cells[0].text = label
-            row.cells[1].text = value
+        self._create_styled_table(doc, ["Metric", "Value"], stats_rows)
 
         doc.add_page_break()
 
@@ -117,10 +164,21 @@ class WordGenerator:
         )
 
         doc.add_heading("2.1 Item Definition", 2)
-        doc.add_paragraph("Description of the item under assessment...")
+        project = content.get("project", data.get("project", {}))
+        doc.add_paragraph(
+            f"Target system: {project.get('name', 'Vehicle System')}"
+        )
+        doc.add_paragraph(
+            f"Vehicle type: {project.get('vehicle_type', 'N/A')}"
+        )
 
         doc.add_heading("2.2 System Boundaries", 2)
-        doc.add_paragraph("Definition of system boundaries and interfaces...")
+        doc.add_paragraph(
+            f"Number of identified assets: {len(assets)}"
+        )
+        doc.add_paragraph(
+            f"Number of interfaces analyzed: {sum(len(a.get('interfaces', [])) for a in assets)}"
+        )
 
         doc.add_page_break()
 
@@ -131,25 +189,34 @@ class WordGenerator:
             "cybersecurity relevance."
         )
 
-        assets = data.get("assets", [])
         if assets:
-            table = doc.add_table(rows=len(assets) + 1, cols=4)
-            table.style = "Table Grid"
-
-            hdr_cells = table.rows[0].cells
-            hdr_cells[0].text = "Asset Name"
-            hdr_cells[1].text = "Type"
-            hdr_cells[2].text = "Security Attributes"
-            hdr_cells[3].text = "Interfaces"
-
-            for i, asset in enumerate(assets):
-                row = table.rows[i + 1]
-                row.cells[0].text = asset.get("name", "")
-                row.cells[1].text = asset.get("asset_type", "")
-                row.cells[2].text = "C/I/A"
-                row.cells[3].text = str(len(asset.get("interfaces", [])))
+            asset_rows = []
+            for asset in assets[:30]:  # Limit to 30
+                interfaces = asset.get("interfaces", [])
+                iface_str = ", ".join([
+                    i.get("type", str(i)) if isinstance(i, dict) else str(i) 
+                    for i in interfaces[:3]
+                ])
+                if len(interfaces) > 3:
+                    iface_str += f" (+{len(interfaces) - 3})"
+                
+                asset_rows.append([
+                    asset.get("name", "N/A")[:40],
+                    asset.get("type", asset.get("asset_type", "N/A")),
+                    asset.get("security_level", asset.get("criticality", "CAL-2")),
+                    iface_str or "-",
+                ])
+            
+            self._create_styled_table(
+                doc, 
+                ["Asset Name", "Type", "Security Level", "Interfaces"], 
+                asset_rows
+            )
+            
+            if len(assets) > 30:
+                doc.add_paragraph(f"... and {len(assets) - 30} more assets")
         else:
-            doc.add_paragraph("No assets identified yet.", style="Intense Quote")
+            doc.add_paragraph("No assets identified.", style="Intense Quote")
 
         doc.add_page_break()
 
@@ -161,6 +228,27 @@ class WordGenerator:
             "Denial of Service, Elevation of Privilege)."
         )
 
+        if threats:
+            threat_rows = []
+            for threat in threats[:30]:  # Limit to 30
+                threat_rows.append([
+                    threat.get("id", "N/A"),
+                    threat.get("name", "N/A")[:40],
+                    threat.get("category_name", threat.get("category", "N/A")),
+                    threat.get("risk_level", "CAL-2"),
+                ])
+            
+            self._create_styled_table(
+                doc, 
+                ["ID", "Threat Name", "STRIDE Category", "Risk Level"], 
+                threat_rows
+            )
+            
+            if len(threats) > 30:
+                doc.add_paragraph(f"... and {len(threats) - 30} more threats")
+        else:
+            doc.add_paragraph("No threats identified.", style="Intense Quote")
+
         doc.add_page_break()
 
         # 5. Risk Assessment
@@ -170,24 +258,60 @@ class WordGenerator:
             "and attack feasibility, in accordance with ISO/SAE 21434 methodology."
         )
 
-        doc.add_heading("5.1 Impact Assessment", 2)
+        doc.add_heading("5.1 Risk Distribution", 2)
+        if risk_dist:
+            risk_rows = [
+                ["CAL-4 (Critical)", str(risk_dist.get("CAL-4", 0)), "Immediate action required"],
+                ["CAL-3 (High)", str(risk_dist.get("CAL-3", 0)), "Priority treatment needed"],
+                ["CAL-2 (Medium)", str(risk_dist.get("CAL-2", 0)), "Planned treatment"],
+                ["CAL-1 (Low)", str(risk_dist.get("CAL-1", 0)), "Acceptable risk"],
+            ]
+            self._create_styled_table(doc, ["Risk Level", "Count", "Action Required"], risk_rows)
+
+        doc.add_heading("5.2 Impact Assessment", 2)
         doc.add_paragraph(
-            "Impact assessment considers safety, financial, operational, and privacy impacts."
+            "Impact assessment considers safety, financial, operational, and privacy impacts "
+            "as defined in ISO/SAE 21434."
         )
 
-        doc.add_heading("5.2 Attack Feasibility Assessment", 2)
+        doc.add_heading("5.3 Attack Feasibility Assessment", 2)
         doc.add_paragraph(
-            "Attack feasibility is evaluated based on attack potential factors."
+            "Attack feasibility is evaluated based on attack potential factors including "
+            "elapsed time, expertise, knowledge of item, window of opportunity, and equipment."
         )
 
         doc.add_page_break()
 
-        # 6. Risk Treatment
-        doc.add_heading("6. Risk Treatment", 1)
+        # 6. Control Measures
+        doc.add_heading("6. Control Measures", 1)
         doc.add_paragraph(
-            "Based on the risk assessment results, appropriate risk treatment decisions "
-            "and control measures have been identified."
+            "Based on the risk assessment results, the following security control measures "
+            "have been recommended."
         )
+
+        if measures:
+            measure_rows = []
+            for measure in measures[:30]:  # Limit to 30
+                eff = measure.get("effectiveness", "medium")
+                eff_text = {"high": "High", "medium": "Medium", "low": "Low"}.get(eff, "Medium")
+                
+                measure_rows.append([
+                    measure.get("name", "N/A")[:40],
+                    measure.get("control_type", measure.get("category", "preventive")),
+                    eff_text,
+                    measure.get("iso21434_ref", "-"),
+                ])
+            
+            self._create_styled_table(
+                doc, 
+                ["Measure Name", "Type", "Effectiveness", "ISO 21434 Ref"], 
+                measure_rows
+            )
+            
+            if len(measures) > 30:
+                doc.add_paragraph(f"... and {len(measures) - 30} more measures")
+        else:
+            doc.add_paragraph("No control measures defined.", style="Intense Quote")
 
         doc.add_page_break()
 
@@ -199,6 +323,7 @@ class WordGenerator:
             "STRIDE - Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege"
         )
         doc.add_paragraph("CAL - Cybersecurity Assurance Level")
+        doc.add_paragraph("ISO 21434 - Road vehicles — Cybersecurity engineering")
 
     async def _generate_default_sections(self, doc: Document, data: dict):
         """Generate default sections."""

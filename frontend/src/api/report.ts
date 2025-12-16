@@ -159,7 +159,7 @@ export const reportApi = {
   /**
    * Download report file
    */
-  getDownloadUrl(reportId: number, format: 'pdf' | 'docx' = 'pdf'): string {
+  getDownloadUrl(reportId: number, format: 'pdf' | 'docx' | 'xlsx' = 'pdf'): string {
     const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1'
     return `${baseUrl}/reports/${reportId}/download?format=${format}`
   },

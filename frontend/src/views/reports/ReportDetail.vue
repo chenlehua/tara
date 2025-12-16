@@ -35,6 +35,14 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="tara-btn tara-btn-secondary" @click="downloadReport('xlsx')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" x2="12" y1="15" y2="3"/>
+          </svg>
+          下载 Excel
+        </button>
         <button class="tara-btn tara-btn-secondary" @click="downloadReport('docx')">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -572,7 +580,7 @@ const loadReport = async () => {
   }
 }
 
-const downloadReport = (format: 'pdf' | 'docx') => {
+const downloadReport = (format: 'pdf' | 'docx' | 'xlsx') => {
   if (!reportId.value) {
     ElMessage.warning('报告ID无效')
     return

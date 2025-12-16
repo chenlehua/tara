@@ -1,10 +1,11 @@
 """Report service."""
 
 import io
+import json
 from datetime import datetime
 from typing import Any, Optional, Tuple
 
-from app.generators import PDFGenerator, WordGenerator
+from app.generators import ExcelGenerator, PDFGenerator, WordGenerator
 from app.repositories.report_repo import ReportRepository
 from sqlalchemy.orm import Session
 from tara_shared.constants import ReportStatus
@@ -24,6 +25,7 @@ class ReportService:
         self.db = db
         self.pdf_generator = PDFGenerator()
         self.word_generator = WordGenerator()
+        self.excel_generator = ExcelGenerator()
 
     async def create_report(self, data: ReportCreate) -> Report:
         """Create a new report record."""
@@ -278,6 +280,8 @@ class ReportService:
                     buffer = await self._generate_pdf_from_content(report)
                 elif format == "docx":
                     buffer = await self._generate_word_from_content(report)
+                elif format == "xlsx":
+                    buffer = await self._generate_excel_from_content(report)
                 else:
                     buffer = io.BytesIO(
                         json.dumps(report.content, ensure_ascii=False, indent=2).encode(
@@ -290,8 +294,6 @@ class ReportService:
                 logger.error(f"Failed to generate report file: {e}")
 
         # Fallback: return JSON with report info
-        import json
-
         content = {
             "id": report.id,
             "name": report.name,
@@ -310,6 +312,7 @@ class ReportService:
         try:
             content = report.content or {}
             data = {
+                "content": content,
                 "project": content.get("project", {"name": report.name}),
                 "assets": content.get("assets", []),
                 "threats": content.get("threats", []),
@@ -330,6 +333,7 @@ class ReportService:
         try:
             content = report.content or {}
             data = {
+                "content": content,
                 "project": content.get("project", {"name": report.name}),
                 "assets": content.get("assets", []),
                 "threats": content.get("threats", []),
@@ -344,6 +348,27 @@ class ReportService:
         except Exception as e:
             logger.error(f"Word generation failed: {e}")
             return io.BytesIO(b"Word generation failed")
+
+    async def _generate_excel_from_content(self, report: Report) -> io.BytesIO:
+        """Generate Excel document from stored report content."""
+        try:
+            content = report.content or {}
+            data = {
+                "content": content,
+                "project": content.get("project", {"name": report.name}),
+                "assets": content.get("assets", []),
+                "threats": content.get("threats", []),
+                "statistics": report.statistics or {},
+            }
+            # Generate Excel using the generator's generate method
+            buffer = await self.excel_generator.generate(
+                data=data,
+                template=report.template or "iso21434",
+            )
+            return buffer
+        except Exception as e:
+            logger.error(f"Excel generation failed: {e}")
+            return io.BytesIO(b"Excel generation failed")
 
     async def get_report_preview(self, report_id: int) -> dict:
         """Get report preview data."""
