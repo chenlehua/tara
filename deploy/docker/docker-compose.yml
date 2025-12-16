@@ -27,6 +27,14 @@ services:
       - ../nginx/conf.d/tara.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - frontend
+      - project-service
+      - document-service
+      - asset-service
+      - threat-risk-service
+      - diagram-service
+      - report-service
+      - agent-service
+    restart: on-failure
     networks:
       - tara-network
 
