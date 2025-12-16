@@ -1,7 +1,7 @@
 """Diagram generation service."""
 
 import io
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import matplotlib
 
@@ -10,6 +10,8 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from sqlalchemy.orm import Session
+from tara_shared.models import Asset, ThreatRisk
 from tara_shared.utils import get_logger
 
 logger = get_logger(__name__)
@@ -17,6 +19,31 @@ logger = get_logger(__name__)
 
 class DiagramService:
     """Service for generating various diagrams."""
+
+    def __init__(self, db: Optional[Session] = None):
+        self.db = db
+
+    def _get_assets_from_db(self, project_id: int) -> List[Asset]:
+        """Fetch assets from database."""
+        if not self.db:
+            return []
+        try:
+            return self.db.query(Asset).filter(Asset.project_id == project_id).all()
+        except Exception as e:
+            logger.error(f"Failed to fetch assets: {e}")
+            return []
+
+    def _get_threats_from_db(self, project_id: int) -> List[ThreatRisk]:
+        """Fetch threats from database."""
+        if not self.db:
+            return []
+        try:
+            return (
+                self.db.query(ThreatRisk).filter(ThreatRisk.project_id == project_id).all()
+            )
+        except Exception as e:
+            logger.error(f"Failed to fetch threats: {e}")
+            return []
 
     async def generate_diagram(
         self,
@@ -53,29 +80,61 @@ class DiagramService:
         format: str = "png",
     ) -> io.BytesIO:
         """Generate asset relationship graph."""
-        # Create sample graph
         G = nx.DiGraph()
 
-        # Sample nodes (in real implementation, fetch from Neo4j)
-        nodes = [
-            ("Gateway", {"type": "gateway", "color": "#409eff"}),
-            ("CAN Bus", {"type": "bus", "color": "#67c23a"}),
-            ("Engine ECU", {"type": "ecu", "color": "#e6a23c"}),
-            ("Brake ECU", {"type": "ecu", "color": "#e6a23c"}),
-            ("ADAS ECU", {"type": "ecu", "color": "#e6a23c"}),
-            ("Telematics", {"type": "external", "color": "#f56c6c"}),
-        ]
+        # Fetch assets from database
+        db_assets = self._get_assets_from_db(project_id)
 
-        edges = [
-            ("Gateway", "CAN Bus"),
-            ("CAN Bus", "Engine ECU"),
-            ("CAN Bus", "Brake ECU"),
-            ("CAN Bus", "ADAS ECU"),
-            ("Gateway", "Telematics"),
-        ]
+        if db_assets:
+            # Use real data from database
+            type_colors = {
+                "ecu": "#e6a23c",
+                "gateway": "#409eff",
+                "sensor": "#67c23a",
+                "actuator": "#909399",
+                "external": "#f56c6c",
+                "bus": "#67c23a",
+            }
 
-        G.add_nodes_from(nodes)
-        G.add_edges_from(edges)
+            nodes = []
+            edges = []
+
+            for asset in db_assets:
+                asset_type = (asset.asset_type or "ecu").lower()
+                color = type_colors.get(asset_type, "#409eff")
+                nodes.append((asset.name, {"type": asset_type, "color": color}))
+
+                # Create parent-child edges
+                if asset.parent_id:
+                    parent = next(
+                        (a for a in db_assets if a.id == asset.parent_id), None
+                    )
+                    if parent:
+                        edges.append((parent.name, asset.name))
+
+            G.add_nodes_from(nodes)
+            G.add_edges_from(edges)
+        else:
+            # Fallback to sample data if no assets in database
+            nodes = [
+                ("Gateway", {"type": "gateway", "color": "#409eff"}),
+                ("CAN Bus", {"type": "bus", "color": "#67c23a"}),
+                ("Engine ECU", {"type": "ecu", "color": "#e6a23c"}),
+                ("Brake ECU", {"type": "ecu", "color": "#e6a23c"}),
+                ("ADAS ECU", {"type": "ecu", "color": "#e6a23c"}),
+                ("Telematics", {"type": "external", "color": "#f56c6c"}),
+            ]
+
+            edges = [
+                ("Gateway", "CAN Bus"),
+                ("CAN Bus", "Engine ECU"),
+                ("CAN Bus", "Brake ECU"),
+                ("CAN Bus", "ADAS ECU"),
+                ("Gateway", "Telematics"),
+            ]
+
+            G.add_nodes_from(nodes)
+            G.add_edges_from(edges)
 
         # Generate visualization
         fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
@@ -126,27 +185,67 @@ class DiagramService:
         """Generate attack tree diagram."""
         fig, ax = plt.subplots(figsize=(14, 10), dpi=100)
 
-        # Sample attack tree structure
         G = nx.DiGraph()
 
-        # Add nodes (goal at top, sub-goals, then leaves)
-        G.add_node("Goal", level=0, label="获取车辆控制权")
-        G.add_node("A1", level=1, label="入侵OBD接口")
-        G.add_node("A2", level=1, label="攻击远程服务")
-        G.add_node("A1.1", level=2, label="物理接入OBD")
-        G.add_node("A1.2", level=2, label="绕过认证")
-        G.add_node("A2.1", level=2, label="中间人攻击")
-        G.add_node("A2.2", level=2, label="服务器漏洞")
+        # Try to fetch threat from database
+        threat = None
+        if self.db:
+            try:
+                threat = (
+                    self.db.query(ThreatRisk).filter(ThreatRisk.id == threat_id).first()
+                )
+            except Exception as e:
+                logger.error(f"Failed to fetch threat: {e}")
 
-        edges = [
-            ("Goal", "A1"),
-            ("Goal", "A2"),
-            ("A1", "A1.1"),
-            ("A1", "A1.2"),
-            ("A2", "A2.1"),
-            ("A2", "A2.2"),
-        ]
-        G.add_edges_from(edges)
+        if threat:
+            # Build attack tree from threat data
+            goal_label = threat.threat_name or "攻击目标"
+            G.add_node("Goal", level=0, label=goal_label)
+
+            # Parse attack paths if available
+            attack_paths = threat.attack_paths if hasattr(threat, "attack_paths") else []
+            if attack_paths:
+                for i, path in enumerate(attack_paths):
+                    path_id = f"A{i+1}"
+                    path_label = path.name if hasattr(path, "name") else f"攻击路径{i+1}"
+                    G.add_node(path_id, level=1, label=path_label)
+                    G.add_edge("Goal", path_id)
+
+                    # Add steps as leaves
+                    steps = path.steps if hasattr(path, "steps") and path.steps else []
+                    for j, step in enumerate(steps):
+                        step_id = f"A{i+1}.{j+1}"
+                        step_label = step.get("action", f"步骤{j+1}") if isinstance(step, dict) else str(step)
+                        G.add_node(step_id, level=2, label=step_label)
+                        G.add_edge(path_id, step_id)
+            else:
+                # Generate default nodes based on threat type
+                attack_vector = threat.attack_vector or "未知"
+                G.add_node("A1", level=1, label=f"利用{attack_vector}")
+                G.add_node("A1.1", level=2, label="获取访问权限")
+                G.add_node("A1.2", level=2, label="执行攻击")
+                G.add_edge("Goal", "A1")
+                G.add_edge("A1", "A1.1")
+                G.add_edge("A1", "A1.2")
+        else:
+            # Fallback to sample attack tree structure
+            G.add_node("Goal", level=0, label="获取车辆控制权")
+            G.add_node("A1", level=1, label="入侵OBD接口")
+            G.add_node("A2", level=1, label="攻击远程服务")
+            G.add_node("A1.1", level=2, label="物理接入OBD")
+            G.add_node("A1.2", level=2, label="绕过认证")
+            G.add_node("A2.1", level=2, label="中间人攻击")
+            G.add_node("A2.2", level=2, label="服务器漏洞")
+
+            edges = [
+                ("Goal", "A1"),
+                ("Goal", "A2"),
+                ("A1", "A1.1"),
+                ("A1", "A1.2"),
+                ("A2", "A2.1"),
+                ("A2", "A2.2"),
+            ]
+            G.add_edges_from(edges)
 
         # Hierarchical layout
         pos = {}
@@ -195,7 +294,7 @@ class DiagramService:
         """Generate risk matrix heatmap."""
         fig, ax = plt.subplots(figsize=(10, 8), dpi=100)
 
-        # Risk matrix (5x4: impact x likelihood)
+        # Base risk matrix (5x4: impact x likelihood)
         # Values represent risk level: 1=negligible, 2=low, 3=medium, 4=high, 5=critical
         matrix = np.array(
             [
@@ -206,6 +305,22 @@ class DiagramService:
                 [1, 1, 1, 2],  # Negligible
             ]
         )
+
+        # Count threats in each cell if database is available
+        threat_counts = np.zeros((5, 4), dtype=int)
+        db_threats = self._get_threats_from_db(project_id)
+
+        if db_threats:
+            for threat in db_threats:
+                # Map impact level (1-4) to row index (0-4, inverted)
+                impact = threat.impact_level if threat.impact_level else 2
+                impact_idx = 4 - min(max(impact, 1), 5)  # Invert for matrix display
+
+                # Map likelihood (1-4) to column index
+                likelihood = threat.likelihood if threat.likelihood else 2
+                likelihood_idx = min(max(likelihood - 1, 0), 3)
+
+                threat_counts[impact_idx, likelihood_idx] += 1
 
         # Color map
         colors = ["#f4f4f5", "#67c23a", "#409eff", "#e6a23c", "#f56c6c"]
@@ -234,13 +349,19 @@ class DiagramService:
             for j in range(len(likelihood_labels)):
                 value = matrix[i, j]
                 text_color = "white" if value >= 4 else "black"
+                count = threat_counts[i, j]
+                # Show risk level and threat count if available
+                if count > 0:
+                    label_text = f"{risk_labels[value - 1]}\n({count})"
+                else:
+                    label_text = risk_labels[value - 1]
                 ax.text(
                     j,
                     i,
-                    risk_labels[value - 1],
+                    label_text,
                     ha="center",
                     va="center",
-                    fontsize=11,
+                    fontsize=10,
                     color=text_color,
                     fontweight="bold",
                 )
@@ -274,26 +395,83 @@ class DiagramService:
 
         G = nx.DiGraph()
 
-        # Sample data flow nodes
-        nodes = [
-            ("User", {"shape": "ellipse", "color": "#67c23a"}),
-            ("Mobile App", {"shape": "rect", "color": "#409eff"}),
-            ("Cloud Server", {"shape": "rect", "color": "#409eff"}),
-            ("TSP", {"shape": "rect", "color": "#e6a23c"}),
-            ("Gateway", {"shape": "rect", "color": "#e6a23c"}),
-            ("ECU", {"shape": "rect", "color": "#f56c6c"}),
-        ]
+        # Fetch assets from database
+        db_assets = self._get_assets_from_db(project_id)
 
-        edges = [
-            ("User", "Mobile App", {"label": "控制指令"}),
-            ("Mobile App", "Cloud Server", {"label": "HTTPS"}),
-            ("Cloud Server", "TSP", {"label": "API调用"}),
-            ("TSP", "Gateway", {"label": "远程命令"}),
-            ("Gateway", "ECU", {"label": "CAN消息"}),
-        ]
+        if db_assets:
+            # Use real data from database
+            type_colors = {
+                "ecu": "#f56c6c",
+                "gateway": "#e6a23c",
+                "sensor": "#67c23a",
+                "actuator": "#909399",
+                "external": "#409eff",
+                "user": "#67c23a",
+                "cloud": "#409eff",
+            }
 
-        G.add_nodes_from(nodes)
-        G.add_edges_from([(e[0], e[1]) for e in edges])
+            nodes = []
+            edges = []
+
+            for asset in db_assets:
+                asset_type = (asset.asset_type or "ecu").lower()
+                color = type_colors.get(asset_type, "#409eff")
+                nodes.append((asset.name, {"shape": "rect", "color": color}))
+
+                # Create edges based on interfaces
+                interfaces = asset.interfaces or []
+                for iface in interfaces:
+                    if isinstance(iface, dict):
+                        iface_type = iface.get("type", "")
+                        # Find connected assets with matching interface
+                        for other_asset in db_assets:
+                            if other_asset.id != asset.id:
+                                other_interfaces = other_asset.interfaces or []
+                                for other_iface in other_interfaces:
+                                    if isinstance(other_iface, dict):
+                                        if other_iface.get("type") == iface_type:
+                                            edges.append(
+                                                (
+                                                    asset.name,
+                                                    other_asset.name,
+                                                    {"label": iface_type},
+                                                )
+                                            )
+                                            break
+
+            # Add parent-child edges if no interface edges
+            if not edges:
+                for asset in db_assets:
+                    if asset.parent_id:
+                        parent = next(
+                            (a for a in db_assets if a.id == asset.parent_id), None
+                        )
+                        if parent:
+                            edges.append((parent.name, asset.name, {"label": "包含"}))
+
+            G.add_nodes_from(nodes)
+            G.add_edges_from([(e[0], e[1]) for e in edges])
+        else:
+            # Fallback to sample data flow nodes
+            nodes = [
+                ("User", {"shape": "ellipse", "color": "#67c23a"}),
+                ("Mobile App", {"shape": "rect", "color": "#409eff"}),
+                ("Cloud Server", {"shape": "rect", "color": "#409eff"}),
+                ("TSP", {"shape": "rect", "color": "#e6a23c"}),
+                ("Gateway", {"shape": "rect", "color": "#e6a23c"}),
+                ("ECU", {"shape": "rect", "color": "#f56c6c"}),
+            ]
+
+            edges = [
+                ("User", "Mobile App", {"label": "控制指令"}),
+                ("Mobile App", "Cloud Server", {"label": "HTTPS"}),
+                ("Cloud Server", "TSP", {"label": "API调用"}),
+                ("TSP", "Gateway", {"label": "远程命令"}),
+                ("Gateway", "ECU", {"label": "CAN消息"}),
+            ]
+
+            G.add_nodes_from(nodes)
+            G.add_edges_from([(e[0], e[1]) for e in edges])
 
         pos = {
             "User": (0, 0.5),

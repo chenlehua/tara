@@ -4,13 +4,19 @@ from enum import Enum
 from typing import Optional
 
 from app.services.diagram_service import DiagramService
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from tara_shared.database import get_db
 from tara_shared.utils import success_response
 
 router = APIRouter()
-diagram_service = DiagramService()
+
+
+def get_diagram_service(db: Session = Depends(get_db)) -> DiagramService:
+    """Get diagram service with database session."""
+    return DiagramService(db)
 
 
 class DiagramType(str, Enum):
@@ -43,7 +49,10 @@ class DiagramRequest(BaseModel):
 
 
 @router.post("")
-async def generate_diagram(request: DiagramRequest):
+async def generate_diagram(
+    request: DiagramRequest,
+    diagram_service: DiagramService = Depends(get_diagram_service),
+):
     """Generate a diagram."""
     result = await diagram_service.generate_diagram(
         project_id=request.project_id,
@@ -60,6 +69,7 @@ async def generate_diagram(request: DiagramRequest):
 async def get_asset_graph(
     project_id: int,
     format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
 ):
     """Get asset graph diagram."""
     image_data = await diagram_service.generate_asset_graph(project_id, format)
@@ -81,6 +91,7 @@ async def get_asset_graph(
 async def get_attack_tree(
     threat_id: int,
     format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
 ):
     """Get attack tree diagram for a threat."""
     image_data = await diagram_service.generate_attack_tree(threat_id, format)
@@ -102,6 +113,7 @@ async def get_attack_tree(
 async def get_risk_matrix(
     project_id: int,
     format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
 ):
     """Get risk matrix diagram."""
     image_data = await diagram_service.generate_risk_matrix(project_id, format)
@@ -123,6 +135,7 @@ async def get_risk_matrix(
 async def get_data_flow_diagram(
     project_id: int,
     format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
 ):
     """Get data flow diagram."""
     image_data = await diagram_service.generate_data_flow(project_id, format)

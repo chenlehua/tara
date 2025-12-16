@@ -28,7 +28,7 @@ _generation_tasks = {}
 
 def get_report_service(db: Session = Depends(get_db)) -> ReportService:
     """Get report service instance."""
-    return ReportService(ReportRepository(db))
+    return ReportService(ReportRepository(db), db)
 
 
 @router.post("")

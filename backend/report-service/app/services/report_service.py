@@ -6,8 +6,9 @@ from typing import Any, Optional, Tuple
 
 from app.generators import PDFGenerator, WordGenerator
 from app.repositories.report_repo import ReportRepository
+from sqlalchemy.orm import Session
 from tara_shared.constants import ReportStatus
-from tara_shared.models import Report
+from tara_shared.models import Asset, Project, Report, ThreatRisk
 from tara_shared.schemas import ReportCreate, ReportGenerateRequest
 from tara_shared.utils import get_logger
 from tara_shared.utils.exceptions import NotFoundException
@@ -18,8 +19,9 @@ logger = get_logger(__name__)
 class ReportService:
     """Report management service."""
 
-    def __init__(self, repo: ReportRepository):
+    def __init__(self, repo: ReportRepository, db: Optional[Session] = None):
         self.repo = repo
+        self.db = db
         self.pdf_generator = PDFGenerator()
         self.word_generator = WordGenerator()
 
@@ -109,13 +111,13 @@ class ReportService:
             )
 
     async def _collect_report_data(self, project_id: int) -> dict:
-        """Collect data for report generation."""
-        # TODO: Call other services to collect data
-        return {
+        """Collect data for report generation from database."""
+        # Default data structure
+        report_data = {
             "project": {
                 "id": project_id,
-                "name": "示例项目",
-                "vehicle_type": "BEV",
+                "name": "未知项目",
+                "vehicle_type": "",
             },
             "assets": [],
             "threats": [],
@@ -129,6 +131,87 @@ class ReportService:
                 "risk_distribution": {},
             },
         }
+
+        if not self.db:
+            logger.warning("No database session available, returning empty data")
+            return report_data
+
+        try:
+            # Fetch project
+            project = self.db.query(Project).filter(Project.id == project_id).first()
+            if project:
+                report_data["project"] = {
+                    "id": project.id,
+                    "name": project.name,
+                    "description": project.description,
+                    "vehicle_type": project.vehicle_type,
+                    "vehicle_model": project.vehicle_model,
+                    "standard": project.standard,
+                    "scope": project.scope,
+                }
+
+            # Fetch assets
+            assets = self.db.query(Asset).filter(Asset.project_id == project_id).all()
+            report_data["assets"] = [
+                {
+                    "id": asset.id,
+                    "name": asset.name,
+                    "asset_type": asset.asset_type,
+                    "category": asset.category,
+                    "description": asset.description,
+                    "security_attrs": asset.security_attrs,
+                    "interfaces": asset.interfaces,
+                    "criticality": asset.criticality,
+                }
+                for asset in assets
+            ]
+
+            # Fetch threats
+            threats = (
+                self.db.query(ThreatRisk).filter(ThreatRisk.project_id == project_id).all()
+            )
+            report_data["threats"] = [
+                {
+                    "id": threat.id,
+                    "threat_name": threat.threat_name,
+                    "threat_type": threat.threat_type,
+                    "threat_desc": threat.threat_desc,
+                    "attack_vector": threat.attack_vector,
+                    "likelihood": threat.likelihood,
+                    "impact_level": threat.impact_level,
+                    "risk_level": threat.risk_level,
+                    "asset_id": threat.asset_id,
+                }
+                for threat in threats
+            ]
+
+            # Calculate risk distribution
+            risk_distribution = {"CAL-4": 0, "CAL-3": 0, "CAL-2": 0, "CAL-1": 0}
+            for threat in threats:
+                risk_level = threat.risk_level or "CAL-2"
+                if risk_level in risk_distribution:
+                    risk_distribution[risk_level] += 1
+
+            # Update statistics
+            report_data["statistics"] = {
+                "total_assets": len(assets),
+                "total_threats": len(threats),
+                "total_attack_paths": sum(
+                    len(t.attack_paths) if hasattr(t, "attack_paths") and t.attack_paths else 0
+                    for t in threats
+                ),
+                "total_controls": 0,  # TODO: count control measures
+                "risk_distribution": risk_distribution,
+            }
+
+            logger.info(
+                f"Collected report data: {len(assets)} assets, {len(threats)} threats"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to collect report data: {e}")
+
+        return report_data
 
     async def _generate_pdf(
         self,
@@ -168,11 +251,24 @@ class ReportService:
         """Get report preview data."""
         report = await self.get_report(report_id)
 
+        # Extract content from stored report data
+        content = report.content or {}
+        sections = report.sections or []
+
+        # If no sections stored, generate from content
+        if not sections and content:
+            sections = [
+                {"id": "assets", "title": "资产清单", "count": len(content.get("assets", []))},
+                {"id": "threats", "title": "威胁分析", "count": len(content.get("threats", []))},
+                {"id": "risks", "title": "风险评估", "count": len(content.get("threats", []))},
+            ]
+
         return {
             "id": report.id,
             "name": report.name,
             "template": report.template,
             "status": report.status,
             "statistics": report.statistics or {},
-            "sections": [],  # TODO: Load section previews
+            "sections": sections,
+            "content": content,
         }
