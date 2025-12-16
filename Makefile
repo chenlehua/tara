@@ -84,7 +84,7 @@ dev-agent: ## 启动智能体服务
 build: build-frontend build-backend ## 构建所有
 
 build-frontend: ## 构建前端
-	cd frontend && pnpm build
+	cd frontend && pnpm install --registry https://registry.npmmirror.com && pnpm build
 
 build-backend: ## 构建后端镜像
 	docker compose -f deploy/docker/docker-compose.yml build
