@@ -43,15 +43,36 @@ async def create_report(
 
 @router.get("")
 async def list_reports(
-    project_id: int = Query(...),
+    project_id: Optional[int] = Query(None, description="项目ID，如果不提供则返回所有报告"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     status: Optional[int] = None,
     service: ReportService = Depends(get_report_service),
 ):
-    """List reports for a project."""
+    """List reports for a project or all reports if project_id is not provided."""
     reports, total = await service.list_reports(
         project_id=project_id,
+        page=page,
+        page_size=page_size,
+        status=status,
+    )
+    return paginated_response(
+        items=[ReportResponse.model_validate(r) for r in reports],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/all")
+async def list_all_reports(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    status: Optional[int] = None,
+    service: ReportService = Depends(get_report_service),
+):
+    """List all reports without project filter."""
+    reports, total = await service.list_all_reports(
         page=page,
         page_size=page_size,
         status=status,

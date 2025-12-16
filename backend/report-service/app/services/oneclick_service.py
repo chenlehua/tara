@@ -133,6 +133,10 @@ class OneClickGenerateService:
             # Step 4: Risk assessment
             await self._update_progress(task_storage, task_id, 3, 75, "风险评估")
             risk_assessment = await self._assess_risks(threats)
+            # Save control measures to database
+            measures_count = await self._save_control_measures_to_db(
+                project_id, risk_assessment.get("threats", [])
+            )
             await asyncio.sleep(1.5)
 
             # Step 5: Generate report
@@ -144,6 +148,7 @@ class OneClickGenerateService:
                 threats=threats,
                 risk_assessment=risk_assessment,
                 template=template,
+                measures_count=measures_count,
             )
             await asyncio.sleep(1)
 
@@ -603,42 +608,155 @@ class OneClickGenerateService:
             },
         }
 
-    def _suggest_controls(self, threat: dict) -> List[Dict[str, str]]:
+    def _suggest_controls(self, threat: dict) -> List[Dict[str, Any]]:
         """Suggest control measures for a threat."""
-        controls = []
         category = threat.get("category", "")
+        risk_level = threat.get("risk_level", "CAL-2")
+
+        # Determine effectiveness based on risk level
+        effectiveness_map = {
+            "CAL-4": "high",
+            "CAL-3": "high",
+            "CAL-2": "medium",
+            "CAL-1": "medium",
+        }
+        effectiveness = effectiveness_map.get(risk_level, "medium")
 
         control_suggestions = {
             "Spoofing": [
-                {"name": "强身份认证", "description": "实施多因素认证机制"},
-                {"name": "数字证书", "description": "使用PKI证书验证身份"},
+                {
+                    "name": "强身份认证",
+                    "description": "实施多因素认证机制，确保通信双方身份的真实性",
+                    "control_type": "preventive",
+                    "category": "technical",
+                    "implementation": "部署基于硬件安全模块(HSM)的身份认证系统，使用非对称加密算法进行身份验证",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-01",
+                },
+                {
+                    "name": "数字证书",
+                    "description": "使用PKI证书验证身份，防止身份伪造攻击",
+                    "control_type": "preventive",
+                    "category": "technical",
+                    "implementation": "建立车辆PKI体系，为每个ECU颁发唯一数字证书",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-02",
+                },
             ],
             "Tampering": [
-                {"name": "消息认证码", "description": "使用MAC验证消息完整性"},
-                {"name": "安全启动", "description": "验证软件完整性"},
+                {
+                    "name": "消息认证码",
+                    "description": "使用MAC验证消息完整性，检测数据篡改",
+                    "control_type": "detective",
+                    "category": "technical",
+                    "implementation": "在CAN报文中添加CMAC认证码，使用AES-128-CMAC算法",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-03",
+                },
+                {
+                    "name": "安全启动",
+                    "description": "验证软件完整性，防止恶意软件注入",
+                    "control_type": "preventive",
+                    "category": "technical",
+                    "implementation": "实施基于信任链的安全启动流程，使用数字签名验证固件",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-04",
+                },
             ],
             "Repudiation": [
-                {"name": "审计日志", "description": "记录所有关键操作"},
-                {"name": "时间戳服务", "description": "为日志添加可信时间戳"},
+                {
+                    "name": "审计日志",
+                    "description": "记录所有关键操作，支持事后追溯",
+                    "control_type": "detective",
+                    "category": "technical",
+                    "implementation": "实施集中化日志管理系统，记录所有安全相关事件",
+                    "effectiveness": "medium",
+                    "iso21434_ref": "RQ-09-05",
+                },
+                {
+                    "name": "时间戳服务",
+                    "description": "为日志添加可信时间戳，确保日志时序准确性",
+                    "control_type": "detective",
+                    "category": "technical",
+                    "implementation": "使用GPS/NTP同步的可信时间源",
+                    "effectiveness": "medium",
+                    "iso21434_ref": "RQ-09-06",
+                },
             ],
             "Information Disclosure": [
-                {"name": "数据加密", "description": "加密敏感数据传输和存储"},
-                {"name": "访问控制", "description": "实施最小权限原则"},
+                {
+                    "name": "数据加密",
+                    "description": "加密敏感数据传输和存储，防止信息泄露",
+                    "control_type": "preventive",
+                    "category": "technical",
+                    "implementation": "使用TLS 1.3加密通信，AES-256加密存储敏感数据",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-07",
+                },
+                {
+                    "name": "访问控制",
+                    "description": "实施最小权限原则，限制数据访问范围",
+                    "control_type": "preventive",
+                    "category": "organizational",
+                    "implementation": "基于角色的访问控制(RBAC)，定期审查访问权限",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-08",
+                },
             ],
             "Denial of Service": [
-                {"name": "速率限制", "description": "限制请求频率"},
-                {"name": "冗余设计", "description": "实施故障转移机制"},
+                {
+                    "name": "速率限制",
+                    "description": "限制请求频率，防止资源耗尽攻击",
+                    "control_type": "preventive",
+                    "category": "technical",
+                    "implementation": "实施CAN总线报文速率限制和异常检测机制",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-09",
+                },
+                {
+                    "name": "冗余设计",
+                    "description": "实施故障转移机制，确保服务连续性",
+                    "control_type": "corrective",
+                    "category": "technical",
+                    "implementation": "关键功能采用双ECU冗余架构，支持自动故障切换",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-10",
+                },
             ],
             "Elevation of Privilege": [
-                {"name": "权限隔离", "description": "实施最小权限原则"},
-                {"name": "安全编码", "description": "防止缓冲区溢出等漏洞"},
+                {
+                    "name": "权限隔离",
+                    "description": "实施最小权限原则，限制进程权限",
+                    "control_type": "preventive",
+                    "category": "technical",
+                    "implementation": "采用虚拟化隔离技术，限制进程访问范围",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-11",
+                },
+                {
+                    "name": "安全编码",
+                    "description": "防止缓冲区溢出等漏洞",
+                    "control_type": "preventive",
+                    "category": "organizational",
+                    "implementation": "遵循MISRA C/C++编码规范，使用静态代码分析工具",
+                    "effectiveness": effectiveness,
+                    "iso21434_ref": "RQ-09-12",
+                },
             ],
         }
 
         controls = control_suggestions.get(
             category,
             [
-                {"name": "安全审计", "description": "定期进行安全评估"},
+                {
+                    "name": "安全审计",
+                    "description": "定期进行安全评估和渗透测试",
+                    "control_type": "detective",
+                    "category": "organizational",
+                    "implementation": "每季度进行一次安全评估",
+                    "effectiveness": "medium",
+                    "iso21434_ref": "RQ-09-00",
+                },
             ],
         )
 
@@ -652,9 +770,33 @@ class OneClickGenerateService:
         threats: List[Dict[str, Any]],
         risk_assessment: Dict[str, Any],
         template: str,
+        measures_count: int = 0,
     ) -> Dict[str, Any]:
         """Generate final report data."""
         summary = risk_assessment.get("summary", {})
+
+        # Calculate measures count from threats if not provided
+        if measures_count == 0:
+            measures_count = sum(
+                len(t.get("control_measures", [])) for t in threats
+            )
+
+        # Get project info from database
+        project_info = {}
+        try:
+            project = self.db.query(Project).filter(Project.id == project_id).first()
+            if project:
+                project_info = {
+                    "id": project.id,
+                    "name": project.name,
+                    "description": project.description,
+                    "vehicle_type": project.vehicle_type,
+                    "vehicle_model": project.vehicle_model,
+                    "standard": project.standard,
+                    "status": project.status,
+                }
+        except Exception as e:
+            logger.error(f"Failed to get project info: {e}")
 
         return {
             "report_id": report_id,
@@ -662,13 +804,12 @@ class OneClickGenerateService:
             "report_name": f"TARA分析报告_{datetime.now().strftime('%Y-%m-%d')}",
             "template": template,
             "generated_at": datetime.now().isoformat(),
+            "project": project_info,
             "statistics": {
                 "assets_count": len(assets),
                 "threats_count": summary.get("total", 0),
                 "high_risk_count": summary.get("critical", 0) + summary.get("high", 0),
-                "measures_count": sum(
-                    len(t.get("control_measures", [])) for t in threats
-                ),
+                "measures_count": measures_count,
             },
             "assets": assets,
             "threats": risk_assessment.get("threats", []),
@@ -700,7 +841,19 @@ class OneClickGenerateService:
                         "vehicle_type": project.vehicle_type,
                         "vehicle_model": project.vehicle_model,
                         "standard": project.standard,
+                        "scope": project.scope,
                     }
+
+                # Extract control measures from threats for content storage
+                control_measures = []
+                for threat in report_data.get("threats", []):
+                    measures = threat.get("control_measures", [])
+                    for measure in measures:
+                        control_measures.append({
+                            "threat_id": threat.get("id"),
+                            "threat_name": threat.get("name"),
+                            **measure,
+                        })
 
                 report.status = ReportStatus.COMPLETED.value
                 report.progress = 100
@@ -710,10 +863,19 @@ class OneClickGenerateService:
                     "assets": report_data.get("assets", []),
                     "threats": report_data.get("threats", []),
                     "risk_distribution": report_data.get("risk_distribution", {}),
+                    "control_measures": control_measures,
                     "generated_at": report_data.get("generated_at"),
                 }
+                # Store sections for navigation
+                report.sections = [
+                    {"id": "overview", "title": "概述", "count": 1},
+                    {"id": "assets", "title": "资产清单", "count": len(report_data.get("assets", []))},
+                    {"id": "threats", "title": "威胁分析", "count": len(report_data.get("threats", []))},
+                    {"id": "risks", "title": "风险评估", "count": len(report_data.get("threats", []))},
+                    {"id": "measures", "title": "安全措施", "count": len(control_measures)},
+                ]
                 self.db.commit()
-                logger.info(f"Report {report_id} saved to database")
+                logger.info(f"Report {report_id} saved to database with {len(control_measures)} control measures")
         except Exception as e:
             logger.error(f"Failed to save report to database: {e}")
             self.db.rollback()
@@ -916,3 +1078,71 @@ class OneClickGenerateService:
         except Exception as e:
             logger.error(f"Failed to update project status: {e}")
             self.db.rollback()
+
+    async def _save_control_measures_to_db(
+        self,
+        project_id: int,
+        threats: List[Dict[str, Any]],
+    ) -> int:
+        """Save control measures to database.
+
+        Returns the total number of control measures saved.
+        """
+        from tara_shared.models import AttackPath, ControlMeasure
+
+        total_measures = 0
+        try:
+            for threat_data in threats:
+                control_measures = threat_data.get("control_measures", [])
+                threat_db_id = threat_data.get("db_id")
+
+                if not threat_db_id or not control_measures:
+                    continue
+
+                # Create a default attack path for the threat
+                attack_path = AttackPath(
+                    threat_risk_id=threat_db_id,
+                    name=f"{threat_data.get('name', 'Unknown')}的攻击路径",
+                    description=threat_data.get("attack_vector", ""),
+                    steps=[
+                        {"step": 1, "action": threat_data.get("attack_vector", "")},
+                    ],
+                    expertise=2,
+                    elapsed_time=3,
+                    equipment=2,
+                    knowledge=2,
+                    window_of_opportunity=3,
+                    attack_potential=12,
+                    feasibility_rating="medium",
+                )
+                self.db.add(attack_path)
+                self.db.flush()
+
+                # Save control measures for this attack path
+                for measure_data in control_measures:
+                    measure = ControlMeasure(
+                        attack_path_id=attack_path.id,
+                        name=measure_data.get("name", "Unknown Measure"),
+                        control_type=measure_data.get("control_type", "preventive"),
+                        category=measure_data.get("category", "technical"),
+                        description=measure_data.get("description", ""),
+                        implementation=measure_data.get("implementation", ""),
+                        effectiveness=measure_data.get("effectiveness", "medium"),
+                        cost_estimate="medium",
+                        implementation_status=0,  # planned
+                        verification_status=0,  # not verified
+                        iso21434_ref=measure_data.get("iso21434_ref", ""),
+                    )
+                    self.db.add(measure)
+                    total_measures += 1
+
+            self.db.commit()
+            logger.info(
+                f"Saved {total_measures} control measures to database for project {project_id}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to save control measures to database: {e}")
+            self.db.rollback()
+
+        return total_measures

@@ -38,14 +38,27 @@ class ReportService:
 
     async def list_reports(
         self,
-        project_id: int,
+        project_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 20,
         status: Optional[int] = None,
     ) -> Tuple[list[Report], int]:
-        """List reports for a project."""
+        """List reports for a project or all reports if project_id is None."""
         return self.repo.list_reports(
             project_id=project_id,
+            page=page,
+            page_size=page_size,
+            status=status,
+        )
+
+    async def list_all_reports(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        status: Optional[int] = None,
+    ) -> Tuple[list[Report], int]:
+        """List all reports without project filter."""
+        return self.repo.list_all_reports(
             page=page,
             page_size=page_size,
             status=status,

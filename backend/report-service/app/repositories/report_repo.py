@@ -26,13 +26,39 @@ class ReportRepository:
 
     def list_reports(
         self,
-        project_id: int,
+        project_id: Optional[int] = None,
         page: int = 1,
         page_size: int = 20,
         status: Optional[int] = None,
     ) -> Tuple[list[Report], int]:
         """List reports with pagination."""
-        query = self.db.query(Report).filter(Report.project_id == project_id)
+        query = self.db.query(Report)
+
+        if project_id is not None:
+            query = query.filter(Report.project_id == project_id)
+
+        if status is not None:
+            query = query.filter(Report.status == status)
+
+        total = query.count()
+
+        reports = (
+            query.order_by(Report.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+
+        return reports, total
+
+    def list_all_reports(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        status: Optional[int] = None,
+    ) -> Tuple[list[Report], int]:
+        """List all reports without project filter."""
+        query = self.db.query(Report)
 
         if status is not None:
             query = query.filter(Report.status == status)

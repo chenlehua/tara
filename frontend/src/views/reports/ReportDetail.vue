@@ -132,14 +132,23 @@
 
       <!-- Report Sections -->
       <div class="report-sections">
+        <!-- Project Info Section -->
         <div class="section-card">
-          <h2>报告概述</h2>
+          <h2>项目信息</h2>
           <div class="section-content">
             <p>本报告基于 ISO/SAE 21434 标准，对目标系统进行了全面的威胁分析和风险评估 (TARA)。</p>
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">项目ID</span>
-                <span class="info-value">{{ report?.project_id || '-' }}</span>
+                <span class="info-label">项目名称</span>
+                <span class="info-value">{{ preview?.content?.project?.name || preview?.project?.name || '-' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">车型</span>
+                <span class="info-value">{{ preview?.content?.project?.vehicle_type || preview?.project?.vehicle_type || '-' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">适用标准</span>
+                <span class="info-value">{{ preview?.content?.project?.standard || preview?.project?.standard || 'ISO/SAE 21434' }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">报告版本</span>
@@ -150,44 +159,71 @@
                 <span class="info-value">{{ report?.author || 'TARA Pro' }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">审核人</span>
-                <span class="info-value">{{ report?.reviewer || '-' }}</span>
+                <span class="info-label">生成时间</span>
+                <span class="info-value">{{ formatDate(preview?.content?.generated_at || report?.created_at) }}</span>
               </div>
+            </div>
+            <div class="section-actions" v-if="report?.project_id">
+              <router-link :to="`/projects/${report.project_id}`" class="link-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                查看项目详情
+              </router-link>
             </div>
           </div>
         </div>
 
         <!-- Assets Section -->
-        <div class="section-card" v-if="preview?.assets?.length">
-          <h2>资产清单</h2>
+        <div class="section-card" v-if="contentAssets.length > 0">
+          <h2>资产清单 ({{ contentAssets.length }})</h2>
           <div class="section-content">
             <table class="data-table">
               <thead>
                 <tr>
                   <th>资产名称</th>
                   <th>类型</th>
+                  <th>接口</th>
                   <th>安全等级</th>
                   <th>攻击面</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="asset in preview.assets.slice(0, 10)" :key="asset.id">
+                <tr v-for="asset in contentAssets.slice(0, 10)" :key="asset.id">
                   <td>{{ asset.name }}</td>
-                  <td>{{ asset.type }}</td>
-                  <td><span :class="['cal-badge', asset.security_level?.toLowerCase()]">{{ asset.security_level }}</span></td>
-                  <td>{{ asset.attack_surface }}/10</td>
+                  <td>{{ asset.type || asset.asset_type }}</td>
+                  <td>
+                    <span v-for="(iface, idx) in (asset.interfaces || []).slice(0, 3)" :key="idx" class="interface-tag">
+                      {{ iface.type || iface }}
+                    </span>
+                    <span v-if="(asset.interfaces || []).length > 3" class="interface-more">+{{ asset.interfaces.length - 3 }}</span>
+                  </td>
+                  <td><span :class="['cal-badge', (asset.security_level || asset.criticality || '').toLowerCase()]">{{ asset.security_level || asset.criticality || 'CAL-2' }}</span></td>
+                  <td>{{ asset.attack_surface || '-' }}/10</td>
                 </tr>
               </tbody>
             </table>
-            <p v-if="preview.assets.length > 10" class="more-hint">
-              还有 {{ preview.assets.length - 10 }} 项资产，请下载完整报告查看
+            <p v-if="contentAssets.length > 10" class="more-hint">
+              还有 {{ contentAssets.length - 10 }} 项资产，请下载完整报告查看
             </p>
+            <div class="section-actions">
+              <router-link to="/assets" class="link-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                查看资产管理
+              </router-link>
+            </div>
           </div>
         </div>
 
         <!-- Threats Section -->
-        <div class="section-card" v-if="preview?.threats?.length">
-          <h2>威胁分析</h2>
+        <div class="section-card" v-if="contentThreats.length > 0">
+          <h2>威胁分析 ({{ contentThreats.length }})</h2>
           <div class="section-content">
             <table class="data-table">
               <thead>
@@ -195,65 +231,127 @@
                   <th>威胁ID</th>
                   <th>威胁名称</th>
                   <th>类别</th>
+                  <th>攻击向量</th>
                   <th>风险等级</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="threat in preview.threats.slice(0, 10)" :key="threat.id">
+                <tr v-for="threat in contentThreats.slice(0, 10)" :key="threat.id">
                   <td>{{ threat.id }}</td>
                   <td>{{ threat.name }}</td>
                   <td>{{ threat.category_name || threat.category }}</td>
-                  <td><span :class="['risk-badge', threat.risk_level?.toLowerCase()]">{{ threat.risk_name || threat.risk_level }}</span></td>
+                  <td class="attack-vector-cell">{{ (threat.attack_vector || '').substring(0, 30) }}{{ threat.attack_vector?.length > 30 ? '...' : '' }}</td>
+                  <td><span :class="['risk-badge', (threat.risk_level || '').toLowerCase()]">{{ threat.risk_name || threat.risk_level }}</span></td>
                 </tr>
               </tbody>
             </table>
-            <p v-if="preview.threats.length > 10" class="more-hint">
-              还有 {{ preview.threats.length - 10 }} 项威胁，请下载完整报告查看
+            <p v-if="contentThreats.length > 10" class="more-hint">
+              还有 {{ contentThreats.length - 10 }} 项威胁，请下载完整报告查看
             </p>
+            <div class="section-actions">
+              <router-link to="/threats" class="link-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                查看威胁分析
+              </router-link>
+            </div>
           </div>
         </div>
 
         <!-- Risk Distribution -->
-        <div class="section-card" v-if="preview?.risk_distribution">
-          <h2>风险分布</h2>
+        <div class="section-card" v-if="riskDistribution">
+          <h2>风险评估</h2>
           <div class="section-content">
             <div class="risk-distribution">
               <div class="risk-bar">
                 <div 
                   class="risk-segment cal-4" 
                   :style="{ width: getRiskPercentage('CAL-4') + '%' }"
-                  v-if="preview.risk_distribution['CAL-4']"
+                  v-if="riskDistribution['CAL-4']"
                 >
-                  {{ preview.risk_distribution['CAL-4'] }}
+                  {{ riskDistribution['CAL-4'] }}
                 </div>
                 <div 
                   class="risk-segment cal-3" 
                   :style="{ width: getRiskPercentage('CAL-3') + '%' }"
-                  v-if="preview.risk_distribution['CAL-3']"
+                  v-if="riskDistribution['CAL-3']"
                 >
-                  {{ preview.risk_distribution['CAL-3'] }}
+                  {{ riskDistribution['CAL-3'] }}
                 </div>
                 <div 
                   class="risk-segment cal-2" 
                   :style="{ width: getRiskPercentage('CAL-2') + '%' }"
-                  v-if="preview.risk_distribution['CAL-2']"
+                  v-if="riskDistribution['CAL-2']"
                 >
-                  {{ preview.risk_distribution['CAL-2'] }}
+                  {{ riskDistribution['CAL-2'] }}
                 </div>
                 <div 
                   class="risk-segment cal-1" 
                   :style="{ width: getRiskPercentage('CAL-1') + '%' }"
-                  v-if="preview.risk_distribution['CAL-1']"
+                  v-if="riskDistribution['CAL-1']"
                 >
-                  {{ preview.risk_distribution['CAL-1'] }}
+                  {{ riskDistribution['CAL-1'] }}
                 </div>
               </div>
               <div class="risk-legend">
-                <span class="legend-item"><span class="legend-color cal-4"></span>CAL-4 极高</span>
-                <span class="legend-item"><span class="legend-color cal-3"></span>CAL-3 高</span>
-                <span class="legend-item"><span class="legend-color cal-2"></span>CAL-2 中</span>
-                <span class="legend-item"><span class="legend-color cal-1"></span>CAL-1 低</span>
+                <span class="legend-item"><span class="legend-color cal-4"></span>CAL-4 极高 ({{ riskDistribution['CAL-4'] || 0 }})</span>
+                <span class="legend-item"><span class="legend-color cal-3"></span>CAL-3 高 ({{ riskDistribution['CAL-3'] || 0 }})</span>
+                <span class="legend-item"><span class="legend-color cal-2"></span>CAL-2 中 ({{ riskDistribution['CAL-2'] || 0 }})</span>
+                <span class="legend-item"><span class="legend-color cal-1"></span>CAL-1 低 ({{ riskDistribution['CAL-1'] || 0 }})</span>
               </div>
+            </div>
+            <div class="section-actions">
+              <router-link to="/risks" class="link-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                查看风险评估
+              </router-link>
+            </div>
+          </div>
+        </div>
+
+        <!-- Control Measures Section -->
+        <div class="section-card" v-if="contentMeasures.length > 0">
+          <h2>安全措施 ({{ contentMeasures.length }})</h2>
+          <div class="section-content">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>措施名称</th>
+                  <th>类型</th>
+                  <th>关联威胁</th>
+                  <th>有效性</th>
+                  <th>ISO 21434参考</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(measure, idx) in contentMeasures.slice(0, 10)" :key="idx">
+                  <td>{{ measure.name }}</td>
+                  <td><span class="measure-type-tag">{{ measure.control_type || measure.category || 'preventive' }}</span></td>
+                  <td>{{ measure.threat_name || '-' }}</td>
+                  <td><span :class="['effectiveness-badge', measure.effectiveness || 'medium']">{{ getEffectivenessText(measure.effectiveness) }}</span></td>
+                  <td>{{ measure.iso21434_ref || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p v-if="contentMeasures.length > 10" class="more-hint">
+              还有 {{ contentMeasures.length - 10 }} 项安全措施，请下载完整报告查看
+            </p>
+            <div class="section-actions">
+              <router-link to="/measures" class="link-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                查看安全措施
+              </router-link>
             </div>
           </div>
         </div>
@@ -289,11 +387,66 @@ const statistics = computed(() => {
     return report.value.statistics as any
   }
   return {
-    assets_count: preview.value?.assets?.length || 0,
-    threats_count: preview.value?.threats?.length || 0,
+    assets_count: contentAssets.value.length || 0,
+    threats_count: contentThreats.value.length || 0,
     high_risk_count: 0,
-    measures_count: 0
+    measures_count: contentMeasures.value.length || 0
   }
+})
+
+// Get assets from preview content
+const contentAssets = computed(() => {
+  if (preview.value?.content?.assets) {
+    return preview.value.content.assets
+  }
+  if (preview.value?.assets) {
+    return preview.value.assets
+  }
+  return []
+})
+
+// Get threats from preview content
+const contentThreats = computed(() => {
+  if (preview.value?.content?.threats) {
+    return preview.value.content.threats
+  }
+  if (preview.value?.threats) {
+    return preview.value.threats
+  }
+  return []
+})
+
+// Get control measures from preview content
+const contentMeasures = computed(() => {
+  if (preview.value?.content?.control_measures) {
+    return preview.value.content.control_measures
+  }
+  // Extract measures from threats if not available separately
+  const measures: any[] = []
+  const threats = contentThreats.value || []
+  threats.forEach((threat: any) => {
+    if (threat.control_measures) {
+      threat.control_measures.forEach((m: any) => {
+        measures.push({
+          ...m,
+          threat_name: threat.name,
+          threat_id: threat.id
+        })
+      })
+    }
+  })
+  return measures
+})
+
+// Get risk distribution from preview content
+const riskDistribution = computed(() => {
+  if (preview.value?.content?.risk_distribution) {
+    return preview.value.content.risk_distribution
+  }
+  if (preview.value?.risk_distribution) {
+    return preview.value.risk_distribution
+  }
+  return null
 })
 
 const formatDate = (dateStr?: string) => {
@@ -328,11 +481,20 @@ const getStatusText = (status?: number) => {
   }
 }
 
+const getEffectivenessText = (effectiveness?: string) => {
+  switch (effectiveness) {
+    case 'high': return '高'
+    case 'medium': return '中'
+    case 'low': return '低'
+    default: return '中'
+  }
+}
+
 const getRiskPercentage = (level: string) => {
-  if (!preview.value?.risk_distribution) return 0
-  const total = Object.values(preview.value.risk_distribution).reduce((a: number, b: any) => a + (b || 0), 0) as number
+  if (!riskDistribution.value) return 0
+  const total = Object.values(riskDistribution.value).reduce((a: number, b: any) => a + (b || 0), 0) as number
   if (total === 0) return 0
-  return ((preview.value.risk_distribution[level] || 0) / total * 100).toFixed(1)
+  return ((riskDistribution.value[level] || 0) / total * 100).toFixed(1)
 }
 
 const goBack = () => {
@@ -793,6 +955,87 @@ onMounted(() => {
   text-align: center;
   padding-top: 12px;
   margin: 0;
+}
+
+/* Section Actions */
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.link-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6366f1;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.link-btn:hover {
+  color: #8b5cf6;
+}
+
+/* Interface Tags */
+.interface-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  margin-right: 4px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.interface-more {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.attack-vector-cell {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Measure Type Tag */
+.measure-type-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  text-transform: capitalize;
+}
+
+/* Effectiveness Badge */
+.effectiveness-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.effectiveness-badge.high {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.effectiveness-badge.medium {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.effectiveness-badge.low {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
 }
 
 /* Risk Distribution */

@@ -115,12 +115,28 @@ export const reportApi = {
    * List reports for a project
    */
   async listReports(
-    projectId: number,
+    projectId?: number,
     page: number = 1,
     pageSize: number = 20
   ): Promise<ApiResponse<{ items: Report[]; total: number }>> {
-    return request.get('/reports', {
-      project_id: projectId,
+    const params: Record<string, number> = {
+      page,
+      page_size: pageSize,
+    }
+    if (projectId !== undefined) {
+      params.project_id = projectId
+    }
+    return request.get('/reports', params)
+  },
+
+  /**
+   * List all reports without project filter
+   */
+  async listAllReports(
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<ApiResponse<{ items: Report[]; total: number }>> {
+    return request.get('/reports/all', {
       page,
       page_size: pageSize,
     })
