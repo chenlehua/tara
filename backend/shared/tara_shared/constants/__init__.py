@@ -1,12 +1,18 @@
 """Constants for TARA system."""
 
-from .enums import (AssetCategory, AssetType, DocumentParseStatus,
-                    FeasibilityRating, ProjectStatus, ReportStatus, RiskLevel,
-                    ThreatType, TreatmentDecision)
+from .enums import (CAL, AssetCategory, AssetType, ControlCategory,
+                    ControlType, DocumentParseStatus, FeasibilityRating,
+                    ProjectStatus, ReportStatus, RiskLevel, ThreatType,
+                    TreatmentDecision)
 from .tara import (ATTACK_POTENTIAL_EQUIPMENT, ATTACK_POTENTIAL_EXPERTISE,
                    ATTACK_POTENTIAL_KNOWLEDGE, ATTACK_POTENTIAL_TIME,
-                   CAL_LEVELS, IMPACT_LEVELS, LIKELIHOOD_LEVELS, RISK_MATRIX,
-                   STRIDE_TYPES)
+                   ATTACK_POTENTIAL_TO_FEASIBILITY, ATTACK_POTENTIAL_WINDOW,
+                   AUTOMOTIVE_ASSET_TYPES, CAL_LEVELS,
+                   COMMON_AUTOMOTIVE_THREATS, FINANCIAL_IMPACT_CRITERIA,
+                   IMPACT_LEVELS, LIKELIHOOD_LEVELS,
+                   OPERATIONAL_IMPACT_CRITERIA, PRIVACY_IMPACT_CRITERIA,
+                   RISK_LEVEL_TO_CAL, RISK_LEVEL_VALUES, RISK_MATRIX,
+                   SAFETY_IMPACT_CRITERIA, STRIDE_TYPES)
 
 __all__ = [
     # Enums
@@ -19,14 +25,27 @@ __all__ = [
     "TreatmentDecision",
     "FeasibilityRating",
     "ReportStatus",
+    "CAL",
+    "ControlType",
+    "ControlCategory",
     # TARA Constants
     "STRIDE_TYPES",
     "IMPACT_LEVELS",
     "LIKELIHOOD_LEVELS",
     "RISK_MATRIX",
+    "RISK_LEVEL_VALUES",
+    "RISK_LEVEL_TO_CAL",
     "ATTACK_POTENTIAL_EXPERTISE",
     "ATTACK_POTENTIAL_TIME",
     "ATTACK_POTENTIAL_EQUIPMENT",
     "ATTACK_POTENTIAL_KNOWLEDGE",
+    "ATTACK_POTENTIAL_WINDOW",
+    "ATTACK_POTENTIAL_TO_FEASIBILITY",
     "CAL_LEVELS",
+    "SAFETY_IMPACT_CRITERIA",
+    "FINANCIAL_IMPACT_CRITERIA",
+    "OPERATIONAL_IMPACT_CRITERIA",
+    "PRIVACY_IMPACT_CRITERIA",
+    "AUTOMOTIVE_ASSET_TYPES",
+    "COMMON_AUTOMOTIVE_THREATS",
 ]

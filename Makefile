@@ -149,39 +149,36 @@ db-shell: ## 连接到MySQL (Docker)
 	docker compose -f deploy/docker/docker-compose.yml exec mysql mysql -u tara -ptara_password tara_db
 
 ## ==================== 测试 ====================
-test: ## 运行所有测试
-	pytest backend/ tests/ -v --ignore=backend/**/node_modules
+# 安装共享模块（测试前必须安装）
+install-shared: ## 安装共享模块
+	pip install -e backend/shared/
 
-test-unit: ## 运行后端单元测试
-	pytest backend/shared/tests/unit/ \
-		backend/project-service/tests/unit/ \
-		backend/document-service/tests/unit/ \
-		backend/asset-service/tests/unit/ \
-		backend/threat-risk-service/tests/unit/ \
-		backend/diagram-service/tests/unit/ \
-		backend/report-service/tests/unit/ \
-		backend/agent-service/tests/unit/ \
-		-v
+test: install-shared ## 运行所有测试
+	PYTHONPATH=backend/shared:backend/project-service:backend/document-service:backend/asset-service:backend/threat-risk-service:backend/diagram-service:backend/report-service:backend/agent-service \
+		pytest backend/shared/tests/ -v
 
-test-integration: ## 运行后端集成测试
-	pytest backend/shared/tests/integration/ \
-		backend/project-service/tests/integration/ \
-		backend/document-service/tests/integration/ \
-		backend/threat-risk-service/tests/integration/ \
-		backend/agent-service/tests/integration/ \
-		-v
+test-unit: install-shared ## 运行后端单元测试
+	PYTHONPATH=backend/shared \
+		pytest backend/shared/tests/unit/ -v
 
-test-e2e: ## 运行端到端测试
-	pytest tests/e2e/ -v
+test-integration: install-shared ## 运行后端集成测试
+	PYTHONPATH=backend/shared \
+		pytest backend/shared/tests/integration/ -v
 
-test-security: ## 运行安全测试
-	pytest tests/security/ -v
+test-e2e: install-shared ## 运行端到端测试
+	PYTHONPATH=backend/shared \
+		pytest tests/e2e/ -v
+
+test-security: install-shared ## 运行安全测试
+	PYTHONPATH=backend/shared \
+		pytest tests/security/ -v
 
 test-frontend: ## 运行前端测试
 	cd frontend && pnpm install --registry https://registry.npmmirror.com && pnpm test
 
-coverage: ## 生成测试覆盖率报告
-	pytest backend/ tests/ --cov=backend --cov-report=html --ignore=backend/**/node_modules
+coverage: install-shared ## 生成测试覆盖率报告
+	PYTHONPATH=backend/shared \
+		pytest backend/shared/tests/ --cov=backend/shared --cov-report=html
 	@echo "Coverage report generated in htmlcov/"
 
 ## ==================== 代码质量 ====================

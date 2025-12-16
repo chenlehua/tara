@@ -6,8 +6,12 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from tara_shared.database.mysql import Base
-from tara_shared.models import Asset, Document, Project, Report, ThreatRisk
+# Import models to ensure they are registered
+from tara_shared.models import (Asset, AttackPath, ControlMeasure,
+                                DamageScenario, Document, Project, Report,
+                                ThreatRisk)
+# Import the Base from models - this is the one used by all models
+from tara_shared.models.base import Base
 
 # Use SQLite for testing
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -21,6 +25,7 @@ def engine():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
+    # Create all tables from the models' Base metadata
     Base.metadata.create_all(bind=engine)
     yield engine
     Base.metadata.drop_all(bind=engine)
@@ -54,7 +59,7 @@ def sample_asset_data():
     """Sample asset data for testing."""
     return {
         "name": "Test ECU",
-        "asset_type": "ecu",
+        "asset_type": "ECU",
         "category": "powertrain",
         "description": "Engine Control Unit for testing",
         "security_attrs": {
@@ -70,8 +75,8 @@ def sample_threat_data():
     """Sample threat data for testing."""
     return {
         "threat_name": "CAN Bus Injection",
-        "threat_type": "Tampering",
-        "description": "Injection of malicious CAN messages",
-        "impact_level": "major",
-        "likelihood": "medium",
+        "threat_type": "T",  # STRIDE: Tampering
+        "threat_desc": "Injection of malicious CAN messages",
+        "safety_impact": 3,
+        "likelihood": 3,
     }

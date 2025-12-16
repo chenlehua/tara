@@ -78,9 +78,9 @@ def get_db_context() -> Generator[Session, None, None]:
 def init_db() -> None:
     """Initialize database tables."""
     # Import all models to ensure they are registered
-    from ..models import (Asset, AttackPath, ControlMeasure,  # noqa: F401
-                          DamageScenario, Document, Project, Report,
-                          ThreatRisk)
+    from ..models import ControlMeasure  # noqa: F401
+    from ..models import (Asset, AttackPath, DamageScenario, Document, Project,
+                          Report, ThreatRisk)
     from ..models.base import Base as ModelBase
 
     # Create all tables

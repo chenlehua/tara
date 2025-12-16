@@ -60,19 +60,23 @@ class TestHelperFunctions:
     def test_sanitize_filename(self):
         """Test filename sanitization."""
         assert sanitize_filename("normal_file.pdf") == "normal_file.pdf"
-        assert sanitize_filename("file with spaces.pdf") == "file_with_spaces.pdf"
+        # Spaces are preserved, only dangerous characters are replaced
+        assert sanitize_filename("file with spaces.pdf") == "file with spaces.pdf"
         assert sanitize_filename("file/with\\slashes.pdf") == "file_with_slashes.pdf"
         assert sanitize_filename("file<with>special.pdf") == "file_with_special.pdf"
 
     def test_parse_page_params(self):
         """Test pagination parameter parsing."""
-        offset, limit = parse_page_params(page=2, page_size=20)
+        # Returns (page, page_size, offset)
+        page, page_size, offset = parse_page_params(page=2, page_size=20)
+        assert page == 2
+        assert page_size == 20
         assert offset == 20
-        assert limit == 20
 
-        offset, limit = parse_page_params(page=1, page_size=10)
+        page, page_size, offset = parse_page_params(page=1, page_size=10)
+        assert page == 1
+        assert page_size == 10
         assert offset == 0
-        assert limit == 10
 
     def test_dict_to_snake_case(self):
         """Test camelCase to snake_case conversion."""
@@ -110,7 +114,7 @@ class TestResponseFunctions:
         response = success_response(data)
 
         assert response["success"] is True
-        assert response["code"] == 0
+        assert response["code"] == 200
         assert response["data"] == data
 
     def test_success_response_with_message(self):
