@@ -157,13 +157,18 @@ downloads/
 *.db
 
 # ===== AI Models =====
-models/
+# Only ignore root-level models directory for AI model files
+/models/
+ai-models/weights/
 *.pt
 *.pth
 *.onnx
 *.bin
 *.safetensors
 *.gguf
+
+# Don't ignore Python models package
+!**/tara_shared/models/
 
 # ===== Secrets =====
 *.pem
