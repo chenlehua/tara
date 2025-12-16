@@ -108,6 +108,8 @@ async def download_report(
     service: ReportService = Depends(get_report_service),
 ):
     """Download report file."""
+    from urllib.parse import quote
+
     file_data, filename = await service.get_report_file(report_id, format)
 
     media_types = {
@@ -116,10 +118,17 @@ async def download_report(
         "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     }
 
+    # Encode filename for Content-Disposition header (RFC 5987)
+    # Use ASCII-safe fallback and UTF-8 encoded version
+    ascii_filename = f"report_{report_id}.{format}"
+    encoded_filename = quote(filename, safe="")
+
     return StreamingResponse(
         file_data,
         media_type=media_types.get(format, "application/octet-stream"),
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{ascii_filename}\"; filename*=UTF-8''{encoded_filename}"
+        },
     )
 
 

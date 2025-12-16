@@ -19,7 +19,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from tara_shared.constants import ReportStatus
-from tara_shared.models import Project, Report
+from tara_shared.models import Asset, Project, Report, ThreatRisk
 from tara_shared.utils import get_logger
 
 logger = get_logger(__name__)
@@ -119,11 +119,15 @@ class OneClickGenerateService:
             # Step 2: Identify assets
             await self._update_progress(task_storage, task_id, 1, 30, "识别资产")
             assets = await self._identify_assets(parsed_data)
+            # Save assets to database
+            db_asset_ids = await self._save_assets_to_db(project_id, assets)
             await asyncio.sleep(1.5)
 
             # Step 3: Threat analysis
             await self._update_progress(task_storage, task_id, 2, 50, "威胁分析")
             threats = await self._analyze_threats(assets, template, prompt)
+            # Save threats to database
+            await self._save_threats_to_db(project_id, threats, db_asset_ids)
             await asyncio.sleep(2)
 
             # Step 4: Risk assessment
@@ -145,6 +149,9 @@ class OneClickGenerateService:
 
             # Save report data to database
             await self._save_report_to_db(report_id, report_data, risk_assessment)
+
+            # Update project status to completed
+            await self._update_project_status(project_id, 2)  # 2 = completed
 
             # Complete
             task_storage[task_id]["status"] = "completed"
@@ -713,4 +720,185 @@ class OneClickGenerateService:
                 self.db.commit()
         except Exception as e:
             logger.error(f"Failed to update report status: {e}")
+            self.db.rollback()
+
+    async def _save_assets_to_db(
+        self,
+        project_id: int,
+        assets: List[Dict[str, Any]],
+    ) -> Dict[str, int]:
+        """Save identified assets to database.
+
+        Returns a mapping of asset id (string) to database id (int).
+        """
+        asset_id_map = {}
+        try:
+            for asset_data in assets:
+                # Map security properties to security_attrs format
+                security_props = asset_data.get("security_properties", {})
+                security_attrs = {
+                    "confidentiality": security_props.get("confidentiality", "medium"),
+                    "integrity": security_props.get("integrity", "medium"),
+                    "availability": security_props.get("availability", "medium"),
+                }
+
+                # Determine criticality from security level
+                security_level = asset_data.get("security_level", "CAL-2")
+                criticality_map = {
+                    "CAL-4": "critical",
+                    "CAL-3": "high",
+                    "CAL-2": "medium",
+                    "CAL-1": "low",
+                }
+                criticality = criticality_map.get(security_level, "medium")
+
+                asset = Asset(
+                    project_id=project_id,
+                    name=asset_data.get("name", "Unknown Asset"),
+                    asset_type=asset_data.get("type", "ECU"),
+                    category=self._get_asset_category(asset_data.get("type", "ECU")),
+                    description=asset_data.get("description", ""),
+                    interfaces=asset_data.get("interfaces", []),
+                    security_attrs=security_attrs,
+                    criticality=criticality,
+                    source="oneclick_generated",
+                )
+                self.db.add(asset)
+                self.db.flush()  # Get the ID without committing
+
+                # Map the original asset id to database id
+                original_id = asset_data.get("id", str(uuid.uuid4())[:8])
+                asset_id_map[original_id] = asset.id
+                # Also store the db id in the asset data for later use
+                asset_data["db_id"] = asset.id
+
+            self.db.commit()
+            logger.info(f"Saved {len(assets)} assets to database for project {project_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to save assets to database: {e}")
+            self.db.rollback()
+
+        return asset_id_map
+
+    def _get_asset_category(self, asset_type: str) -> str:
+        """Get asset category from asset type."""
+        type_lower = asset_type.lower()
+        if "gateway" in type_lower:
+            return "gateway"
+        elif "ecu" in type_lower:
+            return "ecu"
+        elif "sensor" in type_lower:
+            return "sensor"
+        elif "actuator" in type_lower:
+            return "actuator"
+        else:
+            return "general"
+
+    async def _save_threats_to_db(
+        self,
+        project_id: int,
+        threats: List[Dict[str, Any]],
+        asset_id_map: Dict[str, int],
+    ) -> None:
+        """Save analyzed threats to database."""
+        try:
+            for threat_data in threats:
+                # Get the database asset id
+                original_asset_id = threat_data.get("asset_id", "")
+                db_asset_id = asset_id_map.get(original_asset_id)
+
+                if not db_asset_id:
+                    # Try to find by name match
+                    asset_name = threat_data.get("asset_name", "")
+                    for orig_id, db_id in asset_id_map.items():
+                        if asset_name in orig_id or orig_id in asset_name:
+                            db_asset_id = db_id
+                            break
+
+                # Get impact level from the impact data
+                impact_data = threat_data.get("impact", {})
+                impact_level = impact_data.get("total", 2) if isinstance(impact_data, dict) else 2
+
+                # Get likelihood
+                likelihood_data = threat_data.get("likelihood", {})
+                likelihood = 2  # default medium
+                if isinstance(likelihood_data, dict):
+                    likelihood_level = likelihood_data.get("level", "Medium")
+                    likelihood_map = {"High": 3, "Medium": 2, "Low": 1}
+                    likelihood = likelihood_map.get(likelihood_level, 2)
+
+                # Map STRIDE category to threat type code
+                category = threat_data.get("category", "")
+                threat_type_map = {
+                    "Spoofing": "S",
+                    "Tampering": "T",
+                    "Repudiation": "R",
+                    "Information Disclosure": "I",
+                    "Denial of Service": "D",
+                    "Elevation of Privilege": "E",
+                }
+                threat_type = threat_type_map.get(category, "T")
+
+                # Calculate risk level
+                risk_level = self._calculate_risk_level(likelihood, impact_level)
+
+                threat = ThreatRisk(
+                    project_id=project_id,
+                    asset_id=db_asset_id,
+                    threat_name=threat_data.get("name", "Unknown Threat"),
+                    threat_type=threat_type,
+                    threat_desc=threat_data.get("description", ""),
+                    attack_vector=threat_data.get("attack_vector", ""),
+                    likelihood=likelihood,
+                    safety_impact=impact_data.get("safety", 0) if isinstance(impact_data, dict) else 0,
+                    financial_impact=impact_data.get("financial", 0) if isinstance(impact_data, dict) else 0,
+                    operational_impact=impact_data.get("operational", 0) if isinstance(impact_data, dict) else 0,
+                    privacy_impact=impact_data.get("privacy", 0) if isinstance(impact_data, dict) else 0,
+                    impact_level=impact_level,
+                    risk_level=risk_level,
+                    source="oneclick_generated",
+                )
+                self.db.add(threat)
+
+                # Store the db id for later use
+                self.db.flush()
+                threat_data["db_id"] = threat.id
+
+            self.db.commit()
+            logger.info(f"Saved {len(threats)} threats to database for project {project_id}")
+
+        except Exception as e:
+            logger.error(f"Failed to save threats to database: {e}")
+            self.db.rollback()
+
+    def _calculate_risk_level(self, likelihood: int, impact: int) -> str:
+        """Calculate risk level from likelihood and impact."""
+        # Risk matrix based on ISO 21434
+        risk_matrix = {
+            (3, 4): "CAL-4",
+            (3, 3): "CAL-4",
+            (3, 2): "CAL-3",
+            (3, 1): "CAL-2",
+            (2, 4): "CAL-4",
+            (2, 3): "CAL-3",
+            (2, 2): "CAL-2",
+            (2, 1): "CAL-1",
+            (1, 4): "CAL-3",
+            (1, 3): "CAL-2",
+            (1, 2): "CAL-1",
+            (1, 1): "CAL-1",
+        }
+        return risk_matrix.get((likelihood, impact), "CAL-2")
+
+    async def _update_project_status(self, project_id: int, status: int) -> None:
+        """Update project status in database."""
+        try:
+            project = self.db.query(Project).filter(Project.id == project_id).first()
+            if project:
+                project.status = status
+                self.db.commit()
+                logger.info(f"Updated project {project_id} status to {status}")
+        except Exception as e:
+            logger.error(f"Failed to update project status: {e}")
             self.db.rollback()
