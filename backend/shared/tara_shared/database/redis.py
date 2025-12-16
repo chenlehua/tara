@@ -7,8 +7,16 @@ Redis client for caching and pub/sub.
 
 from typing import Optional
 
-import redis
-from redis import Redis
+# Try to import redis, use None if not available
+try:
+    import redis
+    from redis import Redis
+
+    _REDIS_AVAILABLE = True
+except ImportError:
+    redis = None
+    Redis = None
+    _REDIS_AVAILABLE = False
 
 from ..config import settings
 from ..utils.logger import get_logger
@@ -19,12 +27,18 @@ logger = get_logger(__name__)
 class RedisClient:
     """Redis client wrapper with connection management."""
 
-    _instance: Optional[Redis] = None
+    _instance: Optional["Redis"] = None
     _connection_error: Optional[str] = None
 
     @classmethod
-    def get_client(cls) -> Optional[Redis]:
+    def get_client(cls) -> Optional["Redis"]:
         """Get Redis client instance (singleton)."""
+        if not _REDIS_AVAILABLE:
+            if cls._connection_error is None:
+                cls._connection_error = "redis package not installed"
+                logger.warning("redis package not installed. Caching will be unavailable.")
+            return None
+
         if cls._instance is None and cls._connection_error is None:
             try:
                 cls._instance = redis.from_url(

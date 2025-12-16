@@ -9,8 +9,16 @@ import io
 from datetime import timedelta
 from typing import Any, BinaryIO, Dict, List, Optional
 
-from minio import Minio
-from minio.error import S3Error
+# Try to import minio, use None if not available
+try:
+    from minio import Minio
+    from minio.error import S3Error
+
+    _MINIO_AVAILABLE = True
+except ImportError:
+    Minio = None
+    S3Error = Exception
+    _MINIO_AVAILABLE = False
 
 from ..config import settings
 from ..utils.logger import get_logger
@@ -21,12 +29,18 @@ logger = get_logger(__name__)
 class MinIOClient:
     """MinIO client wrapper."""
 
-    _client: Optional[Minio] = None
+    _client: Optional["Minio"] = None
     _connection_error: Optional[str] = None
 
     @classmethod
-    def get_client(cls) -> Optional[Minio]:
+    def get_client(cls) -> Optional["Minio"]:
         """Get MinIO client instance (singleton)."""
+        if not _MINIO_AVAILABLE:
+            if cls._connection_error is None:
+                cls._connection_error = "minio package not installed"
+                logger.warning("minio package not installed. File storage will be unavailable.")
+            return None
+
         if cls._client is None and cls._connection_error is None:
             try:
                 cls._client = Minio(

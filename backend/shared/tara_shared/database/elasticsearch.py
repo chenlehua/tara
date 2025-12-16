@@ -7,7 +7,14 @@ ElasticSearch client for full-text search.
 
 from typing import Any, Dict, List, Optional
 
-from elasticsearch import Elasticsearch
+# Try to import elasticsearch, use None if not available
+try:
+    from elasticsearch import Elasticsearch
+
+    _ELASTICSEARCH_AVAILABLE = True
+except ImportError:
+    Elasticsearch = None
+    _ELASTICSEARCH_AVAILABLE = False
 
 from ..config import settings
 from ..utils.logger import get_logger
@@ -18,12 +25,18 @@ logger = get_logger(__name__)
 class ESClient:
     """ElasticSearch client wrapper."""
 
-    _client: Optional[Elasticsearch] = None
+    _client: Optional["Elasticsearch"] = None
     _connection_error: Optional[str] = None
 
     @classmethod
-    def get_client(cls) -> Optional[Elasticsearch]:
+    def get_client(cls) -> Optional["Elasticsearch"]:
         """Get ElasticSearch client instance (singleton)."""
+        if not _ELASTICSEARCH_AVAILABLE:
+            if cls._connection_error is None:
+                cls._connection_error = "elasticsearch package not installed"
+                logger.warning("elasticsearch package not installed. Search will be unavailable.")
+            return None
+
         if cls._client is None and cls._connection_error is None:
             try:
                 cls._client = Elasticsearch(
@@ -248,6 +261,10 @@ class SearchService:
         if not self.is_available():
             logger.warning("ElasticSearch not available, skipping bulk indexing")
             return {"indexed": 0, "failed": len(documents)}
+
+        if not _ELASTICSEARCH_AVAILABLE:
+            return {"indexed": 0, "failed": len(documents)}
+
         from elasticsearch.helpers import bulk
 
         actions = [

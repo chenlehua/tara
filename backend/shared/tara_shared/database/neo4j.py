@@ -7,8 +7,18 @@ Neo4j driver for knowledge graph operations.
 
 from typing import Any, Dict, List, Optional
 
-from neo4j import Driver, GraphDatabase, Session
-from neo4j.exceptions import Neo4jError
+# Try to import neo4j, use None if not available
+try:
+    from neo4j import Driver, GraphDatabase, Session
+    from neo4j.exceptions import Neo4jError
+
+    _NEO4J_AVAILABLE = True
+except ImportError:
+    Driver = None
+    GraphDatabase = None
+    Session = None
+    Neo4jError = Exception
+    _NEO4J_AVAILABLE = False
 
 from ..config import settings
 from ..utils.logger import get_logger
@@ -19,12 +29,18 @@ logger = get_logger(__name__)
 class Neo4jDriver:
     """Neo4j driver wrapper with connection management."""
 
-    _driver: Optional[Driver] = None
+    _driver: Optional["Driver"] = None
     _connection_error: Optional[str] = None
 
     @classmethod
-    def get_driver(cls) -> Optional[Driver]:
+    def get_driver(cls) -> Optional["Driver"]:
         """Get Neo4j driver instance (singleton)."""
+        if not _NEO4J_AVAILABLE:
+            if cls._connection_error is None:
+                cls._connection_error = "neo4j package not installed"
+                logger.warning("neo4j package not installed. Graph operations will be unavailable.")
+            return None
+
         if cls._driver is None and cls._connection_error is None:
             try:
                 cls._driver = GraphDatabase.driver(

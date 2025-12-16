@@ -7,7 +7,18 @@ Milvus client for vector similarity search.
 
 from typing import Any, Dict, List, Optional
 
-from pymilvus import Collection, DataType, MilvusClient, connections, utility
+# Try to import pymilvus, use None if not available
+try:
+    from pymilvus import Collection, DataType, MilvusClient, connections, utility
+
+    _MILVUS_AVAILABLE = True
+except ImportError:
+    Collection = None
+    DataType = None
+    MilvusClient = None
+    connections = None
+    utility = None
+    _MILVUS_AVAILABLE = False
 
 from ..config import settings
 from ..utils.logger import get_logger
@@ -18,12 +29,18 @@ logger = get_logger(__name__)
 class MilvusManager:
     """Milvus connection and operation manager."""
 
-    _client: Optional[MilvusClient] = None
+    _client: Optional["MilvusClient"] = None
     _connection_error: Optional[str] = None
 
     @classmethod
-    def get_client(cls) -> Optional[MilvusClient]:
+    def get_client(cls) -> Optional["MilvusClient"]:
         """Get Milvus client instance (singleton)."""
+        if not _MILVUS_AVAILABLE:
+            if cls._connection_error is None:
+                cls._connection_error = "pymilvus package not installed"
+                logger.warning("pymilvus package not installed. Vector search will be unavailable.")
+            return None
+
         if cls._client is None and cls._connection_error is None:
             try:
                 cls._client = MilvusClient(
