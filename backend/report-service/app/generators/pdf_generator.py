@@ -1,6 +1,7 @@
 """PDF report generator."""
 
 import io
+import os
 from datetime import datetime
 from typing import Any, List
 
@@ -9,6 +10,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (PageBreak, Paragraph, SimpleDocTemplate,
                                 Spacer, Table, TableStyle)
@@ -21,15 +23,63 @@ class PDFGenerator:
     """Generate PDF reports."""
 
     def __init__(self):
+        self._register_chinese_fonts()
         self.styles = getSampleStyleSheet()
         self._setup_styles()
 
+    def _register_chinese_fonts(self):
+        """Register Chinese fonts for PDF generation."""
+        try:
+            # Try to register CID font for Chinese (built-in, no file needed)
+            pdfmetrics.registerFont(UnicodeCIDFont('STSong-Light'))
+            self.chinese_font = 'STSong-Light'
+            self.chinese_font_bold = 'STSong-Light'
+            logger.info("Registered CID font: STSong-Light")
+        except Exception as e:
+            logger.warning(f"Failed to register CID font: {e}")
+            # Try common system fonts
+            font_paths = [
+                # Linux
+                '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+                '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+                '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+                '/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf',
+                # Alternative Linux paths
+                '/usr/share/fonts/wqy-zenhei/wqy-zenhei.ttc',
+                '/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc',
+                # macOS
+                '/System/Library/Fonts/PingFang.ttc',
+                '/System/Library/Fonts/STHeiti Light.ttc',
+                # Windows
+                'C:/Windows/Fonts/simhei.ttf',
+                'C:/Windows/Fonts/simsun.ttc',
+            ]
+            
+            font_registered = False
+            for font_path in font_paths:
+                if os.path.exists(font_path):
+                    try:
+                        pdfmetrics.registerFont(TTFont('ChineseFont', font_path))
+                        self.chinese_font = 'ChineseFont'
+                        self.chinese_font_bold = 'ChineseFont'
+                        font_registered = True
+                        logger.info(f"Registered TTF font: {font_path}")
+                        break
+                    except Exception as ex:
+                        logger.warning(f"Failed to register font {font_path}: {ex}")
+            
+            if not font_registered:
+                # Fallback to Helvetica (won't display Chinese correctly but won't crash)
+                logger.warning("No Chinese font found, using Helvetica as fallback")
+                self.chinese_font = 'Helvetica'
+                self.chinese_font_bold = 'Helvetica-Bold'
+
     def _setup_styles(self):
-        """Setup custom styles."""
+        """Setup custom styles with Chinese font support."""
         self.styles.add(
             ParagraphStyle(
                 name="ChineseNormal",
-                fontName="Helvetica",
+                fontName=self.chinese_font,
                 fontSize=10,
                 leading=14,
             )
@@ -37,7 +87,7 @@ class PDFGenerator:
         self.styles.add(
             ParagraphStyle(
                 name="ChineseTitle",
-                fontName="Helvetica-Bold",
+                fontName=self.chinese_font_bold,
                 fontSize=18,
                 leading=22,
                 spaceAfter=20,
@@ -46,7 +96,7 @@ class PDFGenerator:
         self.styles.add(
             ParagraphStyle(
                 name="ChineseHeading",
-                fontName="Helvetica-Bold",
+                fontName=self.chinese_font_bold,
                 fontSize=14,
                 leading=18,
                 spaceBefore=12,
@@ -56,7 +106,7 @@ class PDFGenerator:
         self.styles.add(
             ParagraphStyle(
                 name="ChineseSubHeading",
-                fontName="Helvetica-Bold",
+                fontName=self.chinese_font_bold,
                 fontSize=12,
                 leading=16,
                 spaceBefore=8,
@@ -131,12 +181,13 @@ class PDFGenerator:
         return buffer
 
     def _create_table_style(self) -> TableStyle:
-        """Create standard table style."""
+        """Create standard table style with Chinese font support."""
         return TableStyle([
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4F46E5")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
             ("ALIGN", (0, 0), (-1, -1), "LEFT"),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTNAME", (0, 0), (-1, 0), self.chinese_font_bold),
+            ("FONTNAME", (0, 1), (-1, -1), self.chinese_font),
             ("FONTSIZE", (0, 0), (-1, 0), 10),
             ("BOTTOMPADDING", (0, 0), (-1, 0), 10),
             ("TOPPADDING", (0, 0), (-1, 0), 10),
