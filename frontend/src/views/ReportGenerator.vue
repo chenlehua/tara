@@ -599,25 +599,6 @@ const resetProgress = () => {
   })
 }
 
-const updateProgress = (stepIndex: number, progress: number) => {
-  // Update progress bar
-  generationProgress.value = progress
-  
-  // Update step states
-  progressSteps.forEach((step, index) => {
-    if (index < stepIndex) {
-      step.completed = true
-      step.active = false
-    } else if (index === stepIndex) {
-      step.completed = false
-      step.active = true
-    } else {
-      step.completed = false
-      step.active = false
-    }
-  })
-}
-
 const generateReport = async () => {
   if (uploadedFiles.value.length === 0) return
   
