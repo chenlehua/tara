@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from tara_shared.constants import ReportStatus
+from tara_shared.models import Project, Report
 from tara_shared.utils import get_logger
 
 logger = get_logger(__name__)
@@ -62,13 +63,37 @@ class OneClickGenerateService:
             file_paths.append(str(file_path))
             logger.info(f"Saved file: {file_path}")
 
-        # Create mock project and report IDs (in real implementation, create in DB)
-        project_id = int(datetime.now().timestamp() * 1000) % 100000
-        report_id = project_id + 1
+        # Create project in database
+        project = Project(
+            name=project_name or f"一键生成项目_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            description=f"通过一键生成创建的项目，任务ID: {task_id}",
+            vehicle_type="通用",
+            standard="ISO/SAE 21434",
+            status=1,  # in_progress
+        )
+        self.db.add(project)
+        self.db.commit()
+        self.db.refresh(project)
+        logger.info(f"Created project: {project.id}")
+
+        # Create report in database
+        report = Report(
+            project_id=project.id,
+            name=f"TARA分析报告_{datetime.now().strftime('%Y-%m-%d')}",
+            report_type="tara",
+            description=f"一键生成的TARA分析报告，模板: {template}",
+            template=template,
+            status=ReportStatus.GENERATING.value,
+            progress=0,
+        )
+        self.db.add(report)
+        self.db.commit()
+        self.db.refresh(report)
+        logger.info(f"Created report: {report.id}")
 
         return {
-            "project_id": project_id,
-            "report_id": report_id,
+            "project_id": project.id,
+            "report_id": report.id,
             "file_paths": file_paths,
         }
 
@@ -118,6 +143,9 @@ class OneClickGenerateService:
             )
             await asyncio.sleep(1)
 
+            # Save report data to database
+            await self._save_report_to_db(report_id, report_data, risk_assessment)
+
             # Complete
             task_storage[task_id]["status"] = "completed"
             task_storage[task_id]["progress"] = 100
@@ -133,6 +161,8 @@ class OneClickGenerateService:
             logger.error(f"Report generation failed: {e}")
             task_storage[task_id]["status"] = "failed"
             task_storage[task_id]["error"] = str(e)
+            # Update report status to failed
+            await self._update_report_status(report_id, ReportStatus.FAILED.value, str(e))
 
     async def _update_progress(
         self,
@@ -641,3 +671,46 @@ class OneClickGenerateService:
                 "docx": f"/api/v1/reports/{report_id}/download?format=docx",
             },
         }
+
+    async def _save_report_to_db(
+        self,
+        report_id: int,
+        report_data: Dict[str, Any],
+        risk_assessment: Dict[str, Any],
+    ) -> None:
+        """Save generated report data to database."""
+        try:
+            report = self.db.query(Report).filter(Report.id == report_id).first()
+            if report:
+                report.status = ReportStatus.COMPLETED.value
+                report.progress = 100
+                report.statistics = report_data.get("statistics", {})
+                report.content = {
+                    "assets": report_data.get("assets", []),
+                    "threats": report_data.get("threats", []),
+                    "risk_distribution": report_data.get("risk_distribution", {}),
+                    "generated_at": report_data.get("generated_at"),
+                }
+                self.db.commit()
+                logger.info(f"Report {report_id} saved to database")
+        except Exception as e:
+            logger.error(f"Failed to save report to database: {e}")
+            self.db.rollback()
+
+    async def _update_report_status(
+        self,
+        report_id: int,
+        status: int,
+        error_message: Optional[str] = None,
+    ) -> None:
+        """Update report status in database."""
+        try:
+            report = self.db.query(Report).filter(Report.id == report_id).first()
+            if report:
+                report.status = status
+                if error_message:
+                    report.error_message = error_message
+                self.db.commit()
+        except Exception as e:
+            logger.error(f"Failed to update report status: {e}")
+            self.db.rollback()
