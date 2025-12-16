@@ -8,11 +8,18 @@ Common utility functions.
 import hashlib
 import mimetypes
 import os
+import time
 import uuid
 from datetime import datetime
 from typing import Any, Optional
 
-import snowflake
+# Try to import snowflake-id, use fallback if not available
+try:
+    import snowflake
+
+    _SNOWFLAKE_AVAILABLE = True
+except ImportError:
+    _SNOWFLAKE_AVAILABLE = False
 
 
 # Snowflake ID generator (for distributed ID generation)
@@ -20,22 +27,41 @@ class SnowflakeGenerator:
     """Snowflake ID generator."""
 
     _instance = None
+    _initialized = False
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            # Worker ID from environment or default
-            worker_id = int(os.environ.get("WORKER_ID", "1"))
-            datacenter_id = int(os.environ.get("DATACENTER_ID", "1"))
-            cls._instance.generator = snowflake.SnowflakeGenerator(
-                worker_id % 32,  # 5 bits
-                datacenter_id % 32,  # 5 bits
-            )
         return cls._instance
+
+    def _initialize(self):
+        """Lazy initialization of the generator."""
+        if not self._initialized and _SNOWFLAKE_AVAILABLE:
+            try:
+                # Worker ID from environment or default
+                worker_id = int(os.environ.get("WORKER_ID", "1"))
+                datacenter_id = int(os.environ.get("DATACENTER_ID", "1"))
+                self.generator = snowflake.SnowflakeGenerator(
+                    worker_id % 32,  # 5 bits
+                    datacenter_id % 32,  # 5 bits
+                )
+                self._initialized = True
+            except Exception:
+                self._initialized = False
 
     def next_id(self) -> int:
         """Generate next snowflake ID."""
-        return next(self.generator)
+        if not self._initialized:
+            self._initialize()
+
+        if self._initialized and _SNOWFLAKE_AVAILABLE:
+            try:
+                return next(self.generator)
+            except Exception:
+                pass
+
+        # Fallback to timestamp-based ID
+        return int(time.time() * 1000000)
 
 
 def generate_id() -> int:
@@ -45,13 +71,7 @@ def generate_id() -> int:
     Returns:
         Unique integer ID
     """
-    try:
-        return SnowflakeGenerator().next_id()
-    except Exception:
-        # Fallback to timestamp-based ID
-        import time
-
-        return int(time.time() * 1000000)
+    return SnowflakeGenerator().next_id()
 
 
 def generate_uuid() -> str:

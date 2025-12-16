@@ -72,7 +72,23 @@ export const chatApi = {
         project_id: projectId,
         context
       })
-      return response.data
+      // Backend returns {success, code, message, data: {role, content}}
+      // Extract the actual content from the response
+      const result = response.data
+      if (result.success && result.data) {
+        return {
+          content: result.data.content || '',
+          sources: result.data.sources,
+          suggestions: result.data.suggestions,
+          metadata: result.data.metadata
+        }
+      }
+      // Fallback if response format is unexpected
+      return {
+        content: result.data?.content || result.content || '无法获取回复',
+        sources: [],
+        suggestions: []
+      }
     } catch (error) {
       console.error('Chat API error:', error)
       throw error
