@@ -121,11 +121,17 @@ docker-ps: ## 查看Docker容器状态
 	docker compose -f deploy/docker/docker-compose.yml ps
 
 ## ==================== 数据库 ====================
-db-init: ## 初始化数据库
-	@echo "Initializing databases..."
-	mysql -h localhost -u root -p < database/mysql/init/01_create_database.sql
-	mysql -h localhost -u tara -p tara_db < database/mysql/init/02_create_tables.sql
-	mysql -h localhost -u tara -p tara_db < database/mysql/init/03_init_data.sql
+db-init: ## 初始化数据库 (通过Docker)
+	@echo "Initializing databases via Docker..."
+	@echo "Waiting for MySQL to be ready..."
+	@sleep 5
+	docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -p$(MYSQL_ROOT_PASSWORD) < database/mysql/init/01_create_database.sql || \
+		docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -proot_password < database/mysql/init/01_create_database.sql
+	@echo "Database initialized successfully!"
+
+db-init-local: ## 初始化数据库 (本地MySQL)
+	@echo "Initializing databases locally..."
+	mysql -h 127.0.0.1 -P 3306 -u root -p < database/mysql/init/01_create_database.sql
 
 db-migrate: ## 运行数据库迁移
 	cd backend/shared && alembic upgrade head
@@ -135,6 +141,9 @@ db-rollback: ## 回滚数据库迁移
 
 db-seed: ## 填充测试数据
 	python scripts/dev/seed-data.py
+
+db-shell: ## 连接到MySQL (Docker)
+	docker compose -f deploy/docker/docker-compose.yml exec mysql mysql -u tara -ptara_password tara_db
 
 ## ==================== 测试 ====================
 test: ## 运行所有测试
