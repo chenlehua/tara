@@ -241,11 +241,94 @@ class ReportService:
         """Get report file for download."""
         report = await self.get_report(report_id)
 
-        # TODO: Download from MinIO
-        buffer = io.BytesIO(b"Report content placeholder")
-        filename = f"{report.name}.{format}"
+        # Try to get file from MinIO if path exists
+        if report.file_path:
+            try:
+                from tara_shared.database.minio import storage_service
+
+                if storage_service.is_available():
+                    file_data = storage_service.get_object(
+                        bucket_name="reports",
+                        object_name=report.file_path,
+                    )
+                    if file_data:
+                        buffer = io.BytesIO(file_data)
+                        filename = f"{report.name}.{format}"
+                        return buffer, filename
+            except Exception as e:
+                logger.warning(f"Failed to get file from MinIO: {e}")
+
+        # If no file in storage, generate on the fly from stored content
+        if report.content:
+            try:
+                if format == "pdf":
+                    buffer = await self._generate_pdf_from_content(report)
+                elif format == "docx":
+                    buffer = await self._generate_word_from_content(report)
+                else:
+                    buffer = io.BytesIO(
+                        json.dumps(report.content, ensure_ascii=False, indent=2).encode(
+                            "utf-8"
+                        )
+                    )
+                filename = f"{report.name}.{format}"
+                return buffer, filename
+            except Exception as e:
+                logger.error(f"Failed to generate report file: {e}")
+
+        # Fallback: return JSON with report info
+        import json
+
+        content = {
+            "id": report.id,
+            "name": report.name,
+            "status": report.status,
+            "statistics": report.statistics or {},
+            "content": report.content or {},
+            "message": "报告文件正在生成中，请稍后重试",
+        }
+        buffer = io.BytesIO(json.dumps(content, ensure_ascii=False, indent=2).encode("utf-8"))
+        filename = f"{report.name}.json"
 
         return buffer, filename
+
+    async def _generate_pdf_from_content(self, report: Report) -> io.BytesIO:
+        """Generate PDF from stored report content."""
+        buffer = io.BytesIO()
+        # Use PDF generator with stored content
+        try:
+            content = report.content or {}
+            data = {
+                "project": content.get("project", {"name": report.name}),
+                "assets": content.get("assets", []),
+                "threats": content.get("threats", []),
+                "statistics": report.statistics or {},
+            }
+            # Generate simple PDF
+            self.pdf_generator.generate_report(buffer, data)
+            buffer.seek(0)
+        except Exception as e:
+            logger.error(f"PDF generation failed: {e}")
+            buffer = io.BytesIO(b"PDF generation failed")
+        return buffer
+
+    async def _generate_word_from_content(self, report: Report) -> io.BytesIO:
+        """Generate Word document from stored report content."""
+        buffer = io.BytesIO()
+        try:
+            content = report.content or {}
+            data = {
+                "project": content.get("project", {"name": report.name}),
+                "assets": content.get("assets", []),
+                "threats": content.get("threats", []),
+                "statistics": report.statistics or {},
+            }
+            self.word_generator.generate_report(buffer, data)
+            buffer.seek(0)
+        except Exception as e:
+            logger.error(f"Word generation failed: {e}")
+            buffer = io.BytesIO(b"Word generation failed")
+        return buffer
 
     async def get_report_preview(self, report_id: int) -> dict:
         """Get report preview data."""

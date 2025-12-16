@@ -207,9 +207,115 @@ class AssetService:
     ) -> None:
         """Run asset discovery (background task)."""
         logger.info(f"Starting asset discovery task {task_id}")
-        # Implementation would call AI service for asset extraction
-        # This is a placeholder for the actual AI-powered discovery
-        pass
+
+        # Import document model
+        from tara_shared.models import Document
+
+        for doc_id in document_ids:
+            try:
+                # Get document from database
+                doc = self.db.query(Document).filter(Document.id == doc_id).first()
+                if not doc:
+                    logger.warning(f"Document {doc_id} not found")
+                    continue
+
+                project_id = doc.project_id
+
+                # Try to use AI service for asset extraction
+                try:
+                    import httpx
+                    from tara_shared.config import settings
+
+                    async with httpx.AsyncClient() as client:
+                        response = await client.post(
+                            f"{settings.qwen3_url}/chat/completions",
+                            json={
+                                "model": "qwen3",
+                                "messages": [
+                                    {
+                                        "role": "system",
+                                        "content": "你是一个汽车网络安全专家，请从以下文档内容中识别出所有的ECU、传感器、网关等资产，并以JSON数组格式返回。每个资产包含: name(名称), asset_type(类型:ECU/Gateway/Sensor/Actuator), category(类别), description(描述)。",
+                                    },
+                                    {
+                                        "role": "user",
+                                        "content": f"文档名称: {doc.name}\n内容: {doc.content[:4000] if doc.content else '无内容'}",
+                                    },
+                                ],
+                                "temperature": 0.3,
+                                "max_tokens": 2000,
+                            },
+                            timeout=60.0,
+                        )
+                        if response.status_code == 200:
+                            result = response.json()
+                            ai_response = result["choices"][0]["message"]["content"]
+                            # Parse AI response and create assets
+                            await self._parse_and_create_assets(
+                                project_id, ai_response, include_relations
+                            )
+                            continue
+                except Exception as e:
+                    logger.warning(f"AI service unavailable, using fallback: {e}")
+
+                # Fallback: create basic assets from document metadata
+                doc_metadata = doc.doc_metadata or {}
+                if "assets" in doc_metadata:
+                    for asset_data in doc_metadata["assets"]:
+                        asset = Asset(
+                            project_id=project_id,
+                            name=asset_data.get("name", "Unknown Asset"),
+                            asset_type=asset_data.get("type", "ECU"),
+                            category=asset_data.get("category", "general"),
+                            description=asset_data.get("description", ""),
+                            source="document_import",
+                        )
+                        self.db.add(asset)
+
+                self.db.commit()
+                logger.info(f"Asset discovery completed for document {doc_id}")
+
+            except Exception as e:
+                logger.error(f"Asset discovery failed for document {doc_id}: {e}")
+                self.db.rollback()
+
+    async def _parse_and_create_assets(
+        self,
+        project_id: int,
+        ai_response: str,
+        include_relations: bool = True,
+    ) -> None:
+        """Parse AI response and create assets in database."""
+        import json
+        import re
+
+        try:
+            # Extract JSON from AI response
+            json_match = re.search(r"\[.*\]", ai_response, re.DOTALL)
+            if not json_match:
+                logger.warning("No JSON array found in AI response")
+                return
+
+            assets_data = json.loads(json_match.group())
+
+            for asset_data in assets_data:
+                asset = Asset(
+                    project_id=project_id,
+                    name=asset_data.get("name", "Unknown"),
+                    asset_type=asset_data.get("asset_type", "ECU"),
+                    category=asset_data.get("category", "general"),
+                    description=asset_data.get("description", ""),
+                    source="ai_discovered",
+                )
+                self.db.add(asset)
+
+            self.db.commit()
+            logger.info(f"Created {len(assets_data)} assets from AI discovery")
+
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse AI response as JSON: {e}")
+        except Exception as e:
+            logger.error(f"Failed to create assets from AI response: {e}")
+            self.db.rollback()
 
     def _create_graph_node(self, asset: Asset) -> None:
         """Create asset node in Neo4j."""
