@@ -150,19 +150,38 @@ db-shell: ## 连接到MySQL (Docker)
 
 ## ==================== 测试 ====================
 test: ## 运行所有测试
-	pytest tests/ -v
+	pytest backend/ tests/ -v --ignore=backend/**/node_modules
 
-test-unit: ## 运行单元测试
-	pytest tests/backend/unit/ -v
+test-unit: ## 运行后端单元测试
+	pytest backend/shared/tests/unit/ \
+		backend/project-service/tests/unit/ \
+		backend/document-service/tests/unit/ \
+		backend/asset-service/tests/unit/ \
+		backend/threat-risk-service/tests/unit/ \
+		backend/diagram-service/tests/unit/ \
+		backend/report-service/tests/unit/ \
+		backend/agent-service/tests/unit/ \
+		-v
 
-test-integration: ## 运行集成测试
-	pytest tests/backend/integration/ -v
+test-integration: ## 运行后端集成测试
+	pytest backend/shared/tests/integration/ \
+		backend/project-service/tests/integration/ \
+		backend/document-service/tests/integration/ \
+		backend/threat-risk-service/tests/integration/ \
+		backend/agent-service/tests/integration/ \
+		-v
+
+test-e2e: ## 运行端到端测试
+	pytest tests/e2e/ -v
+
+test-security: ## 运行安全测试
+	pytest tests/security/ -v
 
 test-frontend: ## 运行前端测试
-	cd frontend && pnpm test
+	cd frontend && pnpm install --registry https://registry.npmmirror.com && pnpm test
 
 coverage: ## 生成测试覆盖率报告
-	pytest tests/ --cov=backend --cov-report=html
+	pytest backend/ tests/ --cov=backend --cov-report=html --ignore=backend/**/node_modules
 	@echo "Coverage report generated in htmlcov/"
 
 ## ==================== 代码质量 ====================
