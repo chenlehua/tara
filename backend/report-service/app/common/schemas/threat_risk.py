@@ -37,9 +37,11 @@ class ControlMeasureCreate(ControlMeasureBase):
 class ControlMeasureResponse(ControlMeasureBase, IDMixin, TimestampMixin):
     """Schema for ControlMeasure response."""
 
-    attack_path_id: int = Field(..., description="攻击路径ID")
+    attack_path_id: Optional[int] = Field(default=None, description="攻击路径ID")
+    threat_risk_id: Optional[int] = Field(default=None, description="威胁风险ID")
     implementation_status: int = Field(default=0, description="实施状态")
     verification_status: int = Field(default=0, description="验证状态")
+    status: Optional[str] = Field(default=None, description="状态")
 
 
 # ==================== Attack Path ====================

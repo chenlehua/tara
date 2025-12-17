@@ -307,17 +307,21 @@ const loadData = async () => {
       knowledgeApi.listCategories(),
     ])
     
-    if (docsRes.code === 0) {
+    if (docsRes.success) {
       documents.value = docsRes.data?.items || []
     }
-    if (statsRes.code === 0) {
+    if (statsRes.success) {
       stats.value = statsRes.data
     }
-    if (catsRes.code === 0) {
+    if (catsRes.success) {
       categories.value = catsRes.data?.categories || []
     }
   } catch (error) {
     console.error('Failed to load knowledge base:', error)
+    // Set empty defaults on error
+    documents.value = []
+    stats.value = null
+    categories.value = []
   } finally {
     loading.value = false
   }
@@ -336,11 +340,12 @@ const handleSearch = async () => {
       top_k: 20,
     })
     
-    if (res.code === 0) {
+    if (res.success) {
       searchResults.value = res.data?.results || []
     }
   } catch (error) {
     console.error('Search failed:', error)
+    searchResults.value = []
   }
 }
 
@@ -371,7 +376,7 @@ const uploadDocument = async () => {
       tags: uploadTags.value,
     })
     
-    if (res.code === 0) {
+    if (res.success) {
       showUploadModal.value = false
       selectedFile.value = null
       uploadTags.value = ''

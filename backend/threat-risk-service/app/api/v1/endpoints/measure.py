@@ -26,14 +26,31 @@ async def list_measures(
     db: Session = Depends(get_db),
 ):
     """List control measures for a project or all projects if project_id is not provided."""
-    query = db.query(ControlMeasure)
+    from sqlalchemy import or_
+    from app.common.models import AttackPath, ThreatRisk
     
     if project_id is not None:
-        # Join through attack_path to filter by project
-        from app.common.models import AttackPath, ThreatRisk
-        query = query.join(AttackPath, ControlMeasure.attack_path_id == AttackPath.id)
-        query = query.join(ThreatRisk, AttackPath.threat_risk_id == ThreatRisk.id)
-        query = query.filter(ThreatRisk.project_id == project_id)
+        # Get measures linked via attack_path or directly via threat_risk
+        # Subquery for measures linked via attack_path
+        attack_path_measures = (
+            db.query(ControlMeasure.id)
+            .join(AttackPath, ControlMeasure.attack_path_id == AttackPath.id)
+            .join(ThreatRisk, AttackPath.threat_risk_id == ThreatRisk.id)
+            .filter(ThreatRisk.project_id == project_id)
+        )
+        
+        # Subquery for measures linked directly via threat_risk
+        direct_measures = (
+            db.query(ControlMeasure.id)
+            .join(ThreatRisk, ControlMeasure.threat_risk_id == ThreatRisk.id)
+            .filter(ThreatRisk.project_id == project_id)
+        )
+        
+        # Combine both queries
+        measure_ids = attack_path_measures.union(direct_measures).subquery()
+        query = db.query(ControlMeasure).filter(ControlMeasure.id.in_(measure_ids))
+    else:
+        query = db.query(ControlMeasure)
     
     total = query.count()
     offset = (page - 1) * page_size

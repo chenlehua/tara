@@ -127,10 +127,17 @@ class ControlMeasure(BaseModel):
 
     __tablename__ = "control_measures"
 
+    # Can be linked via attack_path or directly to threat_risk
     attack_path_id = Column(
         Integer,
         ForeignKey("attack_paths.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,  # Made optional to support direct threat linkage
+        index=True,
+    )
+    threat_risk_id = Column(
+        Integer,
+        ForeignKey("threat_risks.id", ondelete="CASCADE"),
+        nullable=True,  # Direct linkage to threat (for one-click generation)
         index=True,
     )
 
@@ -143,8 +150,11 @@ class ControlMeasure(BaseModel):
     implementation = Column(Text, nullable=True)
     effectiveness = Column(String(20), nullable=True)  # low, medium, high
     cost_estimate = Column(String(50), nullable=True)
+    
+    # Status as string for flexibility
+    status = Column(String(50), nullable=True)  # planned, in_progress, implemented
 
-    # Implementation status
+    # Implementation status (legacy int field)
     implementation_status = Column(
         Integer, default=0
     )  # 0: planned, 1: in_progress, 2: implemented
@@ -153,8 +163,9 @@ class ControlMeasure(BaseModel):
     # Reference
     iso21434_ref = Column(String(50), nullable=True)  # ISO 21434 reference clause
 
-    # Relationship
+    # Relationships
     attack_path = relationship("AttackPath", back_populates="control_measures")
+    threat_risk = relationship("ThreatRisk", backref="control_measures")
 
     def __repr__(self) -> str:
         return f"<ControlMeasure(id={self.id}, name='{self.name}')>"
