@@ -7,6 +7,7 @@ Handles document processing, chunking, embedding, and hybrid search.
 """
 
 import hashlib
+import json
 import os
 import re
 import uuid
@@ -26,6 +27,12 @@ logger = get_logger(__name__)
 KNOWLEDGE_STORAGE_DIR = Path("/tmp/knowledge_base")
 KNOWLEDGE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
+# Path to static knowledge base data
+STATIC_KNOWLEDGE_BASE_DIR = Path("/app/backend/knowledge-base")
+
+# Document service URL for parsing
+DOCUMENT_SERVICE_URL = getattr(settings, 'document_service_url', 'http://document-service:8002')
+
 # Index and collection names
 ES_INDEX = "tara_knowledge"
 MILVUS_COLLECTION = "knowledge_embeddings"
@@ -43,7 +50,7 @@ class KnowledgeService:
         self._documents_cache: Dict[str, Dict] = {}
 
     def init_storage(self) -> None:
-        """Initialize Elasticsearch index and Milvus collection."""
+        """Initialize Elasticsearch index, Milvus collection, and load static knowledge base."""
         # Initialize ES index
         if self.search_service.is_available():
             mapping = {
@@ -79,6 +86,95 @@ class KnowledgeService:
                     logger.info(f"Created Milvus collection: {MILVUS_COLLECTION}")
             except Exception as e:
                 logger.warning(f"Failed to initialize Milvus collection: {e}")
+        
+        # Load static knowledge base data
+        self._load_static_knowledge_base()
+
+    def _load_static_knowledge_base(self) -> None:
+        """Load static knowledge base files from the knowledge-base directory."""
+        # Check multiple possible paths
+        possible_paths = [
+            STATIC_KNOWLEDGE_BASE_DIR,
+            Path("/workspace/backend/knowledge-base"),
+            Path("./backend/knowledge-base"),
+        ]
+        
+        kb_path = None
+        for path in possible_paths:
+            if path.exists():
+                kb_path = path
+                break
+        
+        if not kb_path:
+            logger.warning("Static knowledge base directory not found")
+            return
+        
+        logger.info(f"Loading static knowledge base from: {kb_path}")
+        
+        # Category mapping based on directory structure
+        category_map = {
+            "attack_patterns": "threat_library",
+            "control_library": "control_library",
+            "standards": "standard",
+            "threat_library": "threat_library",
+            "vehicle_components": "asset_library",
+        }
+        
+        loaded_count = 0
+        for subdir in kb_path.iterdir():
+            if not subdir.is_dir():
+                continue
+            
+            category = category_map.get(subdir.name, "general")
+            
+            for json_file in subdir.glob("*.json"):
+                try:
+                    with open(json_file, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                    
+                    # Create a document entry for the JSON file
+                    document_id = f"static_{subdir.name}_{json_file.stem}"
+                    
+                    if document_id in self._documents_cache:
+                        continue  # Already loaded
+                    
+                    # Extract content based on data structure
+                    content_parts = []
+                    items = data if isinstance(data, list) else data.get("items", data.get("patterns", data.get("controls", [data])))
+                    
+                    for item in items if isinstance(items, list) else [items]:
+                        if isinstance(item, dict):
+                            # Combine relevant fields for searchable content
+                            parts = []
+                            for key in ["name", "title", "description", "requirement", "attack_vector", "implementation"]:
+                                if key in item:
+                                    parts.append(f"{key}: {item[key]}")
+                            content_parts.append("\n".join(parts))
+                    
+                    full_content = "\n\n".join(content_parts)
+                    
+                    # Store in cache
+                    self._documents_cache[document_id] = {
+                        "document_id": document_id,
+                        "filename": json_file.name,
+                        "file_path": str(json_file),
+                        "project_id": None,
+                        "category": category,
+                        "tags": [subdir.name, "static", "preloaded"],
+                        "content_length": len(full_content),
+                        "total_chunks": 1,
+                        "indexed_chunks": 0,
+                        "created_at": datetime.now().isoformat(),
+                        "is_static": True,
+                    }
+                    
+                    loaded_count += 1
+                    logger.info(f"Loaded static knowledge: {json_file.name} ({category})")
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to load {json_file}: {e}")
+        
+        logger.info(f"Loaded {loaded_count} static knowledge base files")
 
     async def upload_and_process(
         self,
@@ -178,7 +274,73 @@ class KnowledgeService:
         filename: str,
         content_type: str,
     ) -> str:
-        """Parse document content to text."""
+        """Parse document content to extract text.
+        
+        First tries to use the document service API for parsing.
+        Falls back to local parsing if the service is unavailable.
+        """
+        # Try to use document service for parsing
+        parsed_text = await self._parse_via_document_service(content, filename, content_type)
+        if parsed_text:
+            return parsed_text
+        
+        # Fallback to local parsing
+        return await self._local_parse_document(content, filename, content_type)
+
+    async def _parse_via_document_service(
+        self,
+        content: bytes,
+        filename: str,
+        content_type: str,
+    ) -> Optional[str]:
+        """Use document service to parse the document."""
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                # Upload and parse in one call
+                files = {"file": (filename, content, content_type or "application/octet-stream")}
+                data = {"project_id": "0"}  # Use 0 for knowledge base documents
+                
+                response = await client.post(
+                    f"{DOCUMENT_SERVICE_URL}/api/v1/documents/upload",
+                    files=files,
+                    data=data,
+                )
+                
+                if response.status_code in [200, 201]:
+                    result = response.json()
+                    doc_id = result.get("data", {}).get("document_id")
+                    
+                    if doc_id:
+                        # Trigger parse and get content
+                        parse_response = await client.post(
+                            f"{DOCUMENT_SERVICE_URL}/api/v1/documents/{doc_id}/parse-extract",
+                            params={"extract_assets": False, "extract_threats": False},
+                        )
+                        
+                        if parse_response.status_code == 200:
+                            # Get parsed content
+                            content_response = await client.get(
+                                f"{DOCUMENT_SERVICE_URL}/api/v1/documents/{doc_id}/parsed-content"
+                            )
+                            if content_response.status_code == 200:
+                                content_data = content_response.json().get("data", {})
+                                return content_data.get("content", content_data.get("text", ""))
+                
+                logger.warning(f"Document service parsing failed: {response.status_code}")
+        except httpx.ConnectError:
+            logger.info("Document service not available, using local parsing")
+        except Exception as e:
+            logger.warning(f"Error calling document service: {e}")
+        
+        return None
+
+    async def _local_parse_document(
+        self,
+        content: bytes,
+        filename: str,
+        content_type: str,
+    ) -> str:
+        """Local fallback for document parsing."""
         ext = Path(filename).suffix.lower()
         
         try:
@@ -186,7 +348,6 @@ class KnowledgeService:
                 return content.decode("utf-8", errors="ignore")
             
             elif ext == ".json":
-                import json
                 data = json.loads(content.decode("utf-8"))
                 return json.dumps(data, ensure_ascii=False, indent=2)
             
@@ -194,8 +355,8 @@ class KnowledgeService:
                 # Try pypdf for PDF parsing
                 try:
                     from pypdf import PdfReader
-                    import io
-                    reader = PdfReader(io.BytesIO(content))
+                    import io as file_io
+                    reader = PdfReader(file_io.BytesIO(content))
                     text = ""
                     for page in reader.pages:
                         text += page.extract_text() + "\n"
@@ -208,8 +369,8 @@ class KnowledgeService:
                 # Try python-docx for Word documents
                 try:
                     from docx import Document
-                    import io
-                    doc = Document(io.BytesIO(content))
+                    import io as file_io
+                    doc = Document(file_io.BytesIO(content))
                     text = "\n".join([p.text for p in doc.paragraphs])
                     return text
                 except ImportError:

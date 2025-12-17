@@ -2,21 +2,77 @@
 
 import io
 from datetime import datetime
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
+import httpx
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Inches, Pt, RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
+from app.common.config import settings
 from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 
+# Diagram service URL
+DIAGRAM_SERVICE_URL = getattr(settings, 'diagram_service_url', 'http://diagram-service:8005')
+
 
 class WordGenerator:
     """Generate Word document reports."""
+
+    def __init__(self):
+        self._diagram_cache: Dict[str, bytes] = {}
+
+    async def _fetch_diagram(
+        self,
+        diagram_type: str,
+        project_id: int,
+        threat_id: Optional[int] = None,
+    ) -> Optional[io.BytesIO]:
+        """Fetch a diagram from the diagram service."""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                if diagram_type == "attack_tree" and threat_id:
+                    url = f"{DIAGRAM_SERVICE_URL}/api/v1/diagrams/attack-tree/{threat_id}?format=png"
+                else:
+                    url = f"{DIAGRAM_SERVICE_URL}/api/v1/diagrams/{diagram_type.replace('_', '-')}/{project_id}?format=png"
+                
+                response = await client.get(url)
+                
+                if response.status_code == 200:
+                    return io.BytesIO(response.content)
+                else:
+                    logger.warning(f"Failed to fetch diagram {diagram_type}: {response.status_code}")
+        except Exception as e:
+            logger.warning(f"Error fetching diagram {diagram_type}: {e}")
+        
+        return None
+
+    def _add_diagram_to_doc(
+        self,
+        doc: Document,
+        diagram_buffer: Optional[io.BytesIO],
+        caption: str,
+        width: float = 6.0,  # inches
+    ) -> None:
+        """Add a diagram image to the document."""
+        if diagram_buffer:
+            try:
+                diagram_buffer.seek(0)
+                doc.add_picture(diagram_buffer, width=Inches(width))
+                # Add caption
+                caption_para = doc.add_paragraph()
+                caption_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                caption_run = caption_para.add_run(caption)
+                caption_run.italic = True
+                caption_run.font.size = Pt(10)
+                doc.add_paragraph()  # Spacing
+            except Exception as e:
+                logger.warning(f"Failed to add diagram to Word doc: {e}")
+                doc.add_paragraph(f"[图表加载失败: {caption}]", style="Intense Quote")
 
     def _set_cell_shading(self, cell, color: str):
         """Set cell background color."""
@@ -179,11 +235,18 @@ class WordGenerator:
             f"Applicable standard: {project.get('standard', 'ISO/SAE 21434')}"
         )
 
+        # Get project_id for diagrams
+        project_id = content.get("project", {}).get("id") or data.get("project_id", 1)
+        
         doc.add_heading("2.2 Item Boundary 项目边界", 2)
         doc.add_paragraph(
             "The item boundary defines the scope of this TARA analysis. "
             "Components within the boundary are subject to cybersecurity assessment."
         )
+        
+        # Fetch and add item boundary diagram
+        item_boundary_diagram = await self._fetch_diagram("item-boundary", project_id)
+        self._add_diagram_to_doc(doc, item_boundary_diagram, "图 2.1 项目边界图 (Item Boundary Diagram)")
         
         # Item Boundary Table
         boundary_rows = [
@@ -211,6 +274,10 @@ class WordGenerator:
             "Each layer has specific security responsibilities and controls."
         )
         
+        # Fetch and add system architecture diagram
+        system_arch_diagram = await self._fetch_diagram("system-architecture", project_id)
+        self._add_diagram_to_doc(doc, system_arch_diagram, "图 2.2 系统架构图 (System Architecture Diagram)")
+        
         # System Architecture Table
         arch_rows = [
             ["Application Layer 应用层", "HMI, Navigation, Media, ADAS", "Input Validation, Access Control"],
@@ -225,6 +292,10 @@ class WordGenerator:
             "Key software modules and their security responsibilities are detailed below. "
             "The software architecture follows a modular design with clear security boundaries."
         )
+        
+        # Fetch and add software architecture diagram
+        sw_arch_diagram = await self._fetch_diagram("software-architecture", project_id)
+        self._add_diagram_to_doc(doc, sw_arch_diagram, "图 2.3 软件架构图 (Software Architecture Diagram)")
         
         # Software Architecture Table
         sw_rows = [
@@ -245,6 +316,18 @@ class WordGenerator:
             "The following assets have been identified and categorized according to their "
             "cybersecurity relevance."
         )
+        
+        # Fetch and add asset graph diagram
+        doc.add_heading("3.1 Asset Relationship Graph 资产关系图", 2)
+        asset_graph_diagram = await self._fetch_diagram("asset-graph", project_id)
+        self._add_diagram_to_doc(doc, asset_graph_diagram, "图 3.1 资产关系图 (Asset Relationship Graph)")
+        
+        # Fetch and add data flow diagram
+        doc.add_heading("3.2 Data Flow Diagram 数据流图", 2)
+        data_flow_diagram = await self._fetch_diagram("data-flow", project_id)
+        self._add_diagram_to_doc(doc, data_flow_diagram, "图 3.2 数据流图 (Data Flow Diagram)")
+        
+        doc.add_heading("3.3 Asset List 资产清单", 2)
 
         if assets:
             asset_rows = []
@@ -284,6 +367,17 @@ class WordGenerator:
             "(Spoofing, Tampering, Repudiation, Information Disclosure, "
             "Denial of Service, Elevation of Privilege)."
         )
+        
+        # Fetch and add attack tree diagram
+        if threats:
+            first_threat = threats[0]
+            first_threat_id = first_threat.get("id")
+            if first_threat_id and isinstance(first_threat_id, int):
+                doc.add_heading("4.1 Attack Tree Analysis 攻击树分析", 2)
+                attack_tree_diagram = await self._fetch_diagram("attack_tree", project_id, threat_id=first_threat_id)
+                self._add_diagram_to_doc(doc, attack_tree_diagram, "图 4.1 攻击树示例 (Attack Tree Example)")
+        
+        doc.add_heading("4.2 Threat List 威胁清单", 2)
 
         if threats:
             threat_rows = []
@@ -314,8 +408,13 @@ class WordGenerator:
             "Risk levels were determined based on the combination of impact severity "
             "and attack feasibility, in accordance with ISO/SAE 21434 methodology."
         )
+        
+        # Fetch and add risk matrix diagram
+        doc.add_heading("5.1 Risk Matrix 风险矩阵", 2)
+        risk_matrix_diagram = await self._fetch_diagram("risk-matrix", project_id)
+        self._add_diagram_to_doc(doc, risk_matrix_diagram, "图 5.1 风险矩阵 (Risk Matrix - ISO/SAE 21434)")
 
-        doc.add_heading("5.1 Risk Distribution", 2)
+        doc.add_heading("5.2 Risk Distribution 风险分布", 2)
         if risk_dist:
             risk_rows = [
                 ["CAL-4 (Critical)", str(risk_dist.get("CAL-4", 0)), "Immediate action required"],

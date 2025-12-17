@@ -3,8 +3,9 @@
 import io
 import os
 from datetime import datetime
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 
+import httpx
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -12,11 +13,15 @@ from reportlab.lib.units import cm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (PageBreak, Paragraph, SimpleDocTemplate,
+from reportlab.platypus import (Image, PageBreak, Paragraph, SimpleDocTemplate,
                                 Spacer, Table, TableStyle)
+from app.common.config import settings
 from app.common.utils import get_logger
 
 logger = get_logger(__name__)
+
+# Diagram service URL
+DIAGRAM_SERVICE_URL = getattr(settings, 'diagram_service_url', 'http://diagram-service:8005')
 
 
 class PDFGenerator:
@@ -26,6 +31,53 @@ class PDFGenerator:
         self._register_chinese_fonts()
         self.styles = getSampleStyleSheet()
         self._setup_styles()
+        self._diagram_cache: Dict[str, bytes] = {}
+
+    async def _fetch_diagram(
+        self,
+        diagram_type: str,
+        project_id: int,
+        threat_id: Optional[int] = None,
+    ) -> Optional[io.BytesIO]:
+        """Fetch a diagram from the diagram service."""
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                if diagram_type == "attack_tree" and threat_id:
+                    url = f"{DIAGRAM_SERVICE_URL}/api/v1/diagrams/attack-tree/{threat_id}?format=png"
+                else:
+                    url = f"{DIAGRAM_SERVICE_URL}/api/v1/diagrams/{diagram_type.replace('_', '-')}/{project_id}?format=png"
+                
+                response = await client.get(url)
+                
+                if response.status_code == 200:
+                    return io.BytesIO(response.content)
+                else:
+                    logger.warning(f"Failed to fetch diagram {diagram_type}: {response.status_code}")
+        except Exception as e:
+            logger.warning(f"Error fetching diagram {diagram_type}: {e}")
+        
+        return None
+
+    def _add_diagram_to_story(
+        self,
+        story: list,
+        diagram_buffer: Optional[io.BytesIO],
+        title: str,
+        width: float = 14 * cm,
+        height: float = 10 * cm,
+    ) -> None:
+        """Add a diagram image to the story."""
+        if diagram_buffer:
+            try:
+                diagram_buffer.seek(0)
+                img = Image(diagram_buffer, width=width, height=height)
+                story.append(img)
+                story.append(Spacer(1, 8))
+                story.append(Paragraph(f"<i>{title}</i>", self.styles["ChineseNormal"]))
+                story.append(Spacer(1, 16))
+            except Exception as e:
+                logger.warning(f"Failed to add diagram to PDF: {e}")
+                story.append(Paragraph(f"[图表加载失败: {title}]", self.styles["ChineseNormal"]))
 
     def _register_chinese_fonts(self):
         """Register Chinese fonts for PDF generation."""
@@ -240,6 +292,9 @@ class PDFGenerator:
         story.append(table)
         story.append(Spacer(1, 20))
 
+        # Get project_id for diagrams
+        project_id = content.get("project", {}).get("id") or data.get("project_id", 1)
+        
         # 1.5 Architecture Overview
         story.append(PageBreak())
         story.append(Paragraph("1.5 Architecture Overview 架构概述", self.styles["ChineseHeading"]))
@@ -255,6 +310,10 @@ class PDFGenerator:
             )
         )
         story.append(Spacer(1, 8))
+        
+        # Fetch and add item boundary diagram
+        item_boundary_diagram = await self._fetch_diagram("item-boundary", project_id)
+        self._add_diagram_to_story(story, item_boundary_diagram, "图 1.1 项目边界图 (Item Boundary Diagram)")
         
         # Add boundary table
         project_name = content.get("project", {}).get("name", "Target System")
@@ -283,6 +342,10 @@ class PDFGenerator:
         )
         story.append(Spacer(1, 8))
         
+        # Fetch and add system architecture diagram
+        system_arch_diagram = await self._fetch_diagram("system-architecture", project_id)
+        self._add_diagram_to_story(story, system_arch_diagram, "图 1.2 系统架构图 (System Architecture Diagram)")
+        
         arch_data = [
             ["Layer", "Components", "Security Focus"],
             ["Application Layer", "HMI, Navigation, Media, ADAS", "Input Validation, Access Control"],
@@ -304,6 +367,10 @@ class PDFGenerator:
             )
         )
         story.append(Spacer(1, 8))
+        
+        # Fetch and add software architecture diagram
+        sw_arch_diagram = await self._fetch_diagram("software-architecture", project_id)
+        self._add_diagram_to_story(story, sw_arch_diagram, "图 1.3 软件架构图 (Software Architecture Diagram)")
         
         sw_arch_data = [
             ["Module", "Function", "Security Measures"],
@@ -329,6 +396,18 @@ class PDFGenerator:
             )
         )
         story.append(Spacer(1, 12))
+        
+        # Fetch and add asset relationship graph
+        story.append(Paragraph("2.1 Asset Relationship Graph 资产关系图", self.styles["ChineseSubHeading"]))
+        asset_graph_diagram = await self._fetch_diagram("asset-graph", project_id)
+        self._add_diagram_to_story(story, asset_graph_diagram, "图 2.1 资产关系图 (Asset Relationship Graph)")
+        
+        # Fetch and add data flow diagram  
+        story.append(Paragraph("2.2 Data Flow Diagram 数据流图", self.styles["ChineseSubHeading"]))
+        data_flow_diagram = await self._fetch_diagram("data-flow", project_id)
+        self._add_diagram_to_story(story, data_flow_diagram, "图 2.2 数据流图 (Data Flow Diagram)")
+        
+        story.append(Paragraph("2.3 Asset List 资产清单", self.styles["ChineseSubHeading"]))
 
         if assets:
             asset_data = [["Name", "Type", "Interfaces", "Security Level"]]
@@ -375,6 +454,16 @@ class PDFGenerator:
             )
         )
         story.append(Spacer(1, 12))
+        
+        # Fetch and add attack tree diagram for first threat
+        if threats:
+            first_threat_id = threats[0].get("id")
+            if first_threat_id and isinstance(first_threat_id, int):
+                story.append(Paragraph("3.1 Attack Tree Analysis 攻击树分析", self.styles["ChineseSubHeading"]))
+                attack_tree_diagram = await self._fetch_diagram("attack_tree", project_id, threat_id=first_threat_id)
+                self._add_diagram_to_story(story, attack_tree_diagram, "图 3.1 攻击树示例 (Attack Tree Example)")
+        
+        story.append(Paragraph("3.2 Threat List 威胁清单", self.styles["ChineseSubHeading"]))
 
         if threats:
             threat_data = [["ID", "Threat Name", "Category", "Risk Level"]]
@@ -412,6 +501,13 @@ class PDFGenerator:
             )
         )
         story.append(Spacer(1, 12))
+        
+        # Fetch and add risk matrix diagram
+        story.append(Paragraph("4.1 Risk Matrix 风险矩阵", self.styles["ChineseSubHeading"]))
+        risk_matrix_diagram = await self._fetch_diagram("risk-matrix", project_id)
+        self._add_diagram_to_story(story, risk_matrix_diagram, "图 4.1 风险矩阵 (Risk Matrix - ISO/SAE 21434)")
+        
+        story.append(Paragraph("4.2 Risk Distribution 风险分布", self.styles["ChineseSubHeading"]))
 
         if risk_dist:
             risk_data = [

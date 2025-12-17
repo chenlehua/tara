@@ -55,6 +55,21 @@ async def tara_exception_handler(request, exc: TaraException):
     return JSONResponse(status_code=exc.code, content=exc.to_dict())
 
 
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc: Exception):
+    """Handle all unhandled exceptions."""
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "code": 500,
+            "message": str(exc) if str(exc) else "服务器内部错误",
+            "data": None,
+        }
+    )
+
+
 app.include_router(api_router, prefix="/api/v1")
 
 
