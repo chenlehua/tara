@@ -9,7 +9,7 @@ from app.generators import ExcelGenerator, PDFGenerator, WordGenerator
 from app.repositories.report_repo import ReportRepository
 from sqlalchemy.orm import Session
 from app.common.constants import ReportStatus
-from app.common.models import Asset, Project, Report, ThreatRisk
+from app.common.models import Asset, AttackPath, ControlMeasure, Project, Report, ThreatRisk
 from app.common.schemas import ReportCreate, ReportGenerateRequest
 from app.common.utils import get_logger
 from app.common.utils.exceptions import NotFoundException
@@ -180,24 +180,117 @@ class ReportService:
                 }
                 for asset in assets
             ]
+            
+            # Create asset name lookup for threat display
+            asset_name_map = {asset.id: asset.name for asset in assets}
 
-            # Fetch threats
+            # Fetch threats with related data
             threats = (
                 self.db.query(ThreatRisk).filter(ThreatRisk.project_id == project_id).all()
             )
+            
+            # Collect all threat IDs for fetching related data
+            threat_ids = [t.id for t in threats]
+            
+            # Fetch attack paths for all threats
+            attack_paths = []
+            attack_path_ids = []
+            if threat_ids:
+                attack_paths = (
+                    self.db.query(AttackPath)
+                    .filter(AttackPath.threat_risk_id.in_(threat_ids))
+                    .all()
+                )
+                attack_path_ids = [ap.id for ap in attack_paths]
+            
+            # Fetch control measures (linked via attack_path or directly to threat)
+            control_measures = []
+            if attack_path_ids or threat_ids:
+                # Get measures linked via attack paths
+                if attack_path_ids:
+                    measures_via_path = (
+                        self.db.query(ControlMeasure)
+                        .filter(ControlMeasure.attack_path_id.in_(attack_path_ids))
+                        .all()
+                    )
+                    control_measures.extend(measures_via_path)
+                
+                # Get measures linked directly to threats
+                measures_via_threat = (
+                    self.db.query(ControlMeasure)
+                    .filter(ControlMeasure.threat_risk_id.in_(threat_ids))
+                    .all()
+                )
+                # Avoid duplicates
+                existing_measure_ids = {m.id for m in control_measures}
+                for m in measures_via_threat:
+                    if m.id not in existing_measure_ids:
+                        control_measures.append(m)
+            
+            # Build attack path lookup by threat_risk_id
+            attack_path_by_threat = {}
+            for ap in attack_paths:
+                if ap.threat_risk_id not in attack_path_by_threat:
+                    attack_path_by_threat[ap.threat_risk_id] = []
+                attack_path_by_threat[ap.threat_risk_id].append(ap)
+            
+            # Build control measure lookup by attack_path_id and threat_risk_id
+            measures_by_attack_path = {}
+            measures_by_threat = {}
+            for m in control_measures:
+                if m.attack_path_id:
+                    if m.attack_path_id not in measures_by_attack_path:
+                        measures_by_attack_path[m.attack_path_id] = []
+                    measures_by_attack_path[m.attack_path_id].append(m)
+                if m.threat_risk_id:
+                    if m.threat_risk_id not in measures_by_threat:
+                        measures_by_threat[m.threat_risk_id] = []
+                    measures_by_threat[m.threat_risk_id].append(m)
+            
+            # Build threats with enriched data
             report_data["threats"] = [
                 {
                     "id": threat.id,
+                    "name": threat.threat_name,  # Alias for Excel generator compatibility
                     "threat_name": threat.threat_name,
                     "threat_type": threat.threat_type,
                     "threat_desc": threat.threat_desc,
+                    "description": threat.threat_desc,  # Alias
                     "attack_vector": threat.attack_vector,
+                    "attack_path": self._format_attack_path(
+                        attack_path_by_threat.get(threat.id, [])
+                    ),
                     "likelihood": threat.likelihood,
-                    "impact_level": threat.impact_level,
-                    "risk_level": threat.risk_level,
+                    "safety_impact": threat.safety_impact or 0,
+                    "financial_impact": threat.financial_impact or 0,
+                    "operational_impact": threat.operational_impact or 0,
+                    "privacy_impact": threat.privacy_impact or 0,
+                    "impact_level": threat.impact_level or 0,
+                    "risk_level": threat.risk_level or "CAL-2",
                     "asset_id": threat.asset_id,
+                    "asset_name": asset_name_map.get(threat.asset_id, ""),
+                    "wp29_ref": self._get_wp29_ref(threat.threat_type),
+                    "iso_clause": self._get_iso_clause(threat.threat_type),
                 }
                 for threat in threats
+            ]
+            
+            # Build control measures list with threat references
+            report_data["control_measures"] = [
+                {
+                    "id": m.id,
+                    "name": m.name,
+                    "control_type": m.control_type,
+                    "category": m.category,
+                    "description": m.description,
+                    "implementation": m.implementation,
+                    "effectiveness": m.effectiveness,
+                    "iso21434_ref": m.iso21434_ref,
+                    "threat_id": m.threat_risk_id,
+                    "threat_risk_id": m.threat_risk_id,
+                    "attack_path_id": m.attack_path_id,
+                }
+                for m in control_measures
             ]
 
             # Calculate risk distribution
@@ -211,22 +304,58 @@ class ReportService:
             report_data["statistics"] = {
                 "total_assets": len(assets),
                 "total_threats": len(threats),
-                "total_attack_paths": sum(
-                    len(t.attack_paths) if hasattr(t, "attack_paths") and t.attack_paths else 0
-                    for t in threats
-                ),
-                "total_controls": 0,  # TODO: count control measures
+                "total_attack_paths": len(attack_paths),
+                "total_controls": len(control_measures),
                 "risk_distribution": risk_distribution,
             }
 
             logger.info(
-                f"Collected report data: {len(assets)} assets, {len(threats)} threats"
+                f"Collected report data: {len(assets)} assets, {len(threats)} threats, "
+                f"{len(attack_paths)} attack paths, {len(control_measures)} control measures"
             )
 
         except Exception as e:
             logger.error(f"Failed to collect report data: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
 
         return report_data
+    
+    def _format_attack_path(self, attack_paths: list) -> str:
+        """Format attack paths into a display string."""
+        if not attack_paths:
+            return "-"
+        # Use the first attack path's description or name
+        ap = attack_paths[0]
+        if hasattr(ap, 'description') and ap.description:
+            return ap.description[:30]
+        if hasattr(ap, 'name') and ap.name:
+            return ap.name[:30]
+        return "-"
+    
+    def _get_wp29_ref(self, threat_type: str) -> str:
+        """Get WP.29 reference for threat type."""
+        wp29_map = {
+            "S": "4.3.1",  # Spoofing
+            "T": "5.1.1",  # Tampering
+            "R": "5.2.1",  # Repudiation
+            "I": "4.3.3",  # Information Disclosure
+            "D": "4.3.4",  # Denial of Service
+            "E": "4.3.5",  # Elevation of Privilege
+        }
+        return wp29_map.get(threat_type, "4.3.1")
+    
+    def _get_iso_clause(self, threat_type: str) -> str:
+        """Get ISO 21434 clause reference for threat type."""
+        iso_map = {
+            "S": "9.4",   # Spoofing
+            "T": "9.5",   # Tampering
+            "R": "9.9",   # Repudiation
+            "I": "9.6",   # Information Disclosure
+            "D": "9.7",   # Denial of Service
+            "E": "9.8",   # Elevation of Privilege
+        }
+        return iso_map.get(threat_type, "9.4")
 
     async def _generate_pdf(
         self,
