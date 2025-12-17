@@ -5,7 +5,7 @@ Report Model
 SQLAlchemy model for Report entity.
 """
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -17,7 +17,7 @@ class Report(BaseModel):
     __tablename__ = "reports"
 
     project_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -46,8 +46,8 @@ class Report(BaseModel):
 
     # Version management
     version = Column(String(20), default="1.0")  # Current version number (for display)
-    current_version_id = Column(Integer, nullable=True)  # Current version ID
-    baseline_version_id = Column(Integer, nullable=True)  # Baseline version ID
+    current_version_id = Column(BigInteger, nullable=True)  # Current version ID
+    baseline_version_id = Column(BigInteger, nullable=True)  # Baseline version ID
     version_count = Column(Integer, default=0)  # Total version count
     
     # Metadata

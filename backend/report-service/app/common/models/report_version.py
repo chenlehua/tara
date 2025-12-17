@@ -6,7 +6,7 @@ SQLAlchemy models for report version management.
 """
 
 from sqlalchemy import (
-    JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+    JSON, BigInteger, Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 )
 from sqlalchemy.orm import relationship
 
@@ -19,7 +19,7 @@ class ReportVersion(BaseModel):
     __tablename__ = "report_versions"
 
     report_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("reports.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -70,7 +70,7 @@ class ReportVersionChange(BaseModel):
     __tablename__ = "report_version_changes"
 
     version_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("report_versions.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -79,7 +79,7 @@ class ReportVersionChange(BaseModel):
     # Change type
     change_type = Column(String(20), nullable=False)  # add, modify, delete
     entity_type = Column(String(50), nullable=False)  # asset, threat, measure, project_info
-    entity_id = Column(Integer, nullable=True)  # Entity ID
+    entity_id = Column(BigInteger, nullable=True)  # Entity ID
     entity_name = Column(String(200), nullable=True)  # Entity name for display
 
     # Change details

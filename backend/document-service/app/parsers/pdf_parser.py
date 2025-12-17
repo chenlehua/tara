@@ -9,7 +9,7 @@ import io
 from typing import Any, Dict
 
 import httpx
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from app.common.config import settings
 from app.common.utils import get_logger
 

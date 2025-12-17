@@ -89,7 +89,6 @@ tara-system/
 │   ├── report-service/      # 报告中心服务 :8006
 │   └── agent-service/       # 智能体服务 :8007
 ├── ai-models/               # AI模型配置
-├── knowledge-base/          # 知识库
 ├── deploy/                  # 部署配置
 ├── database/                # 数据库脚本
 ├── scripts/                 # 开发脚本

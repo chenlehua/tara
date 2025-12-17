@@ -5,7 +5,7 @@ Report Model
 SQLAlchemy model for Report entity.
 """
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -17,7 +17,7 @@ class Report(BaseModel):
     __tablename__ = "reports"
 
     project_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

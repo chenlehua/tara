@@ -27,8 +27,8 @@ logger = get_logger(__name__)
 KNOWLEDGE_STORAGE_DIR = Path("/tmp/knowledge_base")
 KNOWLEDGE_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
 
-# Path to static knowledge base data
-STATIC_KNOWLEDGE_BASE_DIR = Path("/app/backend/knowledge-base")
+# Path to static knowledge base data (merged into knowledge-service)
+STATIC_KNOWLEDGE_BASE_DIR = Path(__file__).parent.parent.parent / "data"
 
 # Document service URL for parsing
 DOCUMENT_SERVICE_URL = getattr(settings, 'document_service_url', 'http://document-service:8002')
@@ -92,11 +92,11 @@ class KnowledgeService:
 
     def _load_static_knowledge_base(self) -> None:
         """Load static knowledge base files from the knowledge-base directory."""
-        # Check multiple possible paths
+        # Check multiple possible paths (knowledge-base merged into knowledge-service/data)
         possible_paths = [
             STATIC_KNOWLEDGE_BASE_DIR,
-            Path("/workspace/backend/knowledge-base"),
-            Path("./backend/knowledge-base"),
+            Path("/app/service/data"),
+            Path("/workspace/backend/knowledge-service/data"),
         ]
         
         kb_path = None

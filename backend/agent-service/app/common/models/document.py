@@ -5,7 +5,7 @@ Document Model
 SQLAlchemy model for Document entity.
 """
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -17,7 +17,7 @@ class Document(BaseModel):
     __tablename__ = "documents"
 
     project_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

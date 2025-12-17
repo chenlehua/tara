@@ -5,7 +5,7 @@ Asset Model
 SQLAlchemy models for Asset and DamageScenario entities.
 """
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -17,13 +17,13 @@ class Asset(BaseModel):
     __tablename__ = "assets"
 
     project_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     parent_id = Column(
-        Integer, ForeignKey("assets.id", ondelete="SET NULL"), nullable=True
+        BigInteger, ForeignKey("assets.id", ondelete="SET NULL"), nullable=True
     )
 
     name = Column(String(200), nullable=False, index=True)
@@ -70,7 +70,7 @@ class DamageScenario(BaseModel):
     __tablename__ = "damage_scenarios"
 
     asset_id = Column(
-        Integer, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+        BigInteger, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     name = Column(String(200), nullable=False)

@@ -8,7 +8,7 @@ Base SQLAlchemy model with common fields.
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, DateTime, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -32,7 +32,7 @@ class BaseModel(Base, TimestampMixin):
 
     __abstract__ = True
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
 
     def to_dict(self) -> dict:
         """Convert model to dictionary."""

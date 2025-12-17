@@ -5,7 +5,7 @@ Threat Risk Model
 SQLAlchemy models for ThreatRisk, AttackPath, and ControlMeasure entities.
 """
 
-from sqlalchemy import JSON, Column, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, BigInteger, Column, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
 from .base import BaseModel
@@ -17,16 +17,16 @@ class ThreatRisk(BaseModel):
     __tablename__ = "threat_risks"
 
     project_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     asset_id = Column(
-        Integer, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
+        BigInteger, ForeignKey("assets.id", ondelete="CASCADE"), nullable=False, index=True
     )
     damage_scenario_id = Column(
-        Integer, ForeignKey("damage_scenarios.id", ondelete="SET NULL"), nullable=True
+        BigInteger, ForeignKey("damage_scenarios.id", ondelete="SET NULL"), nullable=True
     )
 
     # Threat identification
@@ -85,7 +85,7 @@ class AttackPath(BaseModel):
     __tablename__ = "attack_paths"
 
     threat_risk_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("threat_risks.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -129,13 +129,13 @@ class ControlMeasure(BaseModel):
 
     # Can be linked via attack_path or directly to threat_risk
     attack_path_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("attack_paths.id", ondelete="CASCADE"),
         nullable=True,  # Made optional to support direct threat linkage
         index=True,
     )
     threat_risk_id = Column(
-        Integer,
+        BigInteger,
         ForeignKey("threat_risks.id", ondelete="CASCADE"),
         nullable=True,  # Direct linkage to threat (for one-click generation)
         index=True,

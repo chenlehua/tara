@@ -133,7 +133,7 @@ def main():
     parser = argparse.ArgumentParser(description="Prepare fine-tuning data")
     parser.add_argument(
         "--knowledge-base",
-        default="../../knowledge-base",
+        default="../../backend/knowledge-service/data",
         help="Path to knowledge base directory",
     )
     parser.add_argument(

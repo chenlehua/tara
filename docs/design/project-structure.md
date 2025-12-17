@@ -461,23 +461,6 @@ tara-system/
 │           ├── asset_examples.json
 │           └── threat_examples.json
 │
-├── knowledge-base/                     # 📚 知识库
-│   ├── README.md
-│   ├── threat_library/                 # 威胁库
-│   │   ├── stride_threats.json         # STRIDE威胁
-│   │   ├── automotive_threats.json     # 汽车领域威胁
-│   │   └── cwe_mapping.json            # CWE映射
-│   ├── control_library/                # 控制措施库
-│   │   ├── security_controls.json
-│   │   └── iso21434_controls.json
-│   ├── asset_templates/                # 资产模板
-│   │   ├── ecu_template.json
-│   │   ├── gateway_template.json
-│   │   └── tbox_template.json
-│   └── neo4j_import/                   # Neo4j导入脚本
-│       ├── import_threats.cypher
-│       └── import_controls.cypher
-│
 ├── database/                           # 💾 数据库脚本
 │   ├── mysql/
 │   │   ├── init/                       # 初始化脚本
@@ -548,7 +531,7 @@ tara-system/
 | `backend/` | 7个FastAPI微服务 + 共享模块 |
 | `backend/agent-service/` | 智能体服务，包含4个Agent和5个MCP Server |
 | `ai-models/` | AI模型配置和Prompt模板 |
-| `knowledge-base/` | 威胁库、控制措施库等知识数据 |
+| `backend/knowledge-service/data/` | 威胁库、控制措施库等知识数据（已合并到knowledge-service） |
 | `deploy/` | Docker和Kubernetes部署配置 |
 | `database/` | 数据库初始化和迁移脚本 |
 
