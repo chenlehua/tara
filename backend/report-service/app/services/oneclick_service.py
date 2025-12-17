@@ -27,8 +27,9 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from app.common.config import settings
 from app.common.constants import ReportStatus
-from app.common.models import Asset, Project, Report, ThreatRisk
+from app.common.models import Asset, Project, Report, ReportVersion, ThreatRisk
 from app.common.utils import get_logger
+from app.services.version_service import ReportVersionService
 
 logger = get_logger(__name__)
 
@@ -165,6 +166,9 @@ class OneClickGenerateService:
 
             # Save report data to database
             await self._save_report_to_db_v2(report_id, report_data)
+
+            # Create initial version for the report
+            await self._create_initial_version(report_id)
 
             # Update project status to completed
             await self._update_project_status(project_id, 2)  # 2 = completed
@@ -570,6 +574,10 @@ class OneClickGenerateService:
             
             # Save report
             await self._save_report_to_db(report_id, report_data, risk_assessment)
+            
+            # Create initial version for the report
+            await self._create_initial_version(report_id)
+            
             await self._update_project_status(project_id, 2)
             
             # Update task status
@@ -1641,6 +1649,22 @@ class OneClickGenerateService:
             (1, 1): "CAL-1",
         }
         return risk_matrix.get((likelihood, impact), "CAL-2")
+
+    async def _create_initial_version(self, report_id: int) -> None:
+        """Create initial version (1.0) for a newly generated report."""
+        try:
+            version_service = ReportVersionService(self.db)
+            version = version_service.create_version(
+                report_id=report_id,
+                is_major=False,
+                change_summary="初始版本 - 一键生成",
+                change_reason="自动生成的TARA分析报告",
+                created_by="system",
+            )
+            logger.info(f"Created initial version {version.version_number} for report {report_id}")
+        except Exception as e:
+            logger.error(f"Failed to create initial version for report {report_id}: {e}")
+            # Don't fail the whole report generation if version creation fails
 
     async def _update_project_status(self, project_id: int, status: int) -> None:
         """Update project status in database."""

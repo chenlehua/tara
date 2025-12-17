@@ -44,8 +44,13 @@ class Report(BaseModel):
     content = Column(JSON, default=dict)  # Generated content data
     sections = Column(JSON, default=list)  # List of sections
 
+    # Version management
+    version = Column(String(20), default="1.0")  # Current version number (for display)
+    current_version_id = Column(Integer, nullable=True)  # Current version ID
+    baseline_version_id = Column(Integer, nullable=True)  # Baseline version ID
+    version_count = Column(Integer, default=0)  # Total version count
+    
     # Metadata
-    version = Column(String(20), default="1.0")
     author = Column(String(100), nullable=True)
     reviewer = Column(String(100), nullable=True)
     review_status = Column(Integer, default=0)  # 0: draft, 1: in_review, 2: approved
@@ -53,8 +58,15 @@ class Report(BaseModel):
     # Statistics
     statistics = Column(JSON, default=dict)
 
-    # Relationship
+    # Relationships
     project = relationship("Project", back_populates="reports")
+    versions = relationship(
+        "ReportVersion",
+        back_populates="report",
+        cascade="all, delete-orphan",
+        order_by="desc(ReportVersion.created_at)",
+        foreign_keys="ReportVersion.report_id"
+    )
 
     def __repr__(self) -> str:
         return f"<Report(id={self.id}, name='{self.name}', status={self.status})>"

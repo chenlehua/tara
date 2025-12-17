@@ -10,6 +10,7 @@ from .base import Base, BaseModel, TimestampMixin
 from .document import Document
 from .project import Project
 from .report import Report
+from .report_version import ReportVersion, ReportVersionChange
 from .threat_risk import AttackPath, ControlMeasure, ThreatRisk
 
 __all__ = [
@@ -26,4 +27,6 @@ __all__ = [
     "AttackPath",
     "ControlMeasure",
     "Report",
+    "ReportVersion",
+    "ReportVersionChange",
 ]

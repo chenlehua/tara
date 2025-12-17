@@ -60,6 +60,9 @@ export interface Report {
   file_format?: string
   file_size?: number
   version: string
+  version_count?: number
+  current_version_id?: number
+  baseline_version_id?: number
   author?: string
   reviewer?: string
   created_at: string
@@ -70,6 +73,60 @@ export interface Report {
     high_risk_count?: number
     measures_count?: number
   }
+}
+
+// Version types
+export interface ReportVersion {
+  id: number
+  report_id: number
+  version_number: string
+  major_version: number
+  minor_version: number
+  status: string
+  is_baseline: boolean
+  is_current: boolean
+  change_summary?: string
+  change_reason?: string
+  created_by?: string
+  approved_by?: string
+  approved_at?: string
+  created_at: string
+  statistics?: Record<string, any>
+}
+
+export interface ReportVersionDetail extends ReportVersion {
+  content?: Record<string, any>
+  sections?: Array<Record<string, any>>
+  snapshot_data?: Record<string, any>
+  file_paths?: Record<string, string>
+  changes?: Array<{
+    id: number
+    change_type: string
+    entity_type: string
+    entity_name?: string
+    field_name?: string
+    old_value?: string
+    new_value?: string
+  }>
+}
+
+export interface VersionCompareResult {
+  version_a: string
+  version_b: string
+  summary: {
+    added: number
+    modified: number
+    deleted: number
+  }
+  changes: Array<{
+    change_type: string
+    entity_type: string
+    entity_name?: string
+    field_name?: string
+    old_value?: any
+    new_value?: any
+    description?: string
+  }>
 }
 
 // API functions
@@ -169,5 +226,114 @@ export const reportApi = {
    */
   async getReportPreview(reportId: number): Promise<ApiResponse<any>> {
     return request.get(`/reports/${reportId}/preview`)
+  },
+
+  // ================== Version Management APIs ==================
+
+  /**
+   * List versions for a report
+   */
+  async listVersions(
+    reportId: number,
+    page: number = 1,
+    pageSize: number = 20
+  ): Promise<ApiResponse<{
+    versions: ReportVersion[]
+    total: number
+    current_version?: string
+    baseline_version?: string
+  }>> {
+    return request.get(`/reports/${reportId}/versions`, {
+      page,
+      page_size: pageSize,
+    })
+  },
+
+  /**
+   * Create a new version
+   */
+  async createVersion(
+    reportId: number,
+    options: {
+      is_major?: boolean
+      change_summary?: string
+      change_reason?: string
+      created_by?: string
+    } = {}
+  ): Promise<ApiResponse<ReportVersion>> {
+    return request.post(`/reports/${reportId}/versions`, options)
+  },
+
+  /**
+   * Get version detail
+   */
+  async getVersionDetail(
+    reportId: number,
+    versionNumber: string
+  ): Promise<ApiResponse<ReportVersionDetail>> {
+    return request.get(`/reports/${reportId}/versions/${versionNumber}`)
+  },
+
+  /**
+   * Compare two versions
+   */
+  async compareVersions(
+    reportId: number,
+    versionA: string,
+    versionB: string
+  ): Promise<ApiResponse<VersionCompareResult>> {
+    return request.post(`/reports/${reportId}/versions/compare`, {
+      version_a: versionA,
+      version_b: versionB,
+    })
+  },
+
+  /**
+   * Rollback to a version
+   */
+  async rollbackToVersion(
+    reportId: number,
+    versionNumber: string,
+    options: {
+      created_by?: string
+      reason?: string
+    } = {}
+  ): Promise<ApiResponse<ReportVersion>> {
+    return request.post(`/reports/${reportId}/versions/${versionNumber}/rollback`, options)
+  },
+
+  /**
+   * Set a version as baseline
+   */
+  async setBaseline(
+    reportId: number,
+    versionNumber: string,
+    comment?: string
+  ): Promise<ApiResponse<ReportVersion>> {
+    return request.post(`/reports/${reportId}/versions/${versionNumber}/baseline`, {
+      comment,
+    })
+  },
+
+  /**
+   * Approve a version
+   */
+  async approveVersion(
+    reportId: number,
+    versionNumber: string,
+    approvedBy: string,
+    comment?: string
+  ): Promise<ApiResponse<ReportVersion>> {
+    return request.post(`/reports/${reportId}/versions/${versionNumber}/approve`, {
+      approved_by: approvedBy,
+      comment,
+    })
+  },
+
+  /**
+   * Get current version
+   */
+  async getCurrentVersion(reportId: number): Promise<ApiResponse<ReportVersion>> {
+    return request.get(`/reports/${reportId}/versions/current`)
   },
 }

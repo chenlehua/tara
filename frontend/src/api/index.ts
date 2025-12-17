@@ -1,6 +1,15 @@
 export { request, type ApiResponse } from './request'
 export { projectApi, type Project, type CreateProjectData } from './project'
-export { reportApi, type Report, type GenerationProgress, type GenerationResult, type OneClickResponse } from './report'
+export { 
+  reportApi, 
+  type Report, 
+  type GenerationProgress, 
+  type GenerationResult, 
+  type OneClickResponse,
+  type ReportVersion,
+  type ReportVersionDetail,
+  type VersionCompareResult,
+} from './report'
 export { assetApi, type Asset } from './asset'
 export { threatApi, type Threat, type RiskDistribution } from './threat'
 export { measureApi, type ControlMeasure } from './measure'

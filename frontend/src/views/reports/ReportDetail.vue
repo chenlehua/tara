@@ -35,6 +35,15 @@
         </div>
       </div>
       <div class="header-actions">
+        <button class="tara-btn tara-btn-ghost" @click="showVersionPanel = !showVersionPanel">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v18"/>
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M3 15h18"/>
+          </svg>
+          版本管理
+        </button>
         <button class="tara-btn tara-btn-secondary" @click="downloadReport('xlsx')">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -59,6 +68,119 @@
           </svg>
           下载 PDF
         </button>
+      </div>
+    </div>
+
+    <!-- Version Panel -->
+    <div v-if="showVersionPanel" class="version-panel">
+      <div class="version-panel-header">
+        <h3>版本历史</h3>
+        <div class="version-actions">
+          <button class="tara-btn tara-btn-sm tara-btn-primary" @click="createNewVersion">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14"/>
+              <path d="M5 12h14"/>
+            </svg>
+            创建新版本
+          </button>
+          <button class="tara-btn tara-btn-sm tara-btn-secondary" @click="showCompareModal = true" :disabled="versions.length < 2">
+            比较版本
+          </button>
+        </div>
+      </div>
+      <div class="version-list" v-if="versions.length > 0">
+        <div 
+          v-for="version in versions" 
+          :key="version.id" 
+          :class="['version-item', { 'is-current': version.is_current, 'is-baseline': version.is_baseline }]"
+        >
+          <div class="version-info">
+            <div class="version-number">
+              v{{ version.version_number }}
+              <span v-if="version.is_current" class="version-tag current">当前</span>
+              <span v-if="version.is_baseline" class="version-tag baseline">基线</span>
+            </div>
+            <div class="version-meta">
+              <span>{{ version.change_summary || '无变更说明' }}</span>
+              <span class="version-date">{{ formatDate(version.created_at) }}</span>
+            </div>
+          </div>
+          <div class="version-item-actions">
+            <button v-if="!version.is_baseline" class="action-btn" @click="setBaseline(version.version_number)" title="设为基线">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </button>
+            <button v-if="!version.is_current" class="action-btn" @click="rollbackTo(version.version_number)" title="回滚到此版本">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div v-else class="version-empty">
+        <p>暂无版本记录</p>
+      </div>
+    </div>
+
+    <!-- Compare Version Modal -->
+    <div v-if="showCompareModal" class="modal-overlay" @click.self="showCompareModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>版本比较</h3>
+          <button class="close-btn" @click="showCompareModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="compare-selectors">
+            <div class="compare-select">
+              <label>版本A</label>
+              <select v-model="compareVersionA">
+                <option v-for="v in versions" :key="v.version_number" :value="v.version_number">
+                  v{{ v.version_number }}
+                </option>
+              </select>
+            </div>
+            <div class="compare-arrow">→</div>
+            <div class="compare-select">
+              <label>版本B</label>
+              <select v-model="compareVersionB">
+                <option v-for="v in versions" :key="v.version_number" :value="v.version_number">
+                  v{{ v.version_number }}
+                </option>
+              </select>
+            </div>
+          </div>
+          <div v-if="compareResult" class="compare-result">
+            <div class="compare-summary">
+              <div class="summary-item added">
+                <span class="count">{{ compareResult.summary.added }}</span>
+                <span class="label">新增</span>
+              </div>
+              <div class="summary-item modified">
+                <span class="count">{{ compareResult.summary.modified }}</span>
+                <span class="label">修改</span>
+              </div>
+              <div class="summary-item deleted">
+                <span class="count">{{ compareResult.summary.deleted }}</span>
+                <span class="label">删除</span>
+              </div>
+            </div>
+            <div class="compare-changes" v-if="compareResult.changes.length > 0">
+              <div v-for="(change, idx) in compareResult.changes" :key="idx" :class="['change-item', change.change_type]">
+                <span class="change-type">{{ getChangeTypeText(change.change_type) }}</span>
+                <span class="change-desc">{{ change.description || `${change.entity_type}: ${change.entity_name}` }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="tara-btn tara-btn-primary" @click="runCompare" :disabled="!compareVersionA || !compareVersionB">
+            比较
+          </button>
+        </div>
       </div>
     </div>
 
@@ -372,7 +494,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { reportApi, type Report } from '@/api/report'
+import { reportApi, type Report, type ReportVersion, type VersionCompareResult } from '@/api/report'
 
 const route = useRoute()
 const router = useRouter()
@@ -381,6 +503,14 @@ const loading = ref(true)
 const error = ref('')
 const report = ref<Report | null>(null)
 const preview = ref<any>(null)
+
+// Version management state
+const showVersionPanel = ref(false)
+const showCompareModal = ref(false)
+const versions = ref<ReportVersion[]>([])
+const compareVersionA = ref('')
+const compareVersionB = ref('')
+const compareResult = ref<VersionCompareResult | null>(null)
 
 const reportId = computed(() => {
   const id = route.params.id
@@ -589,8 +719,104 @@ const downloadReport = (format: 'pdf' | 'docx' | 'xlsx') => {
   window.open(url, '_blank')
 }
 
+// Version management functions
+const loadVersions = async () => {
+  if (!reportId.value) return
+  
+  try {
+    const res = await reportApi.listVersions(reportId.value)
+    if (res.success && res.data) {
+      versions.value = res.data.versions || []
+      // Set default compare versions if available
+      if (versions.value.length >= 2) {
+        compareVersionA.value = versions.value[1]?.version_number || ''
+        compareVersionB.value = versions.value[0]?.version_number || ''
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load versions:', e)
+  }
+}
+
+const createNewVersion = async () => {
+  if (!reportId.value) return
+  
+  try {
+    const res = await reportApi.createVersion(reportId.value, {
+      change_summary: '手动创建新版本',
+      created_by: 'user',
+    })
+    if (res.success) {
+      ElMessage.success(`版本 ${res.data?.version_number} 创建成功`)
+      await loadVersions()
+    } else {
+      ElMessage.error(res.message || '创建版本失败')
+    }
+  } catch (e) {
+    ElMessage.error('创建版本失败')
+  }
+}
+
+const setBaseline = async (versionNumber: string) => {
+  if (!reportId.value) return
+  
+  try {
+    const res = await reportApi.setBaseline(reportId.value, versionNumber)
+    if (res.success) {
+      ElMessage.success(`版本 ${versionNumber} 已设为基线`)
+      await loadVersions()
+    }
+  } catch (e) {
+    ElMessage.error('设置基线失败')
+  }
+}
+
+const rollbackTo = async (versionNumber: string) => {
+  if (!reportId.value) return
+  
+  try {
+    const res = await reportApi.rollbackToVersion(reportId.value, versionNumber, {
+      reason: '用户手动回滚',
+    })
+    if (res.success) {
+      ElMessage.success(`已回滚到版本 ${versionNumber}`)
+      await loadVersions()
+      await loadReport() // Reload report content
+    }
+  } catch (e) {
+    ElMessage.error('回滚失败')
+  }
+}
+
+const runCompare = async () => {
+  if (!reportId.value || !compareVersionA.value || !compareVersionB.value) return
+  
+  try {
+    const res = await reportApi.compareVersions(
+      reportId.value,
+      compareVersionA.value,
+      compareVersionB.value
+    )
+    if (res.success && res.data) {
+      compareResult.value = res.data
+    }
+  } catch (e) {
+    ElMessage.error('版本比较失败')
+  }
+}
+
+const getChangeTypeText = (type: string) => {
+  const map: Record<string, string> = {
+    add: '新增',
+    modify: '修改',
+    delete: '删除',
+  }
+  return map[type] || type
+}
+
 onMounted(() => {
   loadReport()
+  loadVersions()
 })
 </script>
 
@@ -1122,5 +1348,358 @@ onMounted(() => {
 
 .legend-color.cal-1 {
   background: #22c55e;
+}
+
+/* Ghost Button */
+.tara-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border-color);
+}
+
+.tara-btn-ghost:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-style: solid;
+}
+
+.tara-btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Version Panel */
+.version-panel {
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.version-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.version-panel-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.version-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.version-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.version-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s;
+}
+
+.version-item:last-child {
+  border-bottom: none;
+}
+
+.version-item:hover {
+  background: var(--bg-hover);
+}
+
+.version-item.is-current {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.version-item.is-baseline {
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.version-number {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.version-tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.version-tag.current {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.version-tag.baseline {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.version-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.version-date {
+  color: var(--text-tertiary);
+}
+
+.version-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: #6366f1;
+}
+
+.version-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: var(--bg-color);
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Compare Selectors */
+.compare-selectors {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.compare-select {
+  flex: 1;
+}
+
+.compare-select label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.compare-select select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.compare-arrow {
+  font-size: 20px;
+  color: var(--text-tertiary);
+  margin-top: 20px;
+}
+
+/* Compare Result */
+.compare-summary {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-item {
+  flex: 1;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summary-item.added {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.summary-item.modified {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.summary-item.deleted {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.summary-item .count {
+  display: block;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.summary-item.added .count {
+  color: #22c55e;
+}
+
+.summary-item.modified .count {
+  color: #3b82f6;
+}
+
+.summary-item.deleted .count {
+  color: #ef4444;
+}
+
+.summary-item .label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.compare-changes {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.change-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.change-item.add {
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.change-item.modify {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.change-item.delete {
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.change-type {
+  font-weight: 500;
+  min-width: 40px;
+}
+
+.change-item.add .change-type {
+  color: #22c55e;
+}
+
+.change-item.modify .change-type {
+  color: #3b82f6;
+}
+
+.change-item.delete .change-type {
+  color: #ef4444;
+}
+
+.change-desc {
+  color: var(--text-primary);
 }
 </style>
