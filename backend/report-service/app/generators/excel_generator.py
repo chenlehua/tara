@@ -107,7 +107,7 @@ class ExcelGenerator:
         return buffer
 
     def _create_definitions_sheet(self, wb: Workbook, project: dict):
-        """Create 1-相关定义 sheet."""
+        """Create 1-相关定义 sheet with diagrams."""
         ws = wb.create_sheet("1-相关定义", 0)
 
         project_name = project.get("name", "TARA分析项目")
@@ -115,7 +115,7 @@ class ExcelGenerator:
         description = project.get("description", "")
         
         # Title
-        self._merge_and_style(ws, 1, 1, 1, 10, 
+        self._merge_and_style(ws, 1, 1, 1, 12, 
                              f"{project_name} TARA分析报告 - 相关定义",
                              self.title_font, self.title_fill)
         
@@ -126,33 +126,133 @@ class ExcelGenerator:
         
         func_desc = description or f"{project_name}是一个需要进行威胁分析和风险评估(TARA)的车载系统组件。"
         ws.cell(row=row, column=1, value=func_desc)
-        ws.merge_cells(start_row=row, start_column=1, end_row=row+3, end_column=10)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+2, end_column=12)
         ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
         
-        # Section 2: Item Boundary
-        row = 10
-        ws.cell(row=row, column=1, value="2. 项目边界 Item Boundary").font = Font(bold=True, size=12)
+        # Section 2: Item Boundary Diagram
+        row = 9
+        ws.cell(row=row, column=1, value="2. 项目边界图 Item Boundary Diagram").font = Font(bold=True, size=12)
         row += 1
-        ws.cell(row=row, column=1, value=f"本TARA分析覆盖{project_name}的网络安全评估。")
-        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True)
         
-        # Section 3: Reference Standards
-        row = 15
-        ws.cell(row=row, column=1, value="3. 参考标准 Reference Standards").font = Font(bold=True, size=12)
+        # Draw item boundary diagram using text/ASCII art
+        boundary_diagram = """
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    系统边界 System Boundary                                       │
+│                                                                                                   │
+│   ┌────────────────────┐          ┌────────────────────┐          ┌────────────────────┐        │
+│   │   Core Processing  │ ◄──────► │   Security Module   │ ◄──────► │   Communication    │        │
+│   │   核心处理单元      │          │   安全模块          │          │   通信接口          │        │
+│   └────────────────────┘          └────────────────────┘          └────────────────────┘        │
+│            │                               │                               │                     │
+│            ▼                               ▼                               ▼                     │
+│   ┌────────────────────┐          ┌────────────────────┐          ┌────────────────────┐        │
+│   │   Data Storage     │          │   Crypto Engine    │          │   Network Interface │        │
+│   │   数据存储          │          │   加密引擎          │          │   网络接口          │        │
+│   └────────────────────┘          └────────────────────┘          └────────────────────┘        │
+│                                                                                                   │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+           ▲                                  ▲                                  ▲
+           │                                  │                                  │
+    ┌──────┴──────┐                   ┌───────┴───────┐                  ┌───────┴───────┐
+    │ User Input  │                   │ Cloud Services │                  │ External APIs │
+    │ 用户输入     │                   │ 云端服务       │                  │ 外部接口       │
+    └─────────────┘                   └───────────────┘                  └───────────────┘
+"""
+        ws.cell(row=row, column=1, value=boundary_diagram)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+18, end_column=12)
+        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
+        ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
+        
+        # Section 3: System Architecture Diagram
+        row = 30
+        ws.cell(row=row, column=1, value="3. 系统架构图 System Architecture Diagram").font = Font(bold=True, size=12)
+        row += 1
+        
+        system_arch = """
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              应用层 Application Layer                                              │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│   │     HMI      │    │  Navigation  │    │    Media     │    │     ADAS     │                  │
+│   │   人机界面   │    │     导航     │    │    多媒体    │    │   辅助驾驶   │                  │
+│   └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                              服务层 Service Layer                                                  │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│   │   Security   │    │     Comm     │    │  Diagnostic  │    │     OTA      │                  │
+│   │   安全服务   │    │   通信服务   │    │   诊断服务   │    │   升级服务   │                  │
+│   └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                              中间件层 Middleware Layer                                             │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│   │   AUTOSAR    │    │  Hypervisor  │    │      OS      │    │    Crypto    │                  │
+│   │ 软件架构     │    │   虚拟化     │    │   操作系统   │    │   加密模块   │                  │
+│   └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘                  │
+├──────────────────────────────────────────────────────────────────────────────────────────────────┤
+│                              硬件层 Hardware Layer                                                 │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                  │
+│   │   SoC/MCU    │    │   HSM/SE     │    │    Memory    │    │   Network    │                  │
+│   │   处理器     │    │   安全芯片   │    │    存储器    │    │   网络接口   │                  │
+│   └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+"""
+        ws.cell(row=row, column=1, value=system_arch)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+24, end_column=12)
+        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
+        ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
+        
+        # Section 4: Software Architecture Diagram
+        row = 58
+        ws.cell(row=row, column=1, value="4. 软件架构图 Software Architecture Diagram").font = Font(bold=True, size=12)
+        row += 1
+        
+        software_arch = """
+                           ┌────────────────────────────────────────┐
+                           │        Security Manager 安全管理器     │
+                           └───────────────────┬────────────────────┘
+                                               │
+              ┌────────────────────────────────┼────────────────────────────────┐
+              │                                │                                │
+              ▼                                ▼                                ▼
+   ┌────────────────────┐         ┌────────────────────┐         ┌────────────────────┐
+   │ Application Manager│         │Communication Manager│        │   Update Manager   │
+   │    应用管理器      │         │    通信管理器       │        │   OTA升级管理器    │
+   └─────────┬──────────┘         └─────────┬──────────┘         └─────────┬──────────┘
+             │                              │                              │
+             ▼                              ▼                              ▼
+   ┌────────────────────┐         ┌────────────────────┐         ┌────────────────────┐
+   │ Diagnostic Handler │         │   Crypto Library   │         │   Key Management   │
+   │    诊断处理器      │         │      加密库        │         │     密钥管理       │
+   └────────────────────┘         └────────────────────┘         └────────────────────┘
+                                               │
+                                               ▼
+              ┌─────────────────────────────────────────────────────────────────┐
+              │            Hardware Abstraction Layer (HAL) 硬件抽象层          │
+              └─────────────────────────────────────────────────────────────────┘
+"""
+        ws.cell(row=row, column=1, value=software_arch)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+18, end_column=12)
+        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
+        ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
+        
+        # Section 5: Reference Standards
+        row = 80
+        ws.cell(row=row, column=1, value="5. 参考标准 Reference Standards").font = Font(bold=True, size=12)
         row += 1
         standards = [
             "• ISO/SAE 21434:2021 - Road vehicles — Cybersecurity engineering",
             "• UN R155 - Cyber Security Management System",
             "• UN R156 - Software Update Management System",
             "• GB/T XXXXX - 汽车网络安全相关标准",
+            "• ISO 26262 - Functional Safety",
+            "• AUTOSAR Cybersecurity Guidelines",
         ]
         for std in standards:
             ws.cell(row=row, column=1, value=std)
             row += 1
 
-        # Section 4: Document Info
+        # Section 6: Document Info
         row += 2
-        ws.cell(row=row, column=1, value="4. 文档信息 Document Information").font = Font(bold=True, size=12)
+        ws.cell(row=row, column=1, value="6. 文档信息 Document Information").font = Font(bold=True, size=12)
         row += 1
         
         doc_info = [
@@ -161,6 +261,7 @@ class ExcelGenerator:
             ("作者 Author", "TARA Pro System"),
             ("适用标准 Standard", project.get("standard", "ISO/SAE 21434")),
             ("车型 Vehicle Type", vehicle_type),
+            ("项目阶段 Phase", "Concept/Development"),
         ]
         for label, value in doc_info:
             ws.cell(row=row, column=1, value=label).font = Font(bold=True)
@@ -168,9 +269,17 @@ class ExcelGenerator:
             row += 1
 
         # Adjust column widths
-        ws.column_dimensions['A'].width = 25
-        for col in range(2, 11):
+        ws.column_dimensions['A'].width = 30
+        for col in range(2, 13):
             ws.column_dimensions[get_column_letter(col)].width = 12
+        
+        # Set row heights for diagram sections
+        for r in range(10, 28):
+            ws.row_dimensions[r].height = 15
+        for r in range(31, 55):
+            ws.row_dimensions[r].height = 15
+        for r in range(59, 77):
+            ws.row_dimensions[r].height = 15
 
     def _create_asset_list_sheet(self, wb: Workbook, assets: list):
         """Create 2-资产列表 sheet."""

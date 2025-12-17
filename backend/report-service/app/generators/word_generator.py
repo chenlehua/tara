@@ -100,6 +100,10 @@ class WordGenerator:
         doc.add_heading("Table of Contents", 1)
         doc.add_paragraph("1. Executive Summary")
         doc.add_paragraph("2. Scope Definition")
+        doc.add_paragraph("   2.1 Item Definition")
+        doc.add_paragraph("   2.2 Item Boundary")
+        doc.add_paragraph("   2.3 System Architecture")
+        doc.add_paragraph("   2.4 Software Architecture")
         doc.add_paragraph("3. Asset Identification")
         doc.add_paragraph("4. Threat Analysis")
         doc.add_paragraph("5. Risk Assessment")
@@ -171,14 +175,67 @@ class WordGenerator:
         doc.add_paragraph(
             f"Vehicle type: {project.get('vehicle_type', 'N/A')}"
         )
+        doc.add_paragraph(
+            f"Applicable standard: {project.get('standard', 'ISO/SAE 21434')}"
+        )
 
-        doc.add_heading("2.2 System Boundaries", 2)
+        doc.add_heading("2.2 Item Boundary 项目边界", 2)
+        doc.add_paragraph(
+            "The item boundary defines the scope of this TARA analysis. "
+            "Components within the boundary are subject to cybersecurity assessment."
+        )
+        
+        # Item Boundary Table
+        boundary_rows = [
+            ["Core Processing Unit 核心处理单元", "Internal", "Yes"],
+            ["Security Module (HSM/SE) 安全模块", "Internal", "Yes"],
+            ["Communication Interface 通信接口", "Internal", "Yes"],
+            ["Data Storage 数据存储", "Internal", "Yes"],
+            ["External Network 外部网络", "External", "Interface"],
+            ["Cloud Services 云端服务", "External", "Interface"],
+            ["User Interface 用户接口", "External", "Interface"],
+        ]
+        self._create_styled_table(doc, ["Component 组件", "Type 类型", "Within Boundary 边界内"], boundary_rows)
+        
+        doc.add_paragraph()
         doc.add_paragraph(
             f"Number of identified assets: {len(assets)}"
         )
         doc.add_paragraph(
             f"Number of interfaces analyzed: {sum(len(a.get('interfaces', [])) for a in assets)}"
         )
+
+        doc.add_heading("2.3 System Architecture 系统架构", 2)
+        doc.add_paragraph(
+            "The system architecture consists of multiple layers following industry best practices. "
+            "Each layer has specific security responsibilities and controls."
+        )
+        
+        # System Architecture Table
+        arch_rows = [
+            ["Application Layer 应用层", "HMI, Navigation, Media, ADAS", "Input Validation, Access Control"],
+            ["Service Layer 服务层", "Security, Comm, Diagnostic, OTA", "Authentication, Encryption"],
+            ["Middleware Layer 中间件层", "AUTOSAR, Hypervisor, OS, Crypto", "Isolation, Secure Boot"],
+            ["Hardware Layer 硬件层", "SoC/MCU, HSM/SE, Memory, Network", "Hardware Security, Key Storage"],
+        ]
+        self._create_styled_table(doc, ["Layer 层级", "Components 组件", "Security Focus 安全重点"], arch_rows)
+
+        doc.add_heading("2.4 Software Architecture 软件架构", 2)
+        doc.add_paragraph(
+            "Key software modules and their security responsibilities are detailed below. "
+            "The software architecture follows a modular design with clear security boundaries."
+        )
+        
+        # Software Architecture Table
+        sw_rows = [
+            ["Security Manager 安全管理器", "Central security control", "Policy enforcement, Key management"],
+            ["Application Manager 应用管理器", "App lifecycle management", "Sandbox, Privilege control"],
+            ["Communication Manager 通信管理器", "Network protocols", "TLS/DTLS, Certificate validation"],
+            ["Update Manager OTA升级管理器", "OTA updates", "Signature verification, Rollback"],
+            ["Crypto Library 加密库", "Cryptographic operations", "AES, RSA, ECC, Hash functions"],
+            ["Key Management 密钥管理", "Key lifecycle", "HSM integration, Key derivation"],
+        ]
+        self._create_styled_table(doc, ["Module 模块", "Function 功能", "Security Measures 安全措施"], sw_rows)
 
         doc.add_page_break()
 

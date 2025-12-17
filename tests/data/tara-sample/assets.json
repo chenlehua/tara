@@ -1,140 +1,169 @@
 {
-  "project": {
-    "name": "智能网联汽车TARA分析样例",
-    "vehicle_type": "新能源电动汽车",
-    "standard": "ISO/SAE 21434"
-  },
   "assets": [
     {
-      "id": "ASSET-001",
-      "name": "整车控制器 (VCU)",
-      "type": "ECU",
-      "description": "整车控制核心单元，负责整车动力、制动、转向等关键功能协调控制",
+      "id": "A-001",
+      "name": "车载信息娱乐系统 (IVI)",
+      "asset_type": "ECU",
+      "category": "内部实体",
+      "description": "集成导航、多媒体、蓝牙和车辆信息显示的主控制单元",
       "interfaces": [
-        {"type": "CAN", "protocol": "CAN 2.0B", "baudrate": "500Kbps"},
-        {"type": "Ethernet", "protocol": "SOME/IP", "bandwidth": "100Mbps"}
+        {"type": "CAN", "connected_to": "Gateway"},
+        {"type": "Ethernet", "connected_to": "T-Box"},
+        {"type": "Bluetooth", "connected_to": "Mobile Device"},
+        {"type": "WiFi", "connected_to": "Hotspot"}
       ],
-      "security_properties": {
-        "confidentiality": "high",
-        "integrity": "critical",
-        "availability": "critical"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": false,
+        "confidentiality": true,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["动力控制", "制动协调", "能量管理", "故障诊断"]
+      "criticality": "high"
     },
     {
-      "id": "ASSET-002",
-      "name": "电池管理系统 (BMS)",
-      "type": "ECU",
-      "description": "电池组管理单元，负责电池状态监控、充放电管理、热管理",
+      "id": "A-002",
+      "name": "中央网关 (CGW)",
+      "asset_type": "Gateway",
+      "category": "内部实体",
+      "description": "车载网络核心枢纽，连接各域控制器和外部接口",
       "interfaces": [
-        {"type": "CAN", "protocol": "CAN 2.0B", "baudrate": "500Kbps"},
-        {"type": "LIN", "protocol": "LIN 2.1", "baudrate": "19.2Kbps"}
+        {"type": "CAN-FD", "connected_to": "Domain Controllers"},
+        {"type": "Ethernet", "connected_to": "IVI"},
+        {"type": "DoIP", "connected_to": "Diagnostic Tool"}
       ],
-      "security_properties": {
-        "confidentiality": "high",
-        "integrity": "critical",
-        "availability": "critical"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": true,
+        "confidentiality": true,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["SOC估算", "SOH管理", "充电控制", "热管理"]
+      "criticality": "critical"
     },
     {
-      "id": "ASSET-003",
-      "name": "智能网关 (CGW)",
-      "type": "Gateway",
-      "description": "车载中央网关，连接各个域控制器和外部网络",
+      "id": "A-003",
+      "name": "远程信息处理器 (T-Box)",
+      "asset_type": "ECU",
+      "category": "外部接口",
+      "description": "提供4G/5G蜂窝网络连接，支持远程诊断和OTA更新",
       "interfaces": [
-        {"type": "CAN", "protocol": "CAN FD", "baudrate": "2Mbps"},
-        {"type": "Ethernet", "protocol": "DoIP", "bandwidth": "1Gbps"},
-        {"type": "LIN", "protocol": "LIN 2.1", "baudrate": "19.2Kbps"}
+        {"type": "4G/5G", "connected_to": "TSP Server"},
+        {"type": "Ethernet", "connected_to": "IVI"},
+        {"type": "CAN", "connected_to": "Gateway"}
       ],
-      "security_properties": {
-        "confidentiality": "critical",
-        "integrity": "critical",
-        "availability": "critical"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": true,
+        "confidentiality": true,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["消息路由", "协议转换", "防火墙", "入侵检测"]
+      "criticality": "critical"
     },
     {
-      "id": "ASSET-004",
-      "name": "远程通信单元 (T-Box)",
-      "type": "Telematics",
-      "description": "远程信息处理单元，提供车辆远程控制和数据上传功能",
+      "id": "A-004",
+      "name": "高级驾驶辅助系统 (ADAS)",
+      "asset_type": "ECU",
+      "category": "内部实体",
+      "description": "自动紧急制动、车道保持、自适应巡航等安全功能",
       "interfaces": [
-        {"type": "4G/5G", "protocol": "LTE/NR", "bandwidth": "100Mbps"},
-        {"type": "WiFi", "protocol": "802.11ac", "bandwidth": "300Mbps"},
-        {"type": "Bluetooth", "protocol": "BLE 5.0", "bandwidth": "2Mbps"},
-        {"type": "GNSS", "protocol": "GPS/Beidou", "bandwidth": "N/A"}
+        {"type": "CAN-FD", "connected_to": "Gateway"},
+        {"type": "Ethernet", "connected_to": "Camera"},
+        {"type": "CAN", "connected_to": "ESP/EPS"}
       ],
-      "security_properties": {
-        "confidentiality": "critical",
-        "integrity": "critical",
-        "availability": "high"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": false,
+        "confidentiality": false,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["远程诊断", "OTA升级", "远程控制", "位置服务"]
+      "criticality": "critical"
     },
     {
-      "id": "ASSET-005",
-      "name": "信息娱乐系统 (IVI)",
-      "type": "ECU",
-      "description": "车载信息娱乐系统，提供导航、多媒体、车辆信息显示等功能",
+      "id": "A-005",
+      "name": "车身控制器 (BCM)",
+      "asset_type": "ECU",
+      "category": "内部实体",
+      "description": "控制车门锁、车窗、灯光、雨刮等车身功能",
       "interfaces": [
-        {"type": "Ethernet", "protocol": "TCP/IP", "bandwidth": "100Mbps"},
-        {"type": "USB", "protocol": "USB 3.0", "bandwidth": "5Gbps"},
-        {"type": "Bluetooth", "protocol": "A2DP/HFP", "bandwidth": "3Mbps"}
+        {"type": "CAN", "connected_to": "Gateway"},
+        {"type": "LIN", "connected_to": "Actuators"}
       ],
-      "security_properties": {
-        "confidentiality": "medium",
-        "integrity": "medium",
-        "availability": "low"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": false,
+        "confidentiality": false,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["导航", "多媒体", "语音助手", "手机互联"]
+      "criticality": "high"
     },
     {
-      "id": "ASSET-006",
-      "name": "自动驾驶域控制器 (ADAS DCU)",
-      "type": "Domain Controller",
-      "description": "自动驾驶域控制器，处理感知融合和驾驶决策",
+      "id": "A-006",
+      "name": "硬件安全模块 (HSM)",
+      "asset_type": "Security",
+      "category": "内部实体",
+      "description": "提供密钥存储、加密运算和安全启动验证",
       "interfaces": [
-        {"type": "Ethernet", "protocol": "AVB/TSN", "bandwidth": "10Gbps"},
-        {"type": "CAN", "protocol": "CAN FD", "baudrate": "5Mbps"}
+        {"type": "SPI", "connected_to": "SoC"},
+        {"type": "I2C", "connected_to": "MCU"}
       ],
-      "security_properties": {
-        "confidentiality": "high",
-        "integrity": "critical",
-        "availability": "critical"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": true,
+        "confidentiality": true,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["环境感知", "路径规划", "决策控制", "传感器融合"]
+      "criticality": "critical"
     },
     {
-      "id": "ASSET-007",
+      "id": "A-007",
       "name": "OBD诊断接口",
-      "type": "Interface",
-      "description": "车载诊断接口，用于故障诊断和维修",
+      "asset_type": "Interface",
+      "category": "外部接口",
+      "description": "标准OBD-II诊断接口，用于车辆维护和故障诊断",
       "interfaces": [
-        {"type": "CAN", "protocol": "ISO 15765", "baudrate": "500Kbps"}
+        {"type": "CAN", "connected_to": "Gateway"},
+        {"type": "K-Line", "connected_to": "Legacy ECUs"}
       ],
-      "security_properties": {
-        "confidentiality": "high",
-        "integrity": "high",
-        "availability": "medium"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": false,
+        "confidentiality": false,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["故障读取", "参数配置", "软件刷写"]
+      "criticality": "high"
     },
     {
-      "id": "ASSET-008",
-      "name": "充电通信控制器 (SECC)",
-      "type": "ECU",
-      "description": "充电通信控制器，负责与充电桩通信",
+      "id": "A-008",
+      "name": "动力总成控制器 (PCM)",
+      "asset_type": "ECU",
+      "category": "内部实体",
+      "description": "发动机/电机控制和变速箱控制",
       "interfaces": [
-        {"type": "PLC", "protocol": "HomePlug GP", "bandwidth": "10Mbps"},
-        {"type": "CAN", "protocol": "CAN 2.0B", "baudrate": "250Kbps"}
+        {"type": "CAN", "connected_to": "Gateway"},
+        {"type": "FlexRay", "connected_to": "Battery Management"}
       ],
-      "security_properties": {
-        "confidentiality": "high",
-        "integrity": "critical",
-        "availability": "high"
+      "security_attrs": {
+        "authenticity": true,
+        "integrity": true,
+        "non_repudiation": false,
+        "confidentiality": false,
+        "availability": true,
+        "authorization": true
       },
-      "functions": ["充电握手", "功率协商", "计费认证"]
+      "criticality": "critical"
     }
   ]
 }

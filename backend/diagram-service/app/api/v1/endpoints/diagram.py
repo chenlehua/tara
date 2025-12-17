@@ -151,3 +151,69 @@ async def get_data_flow_diagram(
         media_type=media_type,
         headers={"Content-Disposition": f"inline; filename=data_flow.{format.value}"},
     )
+
+
+@router.get("/item-boundary/{project_id}")
+async def get_item_boundary_diagram(
+    project_id: int,
+    format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
+):
+    """Get item boundary diagram."""
+    image_data = await diagram_service.generate_item_boundary(project_id, format)
+
+    media_type = {
+        DiagramFormat.PNG: "image/png",
+        DiagramFormat.SVG: "image/svg+xml",
+        DiagramFormat.PDF: "application/pdf",
+    }[format]
+
+    return StreamingResponse(
+        image_data,
+        media_type=media_type,
+        headers={"Content-Disposition": f"inline; filename=item_boundary.{format.value}"},
+    )
+
+
+@router.get("/system-architecture/{project_id}")
+async def get_system_architecture_diagram(
+    project_id: int,
+    format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
+):
+    """Get system architecture diagram."""
+    image_data = await diagram_service.generate_system_architecture(project_id, format)
+
+    media_type = {
+        DiagramFormat.PNG: "image/png",
+        DiagramFormat.SVG: "image/svg+xml",
+        DiagramFormat.PDF: "application/pdf",
+    }[format]
+
+    return StreamingResponse(
+        image_data,
+        media_type=media_type,
+        headers={"Content-Disposition": f"inline; filename=system_architecture.{format.value}"},
+    )
+
+
+@router.get("/software-architecture/{project_id}")
+async def get_software_architecture_diagram(
+    project_id: int,
+    format: DiagramFormat = Query(DiagramFormat.PNG),
+    diagram_service: DiagramService = Depends(get_diagram_service),
+):
+    """Get software architecture diagram."""
+    image_data = await diagram_service.generate_software_architecture(project_id, format)
+
+    media_type = {
+        DiagramFormat.PNG: "image/png",
+        DiagramFormat.SVG: "image/svg+xml",
+        DiagramFormat.PDF: "application/pdf",
+    }[format]
+
+    return StreamingResponse(
+        image_data,
+        media_type=media_type,
+        headers={"Content-Disposition": f"inline; filename=software_architecture.{format.value}"},
+    )

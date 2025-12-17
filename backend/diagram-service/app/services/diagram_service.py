@@ -61,6 +61,9 @@ class DiagramService:
             "attack_tree": self.generate_attack_tree,
             "risk_matrix": self.generate_risk_matrix,
             "data_flow": self.generate_data_flow,
+            "item_boundary": self.generate_item_boundary,
+            "system_architecture": self.generate_system_architecture,
+            "software_architecture": self.generate_software_architecture,
         }
 
         generator = generators.get(diagram_type)
@@ -513,4 +516,262 @@ class DiagramService:
         buffer.seek(0)
         plt.close(fig)
 
+        return buffer
+
+    async def generate_item_boundary(
+        self,
+        project_id: int,
+        format: str = "png",
+        project_info: Optional[dict] = None,
+    ) -> io.BytesIO:
+        """Generate item boundary diagram showing system scope."""
+        fig, ax = plt.subplots(figsize=(14, 10), dpi=100)
+        
+        # Get project name
+        project_name = "TARA分析项目"
+        if project_info:
+            project_name = project_info.get("name", project_name)
+        
+        # Draw item boundary
+        # Outer boundary (system scope)
+        outer_rect = mpatches.FancyBboxPatch(
+            (0.05, 0.1), 0.9, 0.8,
+            boxstyle=mpatches.BoxStyle("Round", pad=0.02),
+            facecolor='#E8F4FD', edgecolor='#2E75B6', linewidth=3
+        )
+        ax.add_patch(outer_rect)
+        
+        # Title for item boundary
+        ax.text(0.5, 0.92, f'{project_name} - Item Boundary', 
+                ha='center', va='center', fontsize=14, fontweight='bold', color='#1F4E79')
+        ax.text(0.5, 0.88, '项目边界定义', 
+                ha='center', va='center', fontsize=10, color='#5B9BD5')
+        
+        # Internal components
+        components = [
+            {'name': 'Core Processing\n核心处理单元', 'pos': (0.3, 0.6), 'color': '#5B9BD5'},
+            {'name': 'Security Module\n安全模块', 'pos': (0.7, 0.6), 'color': '#70AD47'},
+            {'name': 'Communication\n通信接口', 'pos': (0.3, 0.35), 'color': '#ED7D31'},
+            {'name': 'Storage\n数据存储', 'pos': (0.7, 0.35), 'color': '#7030A0'},
+        ]
+        
+        for comp in components:
+            rect = mpatches.FancyBboxPatch(
+                (comp['pos'][0] - 0.12, comp['pos'][1] - 0.08), 0.24, 0.16,
+                boxstyle=mpatches.BoxStyle("Round", pad=0.01),
+                facecolor=comp['color'], edgecolor='white', linewidth=2, alpha=0.9
+            )
+            ax.add_patch(rect)
+            ax.text(comp['pos'][0], comp['pos'][1], comp['name'],
+                   ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+        
+        # Draw connections
+        ax.annotate('', xy=(0.42, 0.6), xytext=(0.58, 0.6),
+                   arrowprops=dict(arrowstyle='<->', color='#606266', lw=2))
+        ax.annotate('', xy=(0.42, 0.35), xytext=(0.58, 0.35),
+                   arrowprops=dict(arrowstyle='<->', color='#606266', lw=2))
+        ax.annotate('', xy=(0.3, 0.52), xytext=(0.3, 0.43),
+                   arrowprops=dict(arrowstyle='<->', color='#606266', lw=2))
+        ax.annotate('', xy=(0.7, 0.52), xytext=(0.7, 0.43),
+                   arrowprops=dict(arrowstyle='<->', color='#606266', lw=2))
+        
+        # External interfaces (outside boundary)
+        external = [
+            {'name': 'External\nNetwork', 'pos': (0.1, 0.5), 'color': '#C00000'},
+            {'name': 'Cloud\nServices', 'pos': (0.9, 0.5), 'color': '#C00000'},
+            {'name': 'User\nInterface', 'pos': (0.5, 0.05), 'color': '#C00000'},
+        ]
+        
+        for ext in external:
+            ax.text(ext['pos'][0], ext['pos'][1], ext['name'],
+                   ha='center', va='center', fontsize=8, color=ext['color'],
+                   bbox=dict(boxstyle='round', facecolor='#FFE5E5', edgecolor=ext['color']))
+        
+        # Draw arrows from external to boundary
+        ax.annotate('', xy=(0.17, 0.5), xytext=(0.05, 0.5),
+                   arrowprops=dict(arrowstyle='->', color='#C00000', lw=1.5))
+        ax.annotate('', xy=(0.83, 0.5), xytext=(0.95, 0.5),
+                   arrowprops=dict(arrowstyle='<-', color='#C00000', lw=1.5))
+        ax.annotate('', xy=(0.5, 0.1), xytext=(0.5, 0.02),
+                   arrowprops=dict(arrowstyle='<->', color='#C00000', lw=1.5))
+        
+        # Legend
+        legend_elements = [
+            mpatches.Patch(facecolor='#E8F4FD', edgecolor='#2E75B6', label='Item Boundary 项目边界'),
+            mpatches.Patch(facecolor='#5B9BD5', label='Internal Component 内部组件'),
+            mpatches.Patch(facecolor='#C00000', label='External Interface 外部接口'),
+        ]
+        ax.legend(handles=legend_elements, loc='lower right', fontsize=9)
+        
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        
+        plt.tight_layout()
+        
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format=format, bbox_inches='tight', dpi=100, facecolor='white')
+        buffer.seek(0)
+        plt.close(fig)
+        
+        return buffer
+
+    async def generate_system_architecture(
+        self,
+        project_id: int,
+        format: str = "png",
+        project_info: Optional[dict] = None,
+    ) -> io.BytesIO:
+        """Generate system architecture diagram."""
+        fig, ax = plt.subplots(figsize=(16, 10), dpi=100)
+        
+        project_name = project_info.get("name", "系统") if project_info else "系统"
+        
+        # Title
+        ax.text(0.5, 0.95, f'{project_name} - System Architecture', 
+                ha='center', va='center', fontsize=14, fontweight='bold', color='#1F4E79')
+        ax.text(0.5, 0.91, '系统架构图', 
+                ha='center', va='center', fontsize=10, color='#5B9BD5')
+        
+        # Draw layers (top to bottom)
+        layers = [
+            {'name': 'Application Layer 应用层', 'y': 0.78, 'color': '#5B9BD5', 
+             'components': ['HMI\n人机界面', 'Navigation\n导航', 'Media\n多媒体', 'ADAS\n辅助驾驶']},
+            {'name': 'Service Layer 服务层', 'y': 0.58, 'color': '#70AD47',
+             'components': ['Security\n安全服务', 'Comm\n通信服务', 'Diag\n诊断服务', 'OTA\n升级服务']},
+            {'name': 'Middleware Layer 中间件层', 'y': 0.38, 'color': '#ED7D31',
+             'components': ['AUTOSAR\nClassic/Adaptive', 'Hypervisor\n虚拟化', 'OS\n操作系统', 'Crypto\n加密模块']},
+            {'name': 'Hardware Layer 硬件层', 'y': 0.18, 'color': '#7030A0',
+             'components': ['SoC/MCU\n处理器', 'HSM/SE\n安全芯片', 'Memory\n存储器', 'Network\n网络接口']},
+        ]
+        
+        for layer in layers:
+            # Layer background
+            layer_rect = mpatches.FancyBboxPatch(
+                (0.08, layer['y'] - 0.08), 0.84, 0.16,
+                boxstyle=mpatches.BoxStyle("Round", pad=0.01),
+                facecolor=layer['color'], edgecolor='white', linewidth=2, alpha=0.2
+            )
+            ax.add_patch(layer_rect)
+            
+            # Layer name
+            ax.text(0.04, layer['y'], layer['name'], ha='left', va='center',
+                   fontsize=9, fontweight='bold', color=layer['color'], rotation=90)
+            
+            # Components
+            comp_width = 0.18
+            start_x = 0.12
+            for i, comp in enumerate(layer['components']):
+                x = start_x + i * (comp_width + 0.02)
+                rect = mpatches.FancyBboxPatch(
+                    (x, layer['y'] - 0.05), comp_width, 0.10,
+                    boxstyle=mpatches.BoxStyle("Round", pad=0.005),
+                    facecolor=layer['color'], edgecolor='white', linewidth=1.5, alpha=0.9
+                )
+                ax.add_patch(rect)
+                ax.text(x + comp_width/2, layer['y'], comp, ha='center', va='center',
+                       fontsize=8, color='white', fontweight='bold')
+        
+        # Draw vertical connections between layers
+        for x in [0.21, 0.41, 0.61, 0.81]:
+            ax.plot([x, x], [0.26, 0.7], color='#606266', linewidth=1.5, linestyle='--', alpha=0.5)
+        
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        
+        plt.tight_layout()
+        
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format=format, bbox_inches='tight', dpi=100, facecolor='white')
+        buffer.seek(0)
+        plt.close(fig)
+        
+        return buffer
+
+    async def generate_software_architecture(
+        self,
+        project_id: int,
+        format: str = "png",
+        project_info: Optional[dict] = None,
+    ) -> io.BytesIO:
+        """Generate software architecture diagram."""
+        fig, ax = plt.subplots(figsize=(16, 12), dpi=100)
+        
+        project_name = project_info.get("name", "软件系统") if project_info else "软件系统"
+        
+        # Title
+        ax.text(0.5, 0.96, f'{project_name} - Software Architecture', 
+                ha='center', va='center', fontsize=14, fontweight='bold', color='#1F4E79')
+        ax.text(0.5, 0.92, '软件架构图', 
+                ha='center', va='center', fontsize=10, color='#5B9BD5')
+        
+        # Main software modules
+        modules = [
+            {'name': 'Security Manager\n安全管理器', 'pos': (0.5, 0.75), 'w': 0.35, 'h': 0.12, 'color': '#C00000'},
+            {'name': 'Application Manager\n应用管理器', 'pos': (0.25, 0.55), 'w': 0.25, 'h': 0.10, 'color': '#5B9BD5'},
+            {'name': 'Communication Manager\n通信管理器', 'pos': (0.75, 0.55), 'w': 0.25, 'h': 0.10, 'color': '#70AD47'},
+            {'name': 'Diagnostic Handler\n诊断处理器', 'pos': (0.25, 0.38), 'w': 0.25, 'h': 0.10, 'color': '#ED7D31'},
+            {'name': 'Update Manager\nOTA升级管理器', 'pos': (0.75, 0.38), 'w': 0.25, 'h': 0.10, 'color': '#7030A0'},
+            {'name': 'Crypto Library\n加密库', 'pos': (0.35, 0.20), 'w': 0.20, 'h': 0.08, 'color': '#2F5496'},
+            {'name': 'Key Management\n密钥管理', 'pos': (0.65, 0.20), 'w': 0.20, 'h': 0.08, 'color': '#2F5496'},
+        ]
+        
+        for mod in modules:
+            rect = mpatches.FancyBboxPatch(
+                (mod['pos'][0] - mod['w']/2, mod['pos'][1] - mod['h']/2), mod['w'], mod['h'],
+                boxstyle=mpatches.BoxStyle("Round", pad=0.01),
+                facecolor=mod['color'], edgecolor='white', linewidth=2, alpha=0.9
+            )
+            ax.add_patch(rect)
+            ax.text(mod['pos'][0], mod['pos'][1], mod['name'], ha='center', va='center',
+                   fontsize=9, color='white', fontweight='bold')
+        
+        # Draw connections
+        connections = [
+            ((0.5, 0.69), (0.25, 0.60)),  # Security -> App
+            ((0.5, 0.69), (0.75, 0.60)),  # Security -> Comm
+            ((0.25, 0.50), (0.25, 0.43)), # App -> Diag
+            ((0.75, 0.50), (0.75, 0.43)), # Comm -> Update
+            ((0.25, 0.33), (0.35, 0.24)), # Diag -> Crypto
+            ((0.75, 0.33), (0.65, 0.24)), # Update -> Key
+            ((0.5, 0.69), (0.35, 0.24)),  # Security -> Crypto
+            ((0.5, 0.69), (0.65, 0.24)),  # Security -> Key
+        ]
+        
+        for start, end in connections:
+            ax.annotate('', xy=end, xytext=start,
+                       arrowprops=dict(arrowstyle='->', color='#606266', lw=1.5, connectionstyle='arc3,rad=0.1'))
+        
+        # Hardware abstraction layer at bottom
+        hal_rect = mpatches.FancyBboxPatch(
+            (0.1, 0.05), 0.8, 0.06,
+            boxstyle=mpatches.BoxStyle("Round", pad=0.005),
+            facecolor='#404040', edgecolor='white', linewidth=2
+        )
+        ax.add_patch(hal_rect)
+        ax.text(0.5, 0.08, 'Hardware Abstraction Layer (HAL) / 硬件抽象层', ha='center', va='center',
+               fontsize=10, color='white', fontweight='bold')
+        
+        # Legend
+        legend_elements = [
+            mpatches.Patch(facecolor='#C00000', label='Security 安全模块'),
+            mpatches.Patch(facecolor='#5B9BD5', label='Application 应用模块'),
+            mpatches.Patch(facecolor='#70AD47', label='Communication 通信模块'),
+            mpatches.Patch(facecolor='#2F5496', label='Crypto 加密模块'),
+            mpatches.Patch(facecolor='#404040', label='HAL 硬件抽象层'),
+        ]
+        ax.legend(handles=legend_elements, loc='lower right', fontsize=8)
+        
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.axis('off')
+        
+        plt.tight_layout()
+        
+        buffer = io.BytesIO()
+        plt.savefig(buffer, format=format, bbox_inches='tight', dpi=100, facecolor='white')
+        buffer.seek(0)
+        plt.close(fig)
+        
         return buffer

@@ -240,6 +240,85 @@ class PDFGenerator:
         story.append(table)
         story.append(Spacer(1, 20))
 
+        # 1.5 Architecture Overview
+        story.append(PageBreak())
+        story.append(Paragraph("1.5 Architecture Overview 架构概述", self.styles["ChineseHeading"]))
+        story.append(Spacer(1, 12))
+        
+        # Item Boundary Section
+        story.append(Paragraph("1.5.1 Item Boundary 项目边界", self.styles["ChineseSubHeading"]))
+        story.append(
+            Paragraph(
+                "The item boundary defines the scope of this TARA analysis. "
+                "Components within the boundary are subject to cybersecurity assessment.",
+                self.styles["ChineseNormal"],
+            )
+        )
+        story.append(Spacer(1, 8))
+        
+        # Add boundary table
+        project_name = content.get("project", {}).get("name", "Target System")
+        boundary_data = [
+            ["Component", "Type", "Within Boundary"],
+            ["Core Processing Unit", "Internal", "Yes"],
+            ["Security Module (HSM/SE)", "Internal", "Yes"],
+            ["Communication Interface", "Internal", "Yes"],
+            ["Data Storage", "Internal", "Yes"],
+            ["External Network", "External", "Interface"],
+            ["Cloud Services", "External", "Interface"],
+            ["User Interface", "External", "Interface"],
+        ]
+        table = Table(boundary_data, colWidths=[6 * cm, 4 * cm, 4 * cm])
+        table.setStyle(self._create_table_style())
+        story.append(table)
+        story.append(Spacer(1, 12))
+        
+        # System Architecture Section
+        story.append(Paragraph("1.5.2 System Architecture 系统架构", self.styles["ChineseSubHeading"]))
+        story.append(
+            Paragraph(
+                "The system architecture consists of multiple layers following industry best practices:",
+                self.styles["ChineseNormal"],
+            )
+        )
+        story.append(Spacer(1, 8))
+        
+        arch_data = [
+            ["Layer", "Components", "Security Focus"],
+            ["Application Layer", "HMI, Navigation, Media, ADAS", "Input Validation, Access Control"],
+            ["Service Layer", "Security, Comm, Diagnostic, OTA", "Authentication, Encryption"],
+            ["Middleware Layer", "AUTOSAR, Hypervisor, OS, Crypto", "Isolation, Secure Boot"],
+            ["Hardware Layer", "SoC/MCU, HSM/SE, Memory, Network", "Hardware Security, Key Storage"],
+        ]
+        table = Table(arch_data, colWidths=[4 * cm, 5.5 * cm, 5.5 * cm])
+        table.setStyle(self._create_table_style())
+        story.append(table)
+        story.append(Spacer(1, 12))
+        
+        # Software Architecture Section
+        story.append(Paragraph("1.5.3 Software Architecture 软件架构", self.styles["ChineseSubHeading"]))
+        story.append(
+            Paragraph(
+                "Key software modules and their security responsibilities:",
+                self.styles["ChineseNormal"],
+            )
+        )
+        story.append(Spacer(1, 8))
+        
+        sw_arch_data = [
+            ["Module", "Function", "Security Measures"],
+            ["Security Manager", "Central security control", "Policy enforcement, Key management"],
+            ["Application Manager", "App lifecycle management", "Sandbox, Privilege control"],
+            ["Communication Manager", "Network protocols", "TLS/DTLS, Certificate validation"],
+            ["Update Manager", "OTA updates", "Signature verification, Rollback protection"],
+            ["Crypto Library", "Cryptographic operations", "AES, RSA, ECC, Hash functions"],
+            ["Key Management", "Key lifecycle", "HSM integration, Key derivation"],
+        ]
+        table = Table(sw_arch_data, colWidths=[4.5 * cm, 5 * cm, 5.5 * cm])
+        table.setStyle(self._create_table_style())
+        story.append(table)
+        story.append(Spacer(1, 20))
+
         # 2. Asset Identification
         story.append(PageBreak())
         story.append(Paragraph("2. Asset Identification", self.styles["ChineseHeading"]))
