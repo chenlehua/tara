@@ -190,13 +190,15 @@ CREATE TABLE IF NOT EXISTS attack_paths (
 -- ===========================================
 CREATE TABLE IF NOT EXISTS control_measures (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    attack_path_id BIGINT NOT NULL COMMENT '攻击路径ID',
+    attack_path_id BIGINT COMMENT '攻击路径ID (可选)',
+    threat_risk_id BIGINT COMMENT '威胁风险ID (直接关联)',
     name VARCHAR(200) NOT NULL COMMENT '控制措施名称',
     control_type VARCHAR(50) COMMENT '类型',
     category VARCHAR(50) COMMENT '分类',
     description TEXT COMMENT '措施描述',
     implementation TEXT COMMENT '实施方式',
     implementation_status TINYINT DEFAULT 0 COMMENT '实施状态',
+    status VARCHAR(50) COMMENT '状态: planned, in_progress, implemented',
     effectiveness VARCHAR(20) COMMENT '有效性',
     residual_risk_reduction TINYINT COMMENT '残余风险降低量',
     cost_estimate VARCHAR(50) COMMENT '成本估算',
@@ -207,7 +209,9 @@ CREATE TABLE IF NOT EXISTS control_measures (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (attack_path_id) REFERENCES attack_paths(id) ON DELETE CASCADE,
-    INDEX idx_attack_path_id (attack_path_id)
+    FOREIGN KEY (threat_risk_id) REFERENCES threat_risks(id) ON DELETE CASCADE,
+    INDEX idx_attack_path_id (attack_path_id),
+    INDEX idx_threat_risk_id (threat_risk_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='控制措施表';
 
 -- ===========================================
@@ -229,7 +233,10 @@ CREATE TABLE IF NOT EXISTS reports (
     file_path VARCHAR(500) COMMENT '文件存储路径',
     file_format VARCHAR(20) COMMENT '文件格式',
     file_size BIGINT COMMENT '文件大小',
-    version VARCHAR(20) DEFAULT '1.0' COMMENT '报告版本',
+    version VARCHAR(20) DEFAULT '1.0' COMMENT '报告版本号(显示用)',
+    current_version_id BIGINT COMMENT '当前版本ID',
+    baseline_version_id BIGINT COMMENT '基线版本ID',
+    version_count INT DEFAULT 0 COMMENT '版本总数',
     author VARCHAR(100) COMMENT '作者',
     reviewer VARCHAR(100) COMMENT '审核人',
     review_status TINYINT DEFAULT 0 COMMENT '审核状态',
@@ -240,3 +247,54 @@ CREATE TABLE IF NOT EXISTS reports (
     INDEX idx_project_id (project_id),
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='报告表';
+
+-- ===========================================
+-- Report Versions Table
+-- ===========================================
+CREATE TABLE IF NOT EXISTS report_versions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    report_id BIGINT NOT NULL COMMENT '报告ID',
+    version_number VARCHAR(20) NOT NULL COMMENT '版本号: 1.0, 1.1, 2.0',
+    major_version INT NOT NULL DEFAULT 1 COMMENT '主版本号',
+    minor_version INT NOT NULL DEFAULT 0 COMMENT '次版本号',
+    content JSON COMMENT '报告内容快照',
+    statistics JSON COMMENT '统计数据快照',
+    sections JSON COMMENT '章节列表快照',
+    snapshot_data JSON COMMENT '完整数据快照(资产、威胁、措施)',
+    change_summary TEXT COMMENT '变更摘要',
+    change_reason VARCHAR(500) COMMENT '变更原因',
+    created_by VARCHAR(100) COMMENT '创建人',
+    approved_by VARCHAR(100) COMMENT '审批人',
+    approved_at DATETIME COMMENT '审批时间',
+    status VARCHAR(20) DEFAULT 'draft' COMMENT '状态: draft, review, approved, deprecated',
+    is_baseline TINYINT DEFAULT 0 COMMENT '是否基线版本',
+    is_current TINYINT DEFAULT 0 COMMENT '是否当前版本',
+    file_paths JSON COMMENT '文件路径 {pdf: "", docx: "", xlsx: ""}',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE,
+    INDEX idx_report_id (report_id),
+    INDEX idx_version_number (version_number),
+    INDEX idx_is_current (is_current)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='报告版本表';
+
+-- ===========================================
+-- Report Version Changes Table
+-- ===========================================
+CREATE TABLE IF NOT EXISTS report_version_changes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    version_id BIGINT NOT NULL COMMENT '版本ID',
+    change_type VARCHAR(20) NOT NULL COMMENT '变更类型: add, modify, delete',
+    entity_type VARCHAR(50) NOT NULL COMMENT '实体类型: asset, threat, measure, project_info',
+    entity_id BIGINT COMMENT '实体ID',
+    entity_name VARCHAR(200) COMMENT '实体名称(用于显示)',
+    field_name VARCHAR(100) COMMENT '变更字段',
+    old_value TEXT COMMENT '原值(JSON格式)',
+    new_value TEXT COMMENT '新值(JSON格式)',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (version_id) REFERENCES report_versions(id) ON DELETE CASCADE,
+    INDEX idx_version_id (version_id),
+    INDEX idx_change_type (change_type),
+    INDEX idx_entity_type (entity_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='报告版本变更记录表';

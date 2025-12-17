@@ -121,19 +121,26 @@ docker-ps: ## 查看Docker容器状态
 	docker compose -f deploy/docker/docker-compose.yml ps
 
 ## ==================== 数据库 ====================
-db-init: ## 初始化数据库 (通过Docker)
+db-init: ## 初始化数据库 (通过Docker，先删除再重建)
 	@echo "Initializing databases via Docker..."
 	@echo "Waiting for MySQL to be ready..."
 	@sleep 5
+	@echo "Dropping existing database tara_db..."
+	@echo "DROP DATABASE IF EXISTS tara_db;" | docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -proot_password
+	@echo "Creating database and tables..."
 	@cat database/mysql/init/01_create_database.sql | docker compose -f deploy/docker/docker-compose.yml exec -T mysql mysql -u root -proot_password
 	@echo "Database initialized successfully!"
 
-db-init-local: ## 初始化数据库 (本地MySQL，需要输入密码)
+db-init-local: ## 初始化数据库 (本地MySQL，先删除再重建，需要输入密码)
 	@echo "Initializing databases locally..."
+	@echo "This will DROP and RECREATE the tara_db database!"
+	mysql -h 127.0.0.1 -P 3306 -u root -p -e "DROP DATABASE IF EXISTS tara_db;"
 	mysql -h 127.0.0.1 -P 3306 -u root -p < database/mysql/init/01_create_database.sql
 
-db-init-tcp: ## 初始化数据库 (通过TCP连接Docker MySQL)
+db-init-tcp: ## 初始化数据库 (通过TCP连接Docker MySQL，先删除再重建)
 	@echo "Initializing databases via TCP..."
+	@echo "This will DROP and RECREATE the tara_db database!"
+	mysql -h 127.0.0.1 -P 3306 -u root -proot_password -e "DROP DATABASE IF EXISTS tara_db;"
 	mysql -h 127.0.0.1 -P 3306 -u root -proot_password < database/mysql/init/01_create_database.sql
 
 db-migrate: ## 运行数据库迁移
