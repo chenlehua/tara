@@ -150,3 +150,76 @@ async def get_attack_tree(
 
     attack_tree = service.generate_attack_tree(threat_id)
     return success_response(data=attack_tree)
+
+
+@router.post("/analyze-project", response_model=dict)
+async def analyze_threats_for_project(
+    project_id: int = Query(..., description="项目ID"),
+    asset_ids: Optional[List[int]] = Query(default=None, description="资产ID列表"),
+    service: ThreatService = Depends(get_threat_service),
+):
+    """
+    Perform complete threat analysis for a project.
+    
+    This endpoint is called by report service during one-click generation.
+    It fetches assets from asset service and performs STRIDE analysis.
+    """
+    result = await service.analyze_threats_for_project(
+        project_id=project_id,
+        asset_ids=asset_ids,
+    )
+
+    return success_response(
+        data=result,
+        message=f"威胁分析完成，共创建 {result['created_threats']} 个威胁",
+    )
+
+
+@router.post("/assess-risks", response_model=dict)
+async def assess_risks_for_project(
+    project_id: int = Query(..., description="项目ID"),
+    service: ThreatService = Depends(get_threat_service),
+):
+    """
+    Perform risk assessment for all threats in a project.
+    
+    Updates risk levels based on impact and likelihood analysis.
+    """
+    result = await service.assess_risks_for_project(project_id=project_id)
+
+    return success_response(
+        data=result,
+        message=f"风险评估完成，共分析 {result['total_threats']} 个威胁",
+    )
+
+
+@router.get("/project/{project_id}/all", response_model=dict)
+async def get_project_threats(
+    project_id: int,
+    service: ThreatService = Depends(get_threat_service),
+):
+    """
+    Get all threats for a project in API-friendly format.
+    
+    Used by report service to get complete threat data for report generation.
+    """
+    threats = service.get_threats_for_project(project_id)
+    return success_response(
+        data={"project_id": project_id, "threats": threats, "total": len(threats)}
+    )
+
+
+@router.get("/project/{project_id}/measures", response_model=dict)
+async def get_project_measures(
+    project_id: int,
+    service: ThreatService = Depends(get_threat_service),
+):
+    """
+    Get all control measures for a project.
+    
+    Used by report service to get complete measures data for report generation.
+    """
+    measures = service.get_control_measures_for_project(project_id)
+    return success_response(
+        data={"project_id": project_id, "measures": measures, "total": len(measures)}
+    )

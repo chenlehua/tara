@@ -340,3 +340,274 @@ class ThreatService:
             "threat_name": threat.threat_name,
             "root": root,
         }
+
+    async def analyze_threats_for_project(
+        self,
+        project_id: int,
+        asset_ids: Optional[List[int]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Perform complete threat analysis for a project.
+        
+        This is called by report service during one-click generation.
+        Fetches assets from asset service and performs STRIDE analysis.
+        """
+        import httpx
+        from tara_shared.config import settings
+
+        logger.info(f"Analyzing threats for project {project_id}")
+
+        created_threats = []
+        risk_summary = {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        }
+
+        try:
+            # Get assets from asset service if not provided
+            if not asset_ids:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(
+                        f"{settings.asset_service_url}/api/v1/assets/project/{project_id}/all",
+                        timeout=30.0,
+                    )
+                    if response.status_code == 200:
+                        result = response.json()
+                        assets_data = result.get("data", {}).get("assets", [])
+                        asset_ids = [a["id"] for a in assets_data]
+                    else:
+                        logger.warning(f"Failed to get assets: {response.status_code}")
+                        # Fallback: get from local DB
+                        assets = self.db.query(Asset).filter(Asset.project_id == project_id).all()
+                        asset_ids = [a.id for a in assets]
+            else:
+                assets = self.db.query(Asset).filter(Asset.id.in_(asset_ids)).all()
+
+            # Get assets for analysis
+            assets = self.db.query(Asset).filter(Asset.id.in_(asset_ids)).all()
+
+            # Perform STRIDE analysis on each asset
+            for asset in assets:
+                threats = await self._analyze_asset_threats(asset)
+                for threat in threats:
+                    created_threats.append(threat)
+                    
+                    # Update risk summary
+                    risk_level = threat.risk_level or "medium"
+                    if risk_level in risk_summary:
+                        risk_summary[risk_level] += 1
+
+        except Exception as e:
+            logger.error(f"Threat analysis failed: {e}")
+
+        return {
+            "project_id": project_id,
+            "analyzed_assets": len(asset_ids) if asset_ids else 0,
+            "created_threats": len(created_threats),
+            "threats": [
+                {
+                    "id": t.id,
+                    "name": t.threat_name,
+                    "type": t.threat_type,
+                    "asset_id": t.asset_id,
+                    "risk_level": t.risk_level,
+                    "impact_level": t.impact_level,
+                }
+                for t in created_threats
+            ],
+            "risk_summary": risk_summary,
+        }
+
+    async def _analyze_asset_threats(self, asset: Asset) -> List[ThreatRisk]:
+        """Analyze threats for a single asset using STRIDE."""
+        threats = []
+
+        # Try AI analysis first
+        ai_threats = await self._get_ai_threat_analysis(asset)
+        
+        if ai_threats:
+            for threat_data in ai_threats:
+                threat = self._create_threat_from_data(asset, threat_data)
+                if threat:
+                    threats.append(threat)
+        else:
+            # Fallback: generate STRIDE threats
+            for stride_type, stride_info in STRIDE_TYPES.items():
+                if not self._is_threat_relevant(asset, stride_type):
+                    continue
+
+                threat = ThreatRisk(
+                    project_id=asset.project_id,
+                    asset_id=asset.id,
+                    threat_name=f"{stride_info['name_zh']}威胁 - {asset.name}",
+                    threat_type=stride_type,
+                    threat_desc=f"针对{asset.name}的{stride_info['description']}",
+                    attack_vector=self._get_default_attack_vector(asset, stride_type),
+                    impact_level=self._estimate_impact_level(asset, stride_type),
+                    likelihood=2,  # Default medium
+                    source="auto_generated",
+                )
+                threat.calculate_risk()
+                self.db.add(threat)
+                threats.append(threat)
+
+        self.db.commit()
+        return threats
+
+    async def _get_ai_threat_analysis(self, asset: Asset) -> List[Dict[str, Any]]:
+        """Get AI-powered threat analysis for an asset."""
+        try:
+            import httpx
+            from tara_shared.config import settings
+
+            async with httpx.AsyncClient() as client:
+                asset_context = f"""
+资产名称: {asset.name}
+资产类型: {asset.asset_type}
+资产类别: {asset.category or 'Unknown'}
+接口: {asset.interfaces or []}
+安全属性: {asset.security_attrs or {}}
+"""
+                response = await client.post(
+                    f"{settings.qwen3_url}/chat/completions",
+                    json={
+                        "model": "qwen3",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": """你是汽车网络安全专家，请对资产进行STRIDE威胁分析。
+返回JSON数组，每个威胁包含:
+- name: 威胁名称
+- type: STRIDE类型(S/T/R/I/D/E)
+- description: 描述
+- attack_vector: 攻击向量
+- impact_level: 影响等级(1-4)
+- likelihood: 可能性(1-4)""",
+                            },
+                            {"role": "user", "content": asset_context},
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 2000,
+                    },
+                    timeout=60.0,
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    ai_response = result["choices"][0]["message"]["content"]
+                    return self._parse_ai_threats(ai_response)
+        except Exception as e:
+            logger.warning(f"AI threat analysis failed: {e}")
+        return []
+
+    def _create_threat_from_data(
+        self,
+        asset: Asset,
+        threat_data: Dict[str, Any],
+    ) -> Optional[ThreatRisk]:
+        """Create a threat from parsed data."""
+        try:
+            threat = ThreatRisk(
+                project_id=asset.project_id,
+                asset_id=asset.id,
+                threat_name=threat_data.get("name", f"Threat - {asset.name}"),
+                threat_type=threat_data.get("type", "T"),
+                threat_desc=threat_data.get("description", ""),
+                attack_vector=threat_data.get("attack_vector", ""),
+                impact_level=threat_data.get("impact_level", 2),
+                likelihood=threat_data.get("likelihood", 2),
+                source="ai_analyzed",
+            )
+            threat.calculate_risk()
+            self.db.add(threat)
+            return threat
+        except Exception as e:
+            logger.error(f"Failed to create threat: {e}")
+            return None
+
+    async def assess_risks_for_project(
+        self,
+        project_id: int,
+    ) -> Dict[str, Any]:
+        """
+        Perform risk assessment for all threats in a project.
+        
+        This updates risk levels based on impact and likelihood.
+        """
+        logger.info(f"Assessing risks for project {project_id}")
+
+        threats, _ = self.list_threats(project_id=project_id, page_size=1000)
+
+        risk_distribution = {
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        }
+
+        for threat in threats:
+            # Recalculate risk
+            threat.calculate_risk()
+            self.repo.update(threat)
+
+            # Update distribution
+            risk_level = threat.risk_level or "medium"
+            if risk_level in risk_distribution:
+                risk_distribution[risk_level] += 1
+
+        return {
+            "project_id": project_id,
+            "total_threats": len(threats),
+            "risk_distribution": risk_distribution,
+            "high_risk_count": risk_distribution["critical"] + risk_distribution["high"],
+        }
+
+    def get_threats_for_project(self, project_id: int) -> List[Dict[str, Any]]:
+        """Get all threats for a project in API-friendly format."""
+        threats, _ = self.list_threats(project_id=project_id, page_size=1000)
+        return [
+            {
+                "id": t.id,
+                "threat_name": t.threat_name,
+                "threat_type": t.threat_type,
+                "threat_desc": t.threat_desc,
+                "asset_id": t.asset_id,
+                "attack_vector": t.attack_vector,
+                "impact_level": t.impact_level,
+                "likelihood": t.likelihood,
+                "risk_level": t.risk_level,
+                "safety_impact": t.safety_impact,
+                "financial_impact": t.financial_impact,
+                "operational_impact": t.operational_impact,
+                "privacy_impact": t.privacy_impact,
+            }
+            for t in threats
+        ]
+
+    def get_control_measures_for_project(self, project_id: int) -> List[Dict[str, Any]]:
+        """Get all control measures for a project."""
+        from tara_shared.models import AttackPath, ControlMeasure
+
+        measures = (
+            self.db.query(ControlMeasure)
+            .join(AttackPath, ControlMeasure.attack_path_id == AttackPath.id)
+            .join(ThreatRisk, AttackPath.threat_risk_id == ThreatRisk.id)
+            .filter(ThreatRisk.project_id == project_id)
+            .all()
+        )
+
+        return [
+            {
+                "id": m.id,
+                "name": m.name,
+                "control_type": m.control_type,
+                "description": m.description,
+                "implementation": m.implementation_details,
+                "effectiveness": m.effectiveness,
+                "cost": m.implementation_cost,
+                "priority": m.priority,
+                "status": m.status,
+            }
+            for m in measures
+        ]

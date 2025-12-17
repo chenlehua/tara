@@ -160,3 +160,62 @@ async def delete_document(
         raise NotFoundException("Document", document_id)
 
     return success_response(message="文档删除成功")
+
+
+@router.post("/{document_id}/parse-extract", response_model=dict)
+async def parse_and_extract(
+    document_id: int,
+    extract_assets: bool = Query(default=True, description="是否提取资产"),
+    extract_threats: bool = Query(default=False, description="是否提取威胁"),
+    background_tasks: BackgroundTasks = None,
+    service: DocumentService = Depends(get_document_service),
+):
+    """
+    Parse document and extract structured data for TARA analysis.
+    
+    This endpoint is the main entry for one-click report generation.
+    It parses the document, extracts assets and threats, and stores them.
+    """
+    document = service.get_document(document_id)
+    if not document:
+        raise NotFoundException("Document", document_id)
+
+    result = await service.parse_and_extract(
+        document_id=document_id,
+        extract_assets=extract_assets,
+        extract_threats=extract_threats,
+    )
+
+    return success_response(
+        data=result,
+        message="文档解析和提取完成",
+    )
+
+
+@router.get("/{document_id}/parsed-content", response_model=dict)
+async def get_parsed_content(
+    document_id: int,
+    service: DocumentService = Depends(get_document_service),
+):
+    """Get parsed content and extracted data for a document."""
+    result = service.get_parsed_content(document_id)
+    if not result:
+        raise NotFoundException("Document", document_id)
+
+    return success_response(data=result)
+
+
+@router.get("/{document_id}/extracted-assets", response_model=dict)
+async def get_extracted_assets(
+    document_id: int,
+    service: DocumentService = Depends(get_document_service),
+):
+    """Get extracted assets from a parsed document."""
+    document = service.get_document(document_id)
+    if not document:
+        raise NotFoundException("Document", document_id)
+
+    assets = service.get_extracted_assets(document_id)
+    return success_response(
+        data={"document_id": document_id, "assets": assets, "total": len(assets)}
+    )

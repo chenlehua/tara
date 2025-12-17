@@ -4,3 +4,4 @@ export { reportApi, type Report, type GenerationProgress, type GenerationResult,
 export { assetApi, type Asset } from './asset'
 export { threatApi, type Threat, type RiskDistribution } from './threat'
 export { measureApi, type ControlMeasure } from './measure'
+export { knowledgeApi, type KnowledgeDocument, type SearchResult, type KnowledgeStats } from './knowledge'

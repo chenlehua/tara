@@ -354,3 +354,278 @@ class AssetService:
             }
             for r in results
         ]
+
+    async def identify_from_document(
+        self,
+        project_id: int,
+        document_id: int,
+        include_relations: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Identify assets from a parsed document.
+        
+        This is called by report service during one-click generation.
+        Fetches extracted assets from document service and creates them in DB.
+        """
+        import httpx
+        from tara_shared.config import settings
+
+        logger.info(f"Identifying assets from document {document_id} for project {project_id}")
+
+        created_assets = []
+        relations = []
+
+        try:
+            # Call document service to get extracted assets
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{settings.document_service_url}/api/v1/documents/{document_id}/extracted-assets",
+                    timeout=30.0,
+                )
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    extracted_assets = result.get("data", {}).get("assets", [])
+                    
+                    if not extracted_assets:
+                        logger.info("No assets found in document, trying parse-extract")
+                        # Try to parse and extract if not done yet
+                        parse_response = await client.post(
+                            f"{settings.document_service_url}/api/v1/documents/{document_id}/parse-extract",
+                            params={"extract_assets": True},
+                            timeout=120.0,
+                        )
+                        if parse_response.status_code == 200:
+                            parse_result = parse_response.json()
+                            extracted_assets = parse_result.get("data", {}).get("extracted_data", {}).get("assets", [])
+
+                    # Create assets in database
+                    for asset_data in extracted_assets:
+                        asset = await self._create_asset_from_extracted(
+                            project_id, asset_data
+                        )
+                        if asset:
+                            created_assets.append(asset)
+
+                    # Create relationships if requested
+                    if include_relations and len(created_assets) > 1:
+                        relations = await self._create_asset_relations(created_assets)
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to fetch from document service: {e}")
+            # Fallback: generate default assets
+            created_assets = await self._generate_default_assets(project_id)
+
+        return {
+            "project_id": project_id,
+            "document_id": document_id,
+            "created_assets": len(created_assets),
+            "assets": [
+                {
+                    "id": a.id,
+                    "name": a.name,
+                    "asset_type": a.asset_type,
+                    "category": a.category,
+                }
+                for a in created_assets
+            ],
+            "relations": relations,
+        }
+
+    async def _create_asset_from_extracted(
+        self,
+        project_id: int,
+        asset_data: dict,
+    ) -> Optional[Asset]:
+        """Create an asset from extracted data."""
+        try:
+            # Map security attributes
+            security_attrs = asset_data.get("security_attrs", {})
+            if isinstance(security_attrs, dict):
+                # Normalize to expected format
+                normalized_attrs = {}
+                for key in ["authenticity", "integrity", "confidentiality", "availability"]:
+                    if key in security_attrs:
+                        val = security_attrs[key]
+                        if isinstance(val, bool):
+                            normalized_attrs[key] = "high" if val else "low"
+                        elif isinstance(val, dict):
+                            normalized_attrs[key] = val.get("level", "medium")
+                        else:
+                            normalized_attrs[key] = str(val)
+                security_attrs = normalized_attrs
+
+            # Map interfaces
+            interfaces = []
+            for iface in asset_data.get("interfaces", []):
+                if isinstance(iface, dict):
+                    interfaces.append({
+                        "name": iface.get("name", iface.get("type", "Unknown")),
+                        "interface_type": iface.get("interface_type", iface.get("type", "bus")),
+                        "protocol": iface.get("protocol", ""),
+                    })
+                elif isinstance(iface, str):
+                    interfaces.append({"name": iface, "interface_type": "bus", "protocol": ""})
+
+            # Determine criticality based on security attributes
+            criticality = "medium"
+            if security_attrs:
+                high_count = sum(1 for v in security_attrs.values() if v in ["high", "critical"])
+                if high_count >= 2:
+                    criticality = "high"
+                elif high_count >= 1:
+                    criticality = "medium"
+                else:
+                    criticality = "low"
+
+            asset = Asset(
+                project_id=project_id,
+                name=asset_data.get("name", "Unknown Asset"),
+                asset_type=asset_data.get("asset_type", "ECU"),
+                category=asset_data.get("category", "内部实体"),
+                description=asset_data.get("description", ""),
+                security_attrs=security_attrs,
+                interfaces=interfaces,
+                criticality=criticality,
+                source="document_extracted",
+            )
+
+            self.db.add(asset)
+            self.db.commit()
+            self.db.refresh(asset)
+
+            # Create node in Neo4j
+            try:
+                self._create_graph_node(asset)
+            except Exception as e:
+                logger.error(f"Failed to create graph node: {e}")
+
+            return asset
+
+        except Exception as e:
+            logger.error(f"Failed to create asset from extracted data: {e}")
+            self.db.rollback()
+            return None
+
+    async def _create_asset_relations(
+        self,
+        assets: List[Asset],
+    ) -> List[Dict[str, Any]]:
+        """Create relationships between assets based on type."""
+        relations = []
+
+        # Find gateway to create hub-spoke relations
+        gateway = next((a for a in assets if "gateway" in a.asset_type.lower()), None)
+        
+        if gateway:
+            for asset in assets:
+                if asset.id != gateway.id:
+                    try:
+                        self.add_asset_relation(
+                            source_id=gateway.id,
+                            target_id=asset.id,
+                            relation_type="COMMUNICATES_WITH",
+                        )
+                        relations.append({
+                            "source": gateway.id,
+                            "target": asset.id,
+                            "type": "COMMUNICATES_WITH",
+                        })
+                    except Exception as e:
+                        logger.error(f"Failed to create relation: {e}")
+
+        return relations
+
+    async def _generate_default_assets(self, project_id: int) -> List[Asset]:
+        """Generate default automotive assets as fallback."""
+        default_assets = [
+            {
+                "name": "Central Gateway",
+                "asset_type": "Gateway",
+                "category": "内部实体",
+                "description": "车辆中央网关，负责各域间通信",
+                "interfaces": [
+                    {"name": "CAN", "interface_type": "bus", "protocol": "CAN-FD"},
+                    {"name": "Ethernet", "interface_type": "network", "protocol": "DoIP"},
+                ],
+                "security_attrs": {
+                    "integrity": "high",
+                    "availability": "high",
+                    "confidentiality": "medium",
+                },
+            },
+            {
+                "name": "T-Box",
+                "asset_type": "T-Box",
+                "category": "外部接口",
+                "description": "远程信息处理器，提供远程通信能力",
+                "interfaces": [
+                    {"name": "4G/5G", "interface_type": "wireless", "protocol": "LTE"},
+                    {"name": "CAN", "interface_type": "bus", "protocol": "CAN"},
+                ],
+                "security_attrs": {
+                    "integrity": "high",
+                    "availability": "high",
+                    "confidentiality": "high",
+                },
+            },
+            {
+                "name": "IVI System",
+                "asset_type": "IVI",
+                "category": "内部实体",
+                "description": "车载信息娱乐系统",
+                "interfaces": [
+                    {"name": "Bluetooth", "interface_type": "wireless", "protocol": "BT5.0"},
+                    {"name": "USB", "interface_type": "bus", "protocol": "USB3.0"},
+                    {"name": "CAN", "interface_type": "bus", "protocol": "CAN"},
+                ],
+                "security_attrs": {
+                    "integrity": "medium",
+                    "availability": "medium",
+                    "confidentiality": "medium",
+                },
+            },
+        ]
+
+        created = []
+        for data in default_assets:
+            asset = Asset(
+                project_id=project_id,
+                name=data["name"],
+                asset_type=data["asset_type"],
+                category=data["category"],
+                description=data["description"],
+                interfaces=data["interfaces"],
+                security_attrs=data["security_attrs"],
+                criticality="high" if "Gateway" in data["asset_type"] else "medium",
+                source="auto_generated",
+            )
+            self.db.add(asset)
+            created.append(asset)
+
+        self.db.commit()
+        for a in created:
+            self.db.refresh(a)
+            try:
+                self._create_graph_node(a)
+            except Exception:
+                pass
+
+        return created
+
+    def get_assets_for_project(self, project_id: int) -> List[Dict[str, Any]]:
+        """Get all assets for a project in API-friendly format."""
+        assets = self.repo.get_all_by_project(project_id)
+        return [
+            {
+                "id": a.id,
+                "name": a.name,
+                "asset_type": a.asset_type,
+                "category": a.category,
+                "description": a.description,
+                "interfaces": a.interfaces or [],
+                "security_attrs": a.security_attrs or {},
+                "criticality": a.criticality,
+            }
+            for a in assets
+        ]

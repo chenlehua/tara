@@ -40,6 +40,51 @@ class Settings(BaseSettings):
     diagram_service_port: int = Field(default=8005, alias="DIAGRAM_SERVICE_PORT")
     report_service_port: int = Field(default=8006, alias="REPORT_SERVICE_PORT")
     agent_service_port: int = Field(default=8007, alias="AGENT_SERVICE_PORT")
+    knowledge_service_port: int = Field(default=8008, alias="KNOWLEDGE_SERVICE_PORT")
+    
+    # ===== 服务主机 (for inter-service communication) =====
+    project_service_host: str = Field(default="project-service", alias="PROJECT_SERVICE_HOST")
+    document_service_host: str = Field(default="document-service", alias="DOCUMENT_SERVICE_HOST")
+    asset_service_host: str = Field(default="asset-service", alias="ASSET_SERVICE_HOST")
+    threat_risk_service_host: str = Field(default="threat-risk-service", alias="THREAT_RISK_SERVICE_HOST")
+    diagram_service_host: str = Field(default="diagram-service", alias="DIAGRAM_SERVICE_HOST")
+    report_service_host: str = Field(default="report-service", alias="REPORT_SERVICE_HOST")
+    knowledge_service_host: str = Field(default="knowledge-service", alias="KNOWLEDGE_SERVICE_HOST")
+    
+    @property
+    def project_service_url(self) -> str:
+        """Get project service URL."""
+        return f"http://{self.project_service_host}:{self.project_service_port}"
+    
+    @property
+    def document_service_url(self) -> str:
+        """Get document service URL."""
+        return f"http://{self.document_service_host}:{self.document_service_port}"
+    
+    @property
+    def asset_service_url(self) -> str:
+        """Get asset service URL."""
+        return f"http://{self.asset_service_host}:{self.asset_service_port}"
+    
+    @property
+    def threat_service_url(self) -> str:
+        """Get threat-risk service URL."""
+        return f"http://{self.threat_risk_service_host}:{self.threat_risk_service_port}"
+    
+    @property
+    def diagram_service_url(self) -> str:
+        """Get diagram service URL."""
+        return f"http://{self.diagram_service_host}:{self.diagram_service_port}"
+    
+    @property
+    def report_service_url(self) -> str:
+        """Get report service URL."""
+        return f"http://{self.report_service_host}:{self.report_service_port}"
+    
+    @property
+    def knowledge_service_url(self) -> str:
+        """Get knowledge service URL."""
+        return f"http://{self.knowledge_service_host}:{self.knowledge_service_port}"
 
     # ===== MySQL 配置 =====
     mysql_host: str = Field(default="localhost", alias="MYSQL_HOST")

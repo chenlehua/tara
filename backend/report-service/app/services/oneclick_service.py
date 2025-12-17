@@ -3,6 +3,12 @@ One-click TARA Report Generation Service
 =========================================
 
 Service for generating TARA reports from uploaded files in one click.
+
+Refactored to use service-to-service API calls:
+1. Document Service - Parse documents and extract data
+2. Asset Service - Identify and store assets (MySQL + Neo4j)
+3. Threat-Risk Service - Analyze threats and assess risks
+4. Diagram Service - Generate diagrams for reports
 """
 
 import asyncio
@@ -16,8 +22,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import httpx
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
+from tara_shared.config import settings
 from tara_shared.constants import ReportStatus
 from tara_shared.models import Asset, Project, Report, ThreatRisk
 from tara_shared.utils import get_logger
@@ -27,6 +35,13 @@ logger = get_logger(__name__)
 # File storage path
 UPLOAD_DIR = Path("/tmp/tara_uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+# Service URLs - configurable via settings
+DOCUMENT_SERVICE_URL = getattr(settings, 'document_service_url', 'http://document-service:8002')
+ASSET_SERVICE_URL = getattr(settings, 'asset_service_url', 'http://asset-service:8003')
+THREAT_SERVICE_URL = getattr(settings, 'threat_service_url', 'http://threat-risk-service:8004')
+DIAGRAM_SERVICE_URL = getattr(settings, 'diagram_service_url', 'http://diagram-service:8006')
+PROJECT_SERVICE_URL = getattr(settings, 'project_service_url', 'http://project-service:8001')
 
 
 class OneClickGenerateService:
@@ -108,52 +123,48 @@ class OneClickGenerateService:
         task_storage: dict,
     ) -> None:
         """
-        Run the full TARA report generation process.
+        Run the full TARA report generation process using service-to-service API calls.
+        
+        Flow:
+        1. Upload and parse documents via Document Service
+        2. Identify assets via Asset Service (saves to MySQL + Neo4j)
+        3. Analyze threats via Threat-Risk Service (saves to MySQL)
+        4. Assess risks via Threat-Risk Service
+        5. Generate report by fetching data from all services
         """
+        document_ids = []
         try:
-            # Step 1: Parse files
+            # Step 1: Parse files via Document Service
             await self._update_progress(task_storage, task_id, 0, 10, "解析文件")
-            parsed_data = await self._parse_files(file_paths)
-            await asyncio.sleep(1)  # Simulate processing time
+            document_ids = await self._upload_and_parse_documents(project_id, file_paths)
+            await asyncio.sleep(0.5)
 
-            # Step 2: Identify assets
+            # Step 2: Identify assets via Asset Service
             await self._update_progress(task_storage, task_id, 1, 30, "识别资产")
-            assets = await self._identify_assets(parsed_data)
-            # Save assets to database
-            db_asset_ids = await self._save_assets_to_db(project_id, assets)
-            await asyncio.sleep(1.5)
+            asset_result = await self._identify_assets_via_service(project_id, document_ids)
+            await asyncio.sleep(0.5)
 
-            # Step 3: Threat analysis
+            # Step 3: Threat analysis via Threat-Risk Service
             await self._update_progress(task_storage, task_id, 2, 50, "威胁分析")
-            threats = await self._analyze_threats(assets, template, prompt)
-            # Save threats to database
-            await self._save_threats_to_db(project_id, threats, db_asset_ids)
-            await asyncio.sleep(2)
+            threat_result = await self._analyze_threats_via_service(project_id)
+            await asyncio.sleep(0.5)
 
-            # Step 4: Risk assessment
+            # Step 4: Risk assessment via Threat-Risk Service
             await self._update_progress(task_storage, task_id, 3, 75, "风险评估")
-            risk_assessment = await self._assess_risks(threats)
-            # Save control measures to database
-            measures_count = await self._save_control_measures_to_db(
-                project_id, risk_assessment.get("threats", [])
-            )
-            await asyncio.sleep(1.5)
+            risk_result = await self._assess_risks_via_service(project_id)
+            await asyncio.sleep(0.5)
 
-            # Step 5: Generate report
+            # Step 5: Generate report by fetching data from all services
             await self._update_progress(task_storage, task_id, 4, 90, "生成报告")
-            report_data = await self._generate_report(
+            report_data = await self._generate_report_from_services(
                 project_id=project_id,
                 report_id=report_id,
-                assets=assets,
-                threats=threats,
-                risk_assessment=risk_assessment,
                 template=template,
-                measures_count=measures_count,
             )
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.5)
 
             # Save report data to database
-            await self._save_report_to_db(report_id, report_data, risk_assessment)
+            await self._save_report_to_db_v2(report_id, report_data)
 
             # Update project status to completed
             await self._update_project_status(project_id, 2)  # 2 = completed
@@ -175,6 +186,407 @@ class OneClickGenerateService:
             task_storage[task_id]["error"] = str(e)
             # Update report status to failed
             await self._update_report_status(report_id, ReportStatus.FAILED.value, str(e))
+            # Fallback to local generation
+            await self._run_fallback_generation(
+                task_id, project_id, report_id, file_paths, template, prompt, task_storage
+            )
+
+    async def _upload_and_parse_documents(
+        self,
+        project_id: int,
+        file_paths: List[str],
+    ) -> List[int]:
+        """Upload files to Document Service and parse them."""
+        document_ids = []
+        
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            for file_path in file_paths:
+                path = Path(file_path)
+                if not path.exists():
+                    continue
+                    
+                try:
+                    # Upload file to document service
+                    with open(file_path, "rb") as f:
+                        files = {"file": (path.name, f, "application/octet-stream")}
+                        data = {"project_id": str(project_id)}
+                        
+                        response = await client.post(
+                            f"{DOCUMENT_SERVICE_URL}/api/v1/documents/upload",
+                            files=files,
+                            data=data,
+                        )
+                        
+                        if response.status_code in [200, 201]:
+                            result = response.json()
+                            doc_id = result.get("data", {}).get("document_id")
+                            if doc_id:
+                                document_ids.append(doc_id)
+                                logger.info(f"Uploaded document: {doc_id}")
+                                
+                                # Trigger parse and extract
+                                parse_response = await client.post(
+                                    f"{DOCUMENT_SERVICE_URL}/api/v1/documents/{doc_id}/parse-extract",
+                                    params={"extract_assets": True, "extract_threats": True},
+                                )
+                                if parse_response.status_code == 200:
+                                    logger.info(f"Parsed document: {doc_id}")
+                        else:
+                            logger.warning(f"Failed to upload document: {response.status_code}")
+                            
+                except Exception as e:
+                    logger.error(f"Failed to upload/parse document {file_path}: {e}")
+
+        return document_ids
+
+    async def _identify_assets_via_service(
+        self,
+        project_id: int,
+        document_ids: List[int],
+    ) -> Dict[str, Any]:
+        """Identify assets via Asset Service API."""
+        result = {"created_assets": 0, "assets": []}
+        
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            for doc_id in document_ids:
+                try:
+                    response = await client.post(
+                        f"{ASSET_SERVICE_URL}/api/v1/assets/identify-from-document",
+                        params={
+                            "project_id": project_id,
+                            "document_id": doc_id,
+                            "include_relations": True,
+                        },
+                    )
+                    
+                    if response.status_code == 200:
+                        data = response.json().get("data", {})
+                        result["created_assets"] += data.get("created_assets", 0)
+                        result["assets"].extend(data.get("assets", []))
+                        logger.info(f"Identified {data.get('created_assets', 0)} assets from document {doc_id}")
+                    else:
+                        logger.warning(f"Asset identification failed: {response.status_code}")
+                        
+                except Exception as e:
+                    logger.error(f"Failed to identify assets from document {doc_id}: {e}")
+        
+        # If no assets found, trigger fallback asset generation
+        if result["created_assets"] == 0:
+            result = await self._generate_fallback_assets(project_id)
+            
+        return result
+
+    async def _generate_fallback_assets(self, project_id: int) -> Dict[str, Any]:
+        """Generate fallback assets if no assets were extracted."""
+        logger.info(f"Generating fallback assets for project {project_id}")
+        
+        # Use local fallback
+        assets = self._generate_sample_assets()
+        asset_id_map = await self._save_assets_to_db(project_id, assets)
+        
+        return {
+            "created_assets": len(assets),
+            "assets": [
+                {"id": db_id, "name": a["name"], "asset_type": a["type"]}
+                for a, db_id in zip(assets, asset_id_map.values())
+            ],
+        }
+
+    async def _analyze_threats_via_service(
+        self,
+        project_id: int,
+    ) -> Dict[str, Any]:
+        """Analyze threats via Threat-Risk Service API."""
+        result = {"created_threats": 0, "threats": [], "risk_summary": {}}
+        
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(
+                    f"{THREAT_SERVICE_URL}/api/v1/threats/analyze-project",
+                    params={"project_id": project_id},
+                )
+                
+                if response.status_code == 200:
+                    data = response.json().get("data", {})
+                    result = data
+                    logger.info(f"Analyzed {data.get('created_threats', 0)} threats for project {project_id}")
+                else:
+                    logger.warning(f"Threat analysis failed: {response.status_code}")
+                    # Fallback to local threat analysis
+                    result = await self._fallback_threat_analysis(project_id)
+                    
+        except Exception as e:
+            logger.error(f"Failed to analyze threats: {e}")
+            result = await self._fallback_threat_analysis(project_id)
+            
+        return result
+
+    async def _fallback_threat_analysis(self, project_id: int) -> Dict[str, Any]:
+        """Fallback threat analysis using local logic."""
+        logger.info(f"Running fallback threat analysis for project {project_id}")
+        
+        # Get assets from database
+        assets_db = self.db.query(Asset).filter(Asset.project_id == project_id).all()
+        assets = [
+            {
+                "id": a.id,
+                "name": a.name,
+                "type": a.asset_type,
+                "category": a.category,
+                "interfaces": a.interfaces or [],
+                "security_attrs": a.security_attrs or {},
+            }
+            for a in assets_db
+        ]
+        
+        # Run local threat analysis
+        threats = await self._analyze_threats(assets, "iso21434", "")
+        asset_id_map = {str(a.id): a.id for a in assets_db}
+        await self._save_threats_to_db(project_id, threats, asset_id_map)
+        
+        return {
+            "created_threats": len(threats),
+            "threats": [{"id": t.get("db_id"), "name": t["name"]} for t in threats],
+            "risk_summary": {"critical": 0, "high": 0, "medium": len(threats), "low": 0},
+        }
+
+    async def _assess_risks_via_service(
+        self,
+        project_id: int,
+    ) -> Dict[str, Any]:
+        """Assess risks via Threat-Risk Service API."""
+        result = {"total_threats": 0, "risk_distribution": {}, "high_risk_count": 0}
+        
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{THREAT_SERVICE_URL}/api/v1/threats/assess-risks",
+                    params={"project_id": project_id},
+                )
+                
+                if response.status_code == 200:
+                    result = response.json().get("data", {})
+                    logger.info(f"Risk assessment completed for project {project_id}")
+                else:
+                    logger.warning(f"Risk assessment failed: {response.status_code}")
+                    
+        except Exception as e:
+            logger.error(f"Failed to assess risks: {e}")
+            
+        return result
+
+    async def _generate_report_from_services(
+        self,
+        project_id: int,
+        report_id: int,
+        template: str,
+    ) -> Dict[str, Any]:
+        """Generate report by fetching data from all services."""
+        
+        # Fetch data from all services in parallel
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # Fetch project info
+            project_info = {}
+            try:
+                resp = await client.get(f"{PROJECT_SERVICE_URL}/api/v1/projects/{project_id}")
+                if resp.status_code == 200:
+                    project_info = resp.json().get("data", {})
+            except Exception as e:
+                logger.warning(f"Failed to fetch project info: {e}")
+                # Fallback to local
+                project = self.db.query(Project).filter(Project.id == project_id).first()
+                if project:
+                    project_info = {
+                        "id": project.id,
+                        "name": project.name,
+                        "description": project.description,
+                        "vehicle_type": project.vehicle_type,
+                        "standard": project.standard,
+                    }
+
+            # Fetch assets
+            assets = []
+            try:
+                resp = await client.get(f"{ASSET_SERVICE_URL}/api/v1/assets/project/{project_id}/all")
+                if resp.status_code == 200:
+                    assets = resp.json().get("data", {}).get("assets", [])
+            except Exception as e:
+                logger.warning(f"Failed to fetch assets: {e}")
+                # Fallback to local
+                assets_db = self.db.query(Asset).filter(Asset.project_id == project_id).all()
+                assets = [
+                    {
+                        "id": a.id,
+                        "name": a.name,
+                        "asset_type": a.asset_type,
+                        "category": a.category,
+                        "interfaces": a.interfaces or [],
+                        "security_attrs": a.security_attrs or {},
+                    }
+                    for a in assets_db
+                ]
+
+            # Fetch threats
+            threats = []
+            try:
+                resp = await client.get(f"{THREAT_SERVICE_URL}/api/v1/threats/project/{project_id}/all")
+                if resp.status_code == 200:
+                    threats = resp.json().get("data", {}).get("threats", [])
+            except Exception as e:
+                logger.warning(f"Failed to fetch threats: {e}")
+                # Fallback to local
+                threats_db = self.db.query(ThreatRisk).filter(ThreatRisk.project_id == project_id).all()
+                threats = [
+                    {
+                        "id": t.id,
+                        "threat_name": t.threat_name,
+                        "threat_type": t.threat_type,
+                        "threat_desc": t.threat_desc,
+                        "asset_id": t.asset_id,
+                        "risk_level": t.risk_level,
+                        "impact_level": t.impact_level,
+                    }
+                    for t in threats_db
+                ]
+
+            # Fetch control measures
+            measures = []
+            try:
+                resp = await client.get(f"{THREAT_SERVICE_URL}/api/v1/threats/project/{project_id}/measures")
+                if resp.status_code == 200:
+                    measures = resp.json().get("data", {}).get("measures", [])
+            except Exception as e:
+                logger.warning(f"Failed to fetch measures: {e}")
+
+        # Calculate risk distribution
+        risk_distribution = {"CAL-4": 0, "CAL-3": 0, "CAL-2": 0, "CAL-1": 0}
+        for threat in threats:
+            risk_level = threat.get("risk_level", "CAL-2")
+            if risk_level in risk_distribution:
+                risk_distribution[risk_level] += 1
+
+        # Generate report data
+        report_data = {
+            "report_id": report_id,
+            "project_id": project_id,
+            "report_name": f"TARA分析报告_{datetime.now().strftime('%Y-%m-%d')}",
+            "template": template,
+            "generated_at": datetime.now().isoformat(),
+            "project": project_info,
+            "statistics": {
+                "assets_count": len(assets),
+                "threats_count": len(threats),
+                "high_risk_count": risk_distribution.get("CAL-4", 0) + risk_distribution.get("CAL-3", 0),
+                "measures_count": len(measures),
+            },
+            "assets": assets,
+            "threats": threats,
+            "control_measures": measures,
+            "risk_distribution": risk_distribution,
+            "download_urls": {
+                "pdf": f"/api/v1/reports/{report_id}/download?format=pdf",
+                "docx": f"/api/v1/reports/{report_id}/download?format=docx",
+                "xlsx": f"/api/v1/reports/{report_id}/download?format=xlsx",
+            },
+        }
+
+        return report_data
+
+    async def _save_report_to_db_v2(
+        self,
+        report_id: int,
+        report_data: Dict[str, Any],
+    ) -> None:
+        """Save generated report data to database (v2 - from service calls)."""
+        try:
+            report = self.db.query(Report).filter(Report.id == report_id).first()
+            if report:
+                report.status = ReportStatus.COMPLETED.value
+                report.progress = 100
+                report.statistics = report_data.get("statistics", {})
+                report.content = {
+                    "project": report_data.get("project", {}),
+                    "assets": report_data.get("assets", []),
+                    "threats": report_data.get("threats", []),
+                    "risk_distribution": report_data.get("risk_distribution", {}),
+                    "control_measures": report_data.get("control_measures", []),
+                    "generated_at": report_data.get("generated_at"),
+                }
+                # Store sections for navigation
+                report.sections = [
+                    {"id": "overview", "title": "概述", "count": 1},
+                    {"id": "assets", "title": "资产清单", "count": len(report_data.get("assets", []))},
+                    {"id": "threats", "title": "威胁分析", "count": len(report_data.get("threats", []))},
+                    {"id": "risks", "title": "风险评估", "count": len(report_data.get("threats", []))},
+                    {"id": "measures", "title": "安全措施", "count": len(report_data.get("control_measures", []))},
+                ]
+                self.db.commit()
+                logger.info(f"Report {report_id} saved to database")
+        except Exception as e:
+            logger.error(f"Failed to save report to database: {e}")
+            self.db.rollback()
+
+    async def _run_fallback_generation(
+        self,
+        task_id: str,
+        project_id: int,
+        report_id: int,
+        file_paths: List[str],
+        template: str,
+        prompt: str,
+        task_storage: dict,
+    ) -> None:
+        """Run fallback generation using local logic (no service calls)."""
+        logger.info(f"Running fallback generation for task {task_id}")
+        
+        try:
+            # Parse files locally
+            parsed_data = await self._parse_files(file_paths)
+            
+            # Identify assets locally
+            assets = await self._identify_assets(parsed_data)
+            db_asset_ids = await self._save_assets_to_db(project_id, assets)
+            
+            # Threat analysis locally
+            threats = await self._analyze_threats(assets, template, prompt)
+            await self._save_threats_to_db(project_id, threats, db_asset_ids)
+            
+            # Risk assessment locally
+            risk_assessment = await self._assess_risks(threats)
+            measures_count = await self._save_control_measures_to_db(
+                project_id, risk_assessment.get("threats", [])
+            )
+            
+            # Generate report locally
+            report_data = await self._generate_report(
+                project_id=project_id,
+                report_id=report_id,
+                assets=assets,
+                threats=threats,
+                risk_assessment=risk_assessment,
+                template=template,
+                measures_count=measures_count,
+            )
+            
+            # Save report
+            await self._save_report_to_db(report_id, report_data, risk_assessment)
+            await self._update_project_status(project_id, 2)
+            
+            # Update task status
+            task_storage[task_id]["status"] = "completed"
+            task_storage[task_id]["progress"] = 100
+            task_storage[task_id]["current_step"] = "完成（回退模式）"
+            task_storage[task_id]["result"] = report_data
+            for step in task_storage[task_id]["steps"]:
+                step["completed"] = True
+                step["active"] = False
+                
+            logger.info(f"Fallback generation completed for task {task_id}")
+            
+        except Exception as e:
+            logger.error(f"Fallback generation also failed: {e}")
+            task_storage[task_id]["status"] = "failed"
+            task_storage[task_id]["error"] = f"Fallback failed: {str(e)}"
 
     async def _update_progress(
         self,

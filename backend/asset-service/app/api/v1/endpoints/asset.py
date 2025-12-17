@@ -172,3 +172,44 @@ async def add_asset_relation(
         raise NotFoundException("Asset", asset_id)
 
     return success_response(message="资产关系添加成功")
+
+
+@router.post("/identify-from-document", response_model=dict)
+async def identify_from_document(
+    project_id: int = Query(..., description="项目ID"),
+    document_id: int = Query(..., description="文档ID"),
+    include_relations: bool = Query(default=True, description="是否创建资产关系"),
+    service: AssetService = Depends(get_asset_service),
+):
+    """
+    Identify assets from a parsed document.
+    
+    This endpoint is called by report service during one-click generation.
+    It fetches extracted assets from document service and creates them in DB.
+    """
+    result = await service.identify_from_document(
+        project_id=project_id,
+        document_id=document_id,
+        include_relations=include_relations,
+    )
+
+    return success_response(
+        data=result,
+        message=f"成功识别并创建 {result['created_assets']} 个资产",
+    )
+
+
+@router.get("/project/{project_id}/all", response_model=dict)
+async def get_project_assets(
+    project_id: int,
+    service: AssetService = Depends(get_asset_service),
+):
+    """
+    Get all assets for a project in API-friendly format.
+    
+    Used by report service to get complete asset data for report generation.
+    """
+    assets = service.get_assets_for_project(project_id)
+    return success_response(
+        data={"project_id": project_id, "assets": assets, "total": len(assets)}
+    )

@@ -34,6 +34,7 @@ services:
       - diagram-service
       - report-service
       - agent-service
+      - knowledge-service
     restart: on-failure
     networks:
       - tara-network
@@ -345,6 +346,31 @@ services:
       - VLLM_QWEN3_VL_HOST=vllm-qwen3-vl
     depends_on:
       redis:
+        condition: service_healthy
+    networks:
+      - tara-network
+
+  knowledge-service:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/dockerfiles/backend.Dockerfile
+      args:
+        SERVICE_NAME: knowledge-service
+    ports:
+      - "8008:8008"
+    environment:
+      - PORT=8008
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+      - MINIO_HOST=minio
+      - ES_HOST=elasticsearch
+      - MILVUS_HOST=milvus
+    depends_on:
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     networks:
       - tara-network

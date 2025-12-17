@@ -5,18 +5,81 @@
         <h1>知识库</h1>
         <p class="page-subtitle">汽车网络安全威胁情报与最佳实践</p>
       </div>
-      <div class="search-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="M21 21l-4.35-4.35"/>
-        </svg>
-        <input type="text" placeholder="搜索知识库..." v-model="searchQuery">
+      <div class="header-actions">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input 
+            type="text" 
+            placeholder="搜索知识库..." 
+            v-model="searchQuery"
+            @keyup.enter="handleSearch"
+          >
+        </div>
+        <button class="btn-primary" @click="showUploadModal = true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          上传文档
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-row" v-if="stats">
+      <div class="stat-card">
+        <div class="stat-value">{{ stats.total_documents }}</div>
+        <div class="stat-label">文档总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">{{ stats.total_chunks }}</div>
+        <div class="stat-label">知识片段</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" :class="{ 'status-ok': stats.es_available, 'status-error': !stats.es_available }">
+          {{ stats.es_available ? '在线' : '离线' }}
+        </div>
+        <div class="stat-label">全文搜索</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" :class="{ 'status-ok': stats.milvus_available, 'status-error': !stats.milvus_available }">
+          {{ stats.milvus_available ? '在线' : '离线' }}
+        </div>
+        <div class="stat-label">向量搜索</div>
+      </div>
+    </div>
+
+    <!-- Search Results -->
+    <div v-if="searchResults.length > 0" class="search-results">
+      <div class="section-header">
+        <h2>搜索结果</h2>
+        <button class="btn-text" @click="clearSearch">清除</button>
+      </div>
+      <div class="result-list">
+        <div 
+          v-for="result in searchResults" 
+          :key="result.chunk_id"
+          class="result-card tara-card"
+        >
+          <div class="result-meta">
+            <span class="result-type" :class="result.search_type">{{ result.search_type }}</span>
+            <span class="result-score">相关度: {{ (result.score * 100).toFixed(1) }}%</span>
+          </div>
+          <p class="result-content">{{ result.content }}</p>
+          <div class="result-source" v-if="result.filename">
+            来源: {{ result.filename }}
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="category-tabs">
       <button 
-        v-for="cat in categories" 
+        v-for="cat in displayCategories" 
         :key="cat.id"
         class="category-tab"
         :class="{ active: selectedCategory === cat.id }"
@@ -28,36 +91,109 @@
       </button>
     </div>
 
-    <div class="knowledge-grid">
+    <!-- Document Grid -->
+    <div v-if="loading" class="loading-state">
+      <div class="spinner"></div>
+      <p>加载中...</p>
+    </div>
+
+    <div v-else-if="documents.length === 0" class="empty-state">
+      <div class="empty-icon">📚</div>
+      <h3>知识库为空</h3>
+      <p>上传文档开始构建您的知识库</p>
+      <button class="btn-primary" @click="showUploadModal = true">上传第一个文档</button>
+    </div>
+
+    <div v-else class="knowledge-grid">
       <div 
-        v-for="item in filteredItems" 
-        :key="item.id"
+        v-for="item in documents" 
+        :key="item.document_id"
         class="knowledge-card tara-card"
-        @click="openItem(item)"
       >
-        <div class="card-category" :class="item.categoryClass">
+        <div class="card-category" :class="getCategoryClass(item.category)">
           {{ item.category }}
         </div>
-        <h3 class="card-title">{{ item.title }}</h3>
-        <p class="card-desc">{{ item.description }}</p>
+        <h3 class="card-title">{{ item.filename }}</h3>
+        <p class="card-desc">{{ item.total_chunks }} 个知识片段，{{ formatSize(item.content_length) }}</p>
         <div class="card-meta">
           <span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
               <rect x="3" y="4" width="18" height="18" rx="2"/>
               <path d="M16 2v4M8 2v4M3 10h18"/>
             </svg>
-            {{ item.date }}
+            {{ formatDate(item.created_at) }}
           </span>
           <span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
+              <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
             </svg>
-            {{ item.views }}
+            {{ item.indexed_chunks }}/{{ item.total_chunks }}
           </span>
         </div>
         <div class="card-tags">
           <span v-for="tag in item.tags" :key="tag" class="tag">{{ tag }}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-icon" @click="reindexDocument(item.document_id)" title="重新索引">
+            🔄
+          </button>
+          <button class="btn-icon danger" @click="deleteDocument(item.document_id)" title="删除">
+            🗑️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div v-if="showUploadModal" class="modal-overlay" @click.self="showUploadModal = false">
+      <div class="modal-content tara-card">
+        <h2>上传文档</h2>
+        <div class="upload-form">
+          <div class="file-input">
+            <input 
+              type="file" 
+              ref="fileInput"
+              @change="handleFileSelect"
+              accept=".pdf,.doc,.docx,.txt,.md,.json,.csv"
+            >
+            <div class="file-placeholder" @click="triggerFileInput">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p>{{ selectedFile ? selectedFile.name : '点击选择文件或拖拽至此' }}</p>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>分类</label>
+            <select v-model="uploadCategory">
+              <option value="general">通用</option>
+              <option value="threat_library">威胁库</option>
+              <option value="control_library">控制库</option>
+              <option value="standard">标准规范</option>
+              <option value="regulation">法规</option>
+              <option value="best_practice">最佳实践</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>标签（逗号分隔）</label>
+            <input type="text" v-model="uploadTags" placeholder="如: CAN, STRIDE, 威胁分析">
+          </div>
+          
+          <div class="modal-actions">
+            <button class="btn-secondary" @click="showUploadModal = false">取消</button>
+            <button 
+              class="btn-primary" 
+              @click="uploadDocument"
+              :disabled="!selectedFile || uploading"
+            >
+              {{ uploading ? '上传中...' : '上传' }}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -65,7 +201,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { knowledgeApi, type KnowledgeDocument, type SearchResult, type KnowledgeStats } from '@/api'
 
 // Icons
 const IconShield = {
@@ -83,38 +220,193 @@ const IconFile = {
 
 const searchQuery = ref('')
 const selectedCategory = ref('all')
+const loading = ref(true)
+const documents = ref<KnowledgeDocument[]>([])
+const searchResults = ref<SearchResult[]>([])
+const stats = ref<KnowledgeStats | null>(null)
+const categories = ref<string[]>([])
 
-const categories = [
-  { id: 'all', name: '全部', count: 156, icon: IconBook },
-  { id: 'threats', name: '威胁情报', count: 48, icon: IconWarning },
-  { id: 'controls', name: '安全控制', count: 62, icon: IconShield },
-  { id: 'standards', name: '标准规范', count: 28, icon: IconFile },
-  { id: 'patterns', name: '攻击模式', count: 18, icon: IconWarning }
-]
+// Upload modal
+const showUploadModal = ref(false)
+const selectedFile = ref<File | null>(null)
+const uploadCategory = ref('general')
+const uploadTags = ref('')
+const uploading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
 
-const knowledgeItems = ref([
-  { id: '1', title: 'CAN总线安全威胁分析', description: '详细分析CAN总线面临的各类安全威胁，包括消息注入、DoS攻击等', category: '威胁情报', categoryClass: 'threat', date: '2024-12-10', views: 1256, tags: ['CAN', 'STRIDE', '消息注入'] },
-  { id: '2', title: 'SecOC安全通信协议实施指南', description: 'AUTOSAR SecOC协议的详细实施步骤和最佳实践', category: '安全控制', categoryClass: 'control', date: '2024-12-08', views: 892, tags: ['SecOC', 'AUTOSAR', '消息认证'] },
-  { id: '3', title: 'ISO/SAE 21434合规指南', description: '汽车网络安全工程标准的解读和合规建议', category: '标准规范', categoryClass: 'standard', date: '2024-12-05', views: 2341, tags: ['ISO 21434', '合规', 'CSMS'] },
-  { id: '4', title: 'T-Box远程攻击案例分析', description: '真实案例分析：T-Box远程攻击手法与防护措施', category: '攻击模式', categoryClass: 'pattern', date: '2024-12-01', views: 1567, tags: ['T-Box', '远程攻击', '案例'] },
-  { id: '5', title: 'HSM硬件安全模块部署指南', description: '车载HSM的选型、部署和密钥管理最佳实践', category: '安全控制', categoryClass: 'control', date: '2024-11-28', views: 756, tags: ['HSM', '密钥管理', '硬件安全'] },
-  { id: '6', title: 'UN R155法规解读', description: '联合国R155法规的详细解读和OEM合规路径', category: '标准规范', categoryClass: 'standard', date: '2024-11-25', views: 1890, tags: ['UN R155', '法规', 'OEM'] }
-])
-
-const filteredItems = computed(() => {
-  return knowledgeItems.value.filter(item => {
-    const matchesSearch = !searchQuery.value || 
-      item.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesCategory = selectedCategory.value === 'all' || 
-      item.categoryClass === selectedCategory.value.replace('s', '')
-    return matchesSearch && matchesCategory
+const displayCategories = computed(() => {
+  const baseCats = [
+    { id: 'all', name: '全部', count: documents.value.length, icon: IconBook },
+  ]
+  
+  const catCounts: Record<string, number> = {}
+  documents.value.forEach(doc => {
+    catCounts[doc.category] = (catCounts[doc.category] || 0) + 1
   })
+  
+  const catIcons: Record<string, any> = {
+    'threat_library': IconWarning,
+    'control_library': IconShield,
+    'standard': IconFile,
+    'regulation': IconFile,
+    'best_practice': IconBook,
+    'general': IconBook,
+  }
+  
+  const catNames: Record<string, string> = {
+    'threat_library': '威胁库',
+    'control_library': '控制库',
+    'standard': '标准规范',
+    'regulation': '法规',
+    'best_practice': '最佳实践',
+    'general': '通用',
+  }
+  
+  categories.value.forEach(cat => {
+    if (catCounts[cat] || cat !== 'all') {
+      baseCats.push({
+        id: cat,
+        name: catNames[cat] || cat,
+        count: catCounts[cat] || 0,
+        icon: catIcons[cat] || IconBook,
+      })
+    }
+  })
+  
+  return baseCats
 })
 
-const openItem = (item: any) => {
-  console.log('Open:', item)
+const getCategoryClass = (category: string) => {
+  const classMap: Record<string, string> = {
+    'threat_library': 'threat',
+    'control_library': 'control',
+    'standard': 'standard',
+    'regulation': 'standard',
+    'best_practice': 'control',
+    'general': 'standard',
+  }
+  return classMap[category] || 'standard'
 }
+
+const formatDate = (dateStr: string) => {
+  return new Date(dateStr).toLocaleDateString('zh-CN')
+}
+
+const formatSize = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+}
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    const [docsRes, statsRes, catsRes] = await Promise.all([
+      knowledgeApi.list({ page: 1, page_size: 100 }),
+      knowledgeApi.getStats(),
+      knowledgeApi.listCategories(),
+    ])
+    
+    if (docsRes.code === 0) {
+      documents.value = docsRes.data?.items || []
+    }
+    if (statsRes.code === 0) {
+      stats.value = statsRes.data
+    }
+    if (catsRes.code === 0) {
+      categories.value = catsRes.data?.categories || []
+    }
+  } catch (error) {
+    console.error('Failed to load knowledge base:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleSearch = async () => {
+  if (!searchQuery.value.trim()) {
+    searchResults.value = []
+    return
+  }
+  
+  try {
+    const res = await knowledgeApi.search({
+      query: searchQuery.value,
+      search_type: 'hybrid',
+      top_k: 20,
+    })
+    
+    if (res.code === 0) {
+      searchResults.value = res.data?.results || []
+    }
+  } catch (error) {
+    console.error('Search failed:', error)
+  }
+}
+
+const clearSearch = () => {
+  searchQuery.value = ''
+  searchResults.value = []
+}
+
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    selectedFile.value = target.files[0]
+  }
+}
+
+const uploadDocument = async () => {
+  if (!selectedFile.value) return
+  
+  uploading.value = true
+  try {
+    const res = await knowledgeApi.upload({
+      file: selectedFile.value,
+      category: uploadCategory.value,
+      tags: uploadTags.value,
+    })
+    
+    if (res.code === 0) {
+      showUploadModal.value = false
+      selectedFile.value = null
+      uploadTags.value = ''
+      await loadData()
+    }
+  } catch (error) {
+    console.error('Upload failed:', error)
+  } finally {
+    uploading.value = false
+  }
+}
+
+const deleteDocument = async (documentId: string) => {
+  if (!confirm('确定要删除此文档吗？')) return
+  
+  try {
+    await knowledgeApi.delete(documentId)
+    await loadData()
+  } catch (error) {
+    console.error('Delete failed:', error)
+  }
+}
+
+const reindexDocument = async (documentId: string) => {
+  try {
+    await knowledgeApi.reindex(documentId)
+    await loadData()
+  } catch (error) {
+    console.error('Reindex failed:', error)
+  }
+}
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
@@ -138,6 +430,12 @@ const openItem = (item: any) => {
 .page-subtitle {
   color: var(--text-muted);
   font-size: 15px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
 }
 
 .search-box {
@@ -168,6 +466,131 @@ const openItem = (item: any) => {
 
 .search-box input:focus {
   border-color: var(--border-focus);
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--brand-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary svg {
+  width: 18px;
+  height: 18px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.stat-value.status-ok { color: #10b981; }
+.stat-value.status-error { color: #ef4444; }
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.search-results {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: var(--brand-blue);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  padding: 16px;
+}
+
+.result-meta {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.result-type {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.result-type.vector { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+.result-type.fulltext { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.result-type.hybrid { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.result-score {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.result-content {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.result-source {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
 .category-tabs {
@@ -217,6 +640,43 @@ const openItem = (item: any) => {
   font-size: 12px;
 }
 
+.loading-state, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--brand-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
 .knowledge-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -224,7 +684,7 @@ const openItem = (item: any) => {
 }
 
 .knowledge-card {
-  cursor: pointer;
+  position: relative;
   transition: all var(--transition-normal);
 }
 
@@ -245,7 +705,6 @@ const openItem = (item: any) => {
 .card-category.threat { background: rgba(245, 158, 11, 0.15); color: #FBBF24; }
 .card-category.control { background: rgba(16, 185, 129, 0.15); color: #34D399; }
 .card-category.standard { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
-.card-category.pattern { background: rgba(239, 68, 68, 0.15); color: #F87171; }
 
 .card-title {
   font-size: 17px;
@@ -294,5 +753,128 @@ const openItem = (item: any) => {
   font-size: 12px;
   background: var(--bg-hover);
   color: var(--text-secondary);
+}
+
+.card-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.knowledge-card:hover .card-actions {
+  opacity: 1;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: var(--bg-hover);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-icon.danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  width: 480px;
+  max-width: 90vw;
+  padding: 24px;
+}
+
+.modal-content h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.file-input input {
+  display: none;
+}
+
+.file-placeholder {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.file-placeholder:hover {
+  border-color: var(--brand-blue);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.file-placeholder svg {
+  width: 40px;
+  height: 40px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.file-placeholder p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-secondary {
+  padding: 10px 20px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
 }
 </style>
