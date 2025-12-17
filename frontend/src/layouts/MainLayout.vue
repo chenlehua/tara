@@ -155,10 +155,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import AiChatPanel from '@/components/ai/AiChatPanel.vue'
+import { projectApi, assetApi, threatApi, measureApi, reportApi } from '@/api'
 
 // Icons as inline components
 const IconHome = {
@@ -201,6 +202,53 @@ const showSettings = ref(false)
 const searchQuery = ref('')
 const hasNotifications = ref(true)
 
+// Counts from API
+const counts = reactive({
+  projects: 0,
+  assets: 0,
+  threats: 0,
+  risks: 0,
+  measures: 0,
+  reports: 0
+})
+
+// Fetch counts from API
+const loadCounts = async () => {
+  try {
+    // Fetch all counts in parallel
+    const [projectsRes, assetsRes, threatsRes, measuresRes, reportsRes] = await Promise.allSettled([
+      projectApi.list({ page: 1, pageSize: 1 }),
+      assetApi.list({ page: 1, page_size: 1 }),
+      threatApi.list({ page: 1, page_size: 1 }),
+      measureApi.list({ page: 1, page_size: 1 }),
+      reportApi.listReports(undefined, 1, 1)
+    ])
+    
+    if (projectsRes.status === 'fulfilled' && projectsRes.value.success) {
+      counts.projects = projectsRes.value.data?.total || 0
+    }
+    if (assetsRes.status === 'fulfilled' && assetsRes.value.success) {
+      counts.assets = assetsRes.value.data?.total || 0
+    }
+    if (threatsRes.status === 'fulfilled' && threatsRes.value.success) {
+      counts.threats = threatsRes.value.data?.total || 0
+      counts.risks = threatsRes.value.data?.total || 0  // Risks are based on threats
+    }
+    if (measuresRes.status === 'fulfilled' && measuresRes.value.success) {
+      counts.measures = measuresRes.value.data?.total || 0
+    }
+    if (reportsRes.status === 'fulfilled' && reportsRes.value.success) {
+      counts.reports = reportsRes.value.data?.total || 0
+    }
+  } catch (error) {
+    console.error('Failed to load counts:', error)
+  }
+}
+
+onMounted(() => {
+  loadCounts()
+})
+
 // User info
 const userName = computed(() => userStore.user?.username || '张工程师')
 const userRole = computed(() => userStore.user?.role || '高级安全分析师')
@@ -215,24 +263,24 @@ interface NavItem {
   badgeType?: string
 }
 
-// Navigation items
+// Navigation items - computed to use dynamic counts
 const mainNavItems: NavItem[] = [
   { path: '/', label: '工作台', icon: IconHome },
   { path: '/generator', label: '一键生成报告', icon: IconSparkles, badge: 'AI', badgeType: 'new' }
 ]
 
-const analysisNavItems: NavItem[] = [
-  { path: '/projects', label: '项目管理', icon: IconFolder, badge: '3' },
-  { path: '/assets', label: '资产识别', icon: IconCpu, badge: '48' },
-  { path: '/threats', label: '威胁分析', icon: IconWarning, badge: '127', badgeType: 'danger' },
-  { path: '/risks', label: '风险评估', icon: IconActivity, badge: '23', badgeType: 'danger' },
-  { path: '/measures', label: '安全措施', icon: IconShield, badge: '89', badgeType: 'success' }
-]
+const analysisNavItems = computed<NavItem[]>(() => [
+  { path: '/projects', label: '项目管理', icon: IconFolder, badge: counts.projects > 0 ? String(counts.projects) : undefined },
+  { path: '/assets', label: '资产识别', icon: IconCpu, badge: counts.assets > 0 ? String(counts.assets) : undefined },
+  { path: '/threats', label: '威胁分析', icon: IconWarning, badge: counts.threats > 0 ? String(counts.threats) : undefined, badgeType: counts.threats > 0 ? 'danger' : undefined },
+  { path: '/risks', label: '风险评估', icon: IconActivity, badge: counts.risks > 0 ? String(counts.risks) : undefined, badgeType: counts.risks > 0 ? 'danger' : undefined },
+  { path: '/measures', label: '安全措施', icon: IconShield, badge: counts.measures > 0 ? String(counts.measures) : undefined, badgeType: counts.measures > 0 ? 'success' : undefined }
+])
 
-const outputNavItems: NavItem[] = [
-  { path: '/reports', label: '报告中心', icon: IconFile, badge: '2' },
+const outputNavItems = computed<NavItem[]>(() => [
+  { path: '/reports', label: '报告中心', icon: IconFile, badge: counts.reports > 0 ? String(counts.reports) : undefined },
   { path: '/knowledge', label: '知识库', icon: IconDatabase }
-]
+])
 
 // Page info based on current route
 const pageConfig: Record<string, { title: string; icon: any; color: string }> = {

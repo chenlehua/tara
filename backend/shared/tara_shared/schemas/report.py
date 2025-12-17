@@ -28,6 +28,13 @@ class ReportSection(BaseSchema):
 class ReportStatistics(BaseSchema):
     """Report statistics."""
 
+    # New naming (used by oneclick service)
+    assets_count: int = Field(default=0, description="资产总数")
+    threats_count: int = Field(default=0, description="威胁总数")
+    measures_count: int = Field(default=0, description="控制措施总数")
+    high_risk_count: int = Field(default=0, description="高风险数")
+    
+    # Legacy naming (for compatibility)
     total_assets: int = Field(default=0, description="资产总数")
     total_threats: int = Field(default=0, description="威胁总数")
     total_attack_paths: int = Field(default=0, description="攻击路径总数")
