@@ -9,10 +9,10 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
-from tara_shared.constants import STRIDE_TYPES
-from tara_shared.models import Asset, ThreatRisk
-from tara_shared.schemas.threat_risk import ThreatRiskCreate, ThreatRiskUpdate
-from tara_shared.utils import get_logger
+from app.common.constants import STRIDE_TYPES
+from app.common.models import Asset, ThreatRisk
+from app.common.schemas.threat_risk import ThreatRiskCreate, ThreatRiskUpdate
+from app.common.utils import get_logger
 
 from ..repositories.threat_repo import ThreatRepository
 
@@ -153,7 +153,7 @@ class ThreatService:
             ai_threats = None
             try:
                 import httpx
-                from tara_shared.config import settings
+                from app.common.config import settings
 
                 async with httpx.AsyncClient() as client:
                     # Get asset context
@@ -353,7 +353,7 @@ class ThreatService:
         Fetches assets from asset service and performs STRIDE analysis.
         """
         import httpx
-        from tara_shared.config import settings
+        from app.common.config import settings
 
         logger.info(f"Analyzing threats for project {project_id}")
 
@@ -460,7 +460,7 @@ class ThreatService:
         """Get AI-powered threat analysis for an asset."""
         try:
             import httpx
-            from tara_shared.config import settings
+            from app.common.config import settings
 
             async with httpx.AsyncClient() as client:
                 asset_context = f"""
@@ -587,7 +587,7 @@ class ThreatService:
 
     def get_control_measures_for_project(self, project_id: int) -> List[Dict[str, Any]]:
         """Get all control measures for a project."""
-        from tara_shared.models import AttackPath, ControlMeasure
+        from app.common.models import AttackPath, ControlMeasure
 
         measures = (
             self.db.query(ControlMeasure)

@@ -9,8 +9,8 @@ from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from pydantic import BaseModel, Field
-from tara_shared.utils import success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.utils import success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.orchestrator import AgentOrchestrator
 

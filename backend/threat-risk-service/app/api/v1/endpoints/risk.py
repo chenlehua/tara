@@ -9,11 +9,11 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas.threat_risk import (RiskAssessmentRequest,
+from app.common.database import get_db
+from app.common.schemas.threat_risk import (RiskAssessmentRequest,
                                              RiskMatrixData)
-from tara_shared.utils import success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.utils import success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.risk_service import RiskService
 

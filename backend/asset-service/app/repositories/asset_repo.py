@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
-from tara_shared.models import Asset
+from app.common.models import Asset
 
 
 class AssetRepository:

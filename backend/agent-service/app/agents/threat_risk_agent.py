@@ -7,7 +7,7 @@ Agent for threat analysis and risk assessment.
 
 from typing import Any, Dict, List
 
-from tara_shared.constants import STRIDE_TYPES
+from app.common.constants import STRIDE_TYPES
 
 from .base_agent import BaseAgent
 

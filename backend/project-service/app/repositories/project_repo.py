@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
-from tara_shared.models import Asset, Document, Project, Report, ThreatRisk
+from app.common.models import Asset, Document, Project, Report, ThreatRisk
 
 
 class ProjectRepository:

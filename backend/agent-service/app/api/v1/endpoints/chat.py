@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
-from tara_shared.utils import get_logger, success_response
+from app.common.utils import get_logger, success_response
 
 router = APIRouter()
 logger = get_logger(__name__)

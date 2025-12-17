@@ -11,8 +11,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from sqlalchemy.orm import Session
-from tara_shared.models import Asset, ThreatRisk
-from tara_shared.utils import get_logger
+from app.common.models import Asset, ThreatRisk
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

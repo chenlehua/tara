@@ -1,7 +1,7 @@
 """Template endpoints."""
 
 from fastapi import APIRouter
-from tara_shared.utils import success_response
+from app.common.utils import success_response
 
 router = APIRouter()
 

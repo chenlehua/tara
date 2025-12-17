@@ -9,14 +9,14 @@ from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas.threat_risk import (STRIDEAnalysisRequest,
+from app.common.database import get_db
+from app.common.schemas.threat_risk import (STRIDEAnalysisRequest,
                                              ThreatRiskCreate,
                                              ThreatRiskDetailResponse,
                                              ThreatRiskResponse,
                                              ThreatRiskUpdate)
-from tara_shared.utils import paginated_response, success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.utils import paginated_response, success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.threat_service import ThreatService
 

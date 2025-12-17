@@ -8,8 +8,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from tara_shared.database.mysql import Base, get_db
-from tara_shared.models import Asset, Project
+from app.common.database.mysql import Base, get_db
+from app.common.models import Asset, Project
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 

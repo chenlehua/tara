@@ -7,8 +7,8 @@ Engine for STRIDE threat identification.
 
 from typing import Any, Dict, List
 
-from tara_shared.constants import STRIDE_TYPES
-from tara_shared.utils import get_logger
+from app.common.constants import STRIDE_TYPES
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

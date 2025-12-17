@@ -23,18 +23,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# === 5. 复制并安装共享模块 ===
-COPY backend/shared /app/shared
-RUN pip install --no-cache-dir -e /app/shared
-
-# === 6. 复制并安装具体服务 ===
+# === 5. 复制并安装具体服务（每个服务包含自己的common模块） ===
 COPY backend/${SERVICE_NAME} /app/service
 RUN pip install --no-cache-dir -e /app/service
 
 WORKDIR /app/service
 
-# 端口映射: project=8001, document=8002, asset=8003, threat-risk=8004, diagram=8005, report=8006, agent=8007
-EXPOSE 8001 8002 8003 8004 8005 8006 8007
+# 端口映射: project=8001, document=8002, asset=8003, threat-risk=8004, diagram=8005, report=8006, agent=8007, knowledge=8008
+EXPOSE 8001 8002 8003 8004 8005 8006 8007 8008
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

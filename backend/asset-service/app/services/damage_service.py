@@ -8,9 +8,9 @@ Business logic for damage scenario management.
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
-from tara_shared.models import DamageScenario
-from tara_shared.schemas.asset import DamageScenarioCreate
-from tara_shared.utils import get_logger
+from app.common.models import DamageScenario
+from app.common.schemas.asset import DamageScenarioCreate
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

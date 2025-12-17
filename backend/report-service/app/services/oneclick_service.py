@@ -25,10 +25,10 @@ from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
-from tara_shared.config import settings
-from tara_shared.constants import ReportStatus
-from tara_shared.models import Asset, Project, Report, ThreatRisk
-from tara_shared.utils import get_logger
+from app.common.config import settings
+from app.common.constants import ReportStatus
+from app.common.models import Asset, Project, Report, ThreatRisk
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 
@@ -1663,7 +1663,7 @@ class OneClickGenerateService:
 
         Returns the total number of control measures saved.
         """
-        from tara_shared.models import AttackPath, ControlMeasure
+        from app.common.models import AttackPath, ControlMeasure
 
         total_measures = 0
         try:

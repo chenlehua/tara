@@ -7,13 +7,13 @@ REST API endpoints for attack path management.
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas.threat_risk import (AttackPathCreate,
+from app.common.database import get_db
+from app.common.schemas.threat_risk import (AttackPathCreate,
                                              AttackPathResponse,
                                              ControlMeasureCreate,
                                              ControlMeasureResponse)
-from tara_shared.utils import success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.utils import success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.attack_path_service import AttackPathService
 

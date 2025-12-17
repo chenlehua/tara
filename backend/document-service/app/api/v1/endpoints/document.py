@@ -10,12 +10,12 @@ from typing import Optional
 from fastapi import (APIRouter, BackgroundTasks, Depends, File, Form, Query,
                      UploadFile, status)
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas.document import (DocumentDetailResponse,
+from app.common.database import get_db
+from app.common.schemas.document import (DocumentDetailResponse,
                                           DocumentResponse,
                                           DocumentUploadResponse, ParseRequest)
-from tara_shared.utils import paginated_response, success_response
-from tara_shared.utils.exceptions import NotFoundException, ValidationException
+from app.common.utils import paginated_response, success_response
+from app.common.utils.exceptions import NotFoundException, ValidationException
 
 from ....services.document_service import DocumentService
 

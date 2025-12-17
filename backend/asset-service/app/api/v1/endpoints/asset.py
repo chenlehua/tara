@@ -9,12 +9,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas.asset import (AssetCreate, AssetDetailResponse,
+from app.common.database import get_db
+from app.common.schemas.asset import (AssetCreate, AssetDetailResponse,
                                        AssetDiscoveryRequest, AssetGraph,
                                        AssetResponse, AssetUpdate)
-from tara_shared.utils import paginated_response, success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.utils import paginated_response, success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.asset_service import AssetService
 
@@ -90,7 +90,7 @@ async def get_asset(
         response.children = [AssetResponse.model_validate(c) for c in asset.children]
 
     if include_scenarios:
-        from tara_shared.schemas.asset import DamageScenarioResponse
+        from app.common.schemas.asset import DamageScenarioResponse
 
         response.damage_scenarios = [
             DamageScenarioResponse.model_validate(s) for s in asset.damage_scenarios

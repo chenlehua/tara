@@ -9,12 +9,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas import (ProjectCreate, ProjectListResponse,
+from app.common.database import get_db
+from app.common.schemas import (ProjectCreate, ProjectListResponse,
                                  ProjectResponse, ProjectUpdate)
-from tara_shared.schemas.project import ProjectCloneRequest, ProjectStats
-from tara_shared.utils import paginated_response, success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.schemas.project import ProjectCloneRequest, ProjectStats
+from app.common.utils import paginated_response, success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.project_service import ProjectService
 

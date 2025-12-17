@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app.services.project_service import ProjectService
-from tara_shared.schemas import ProjectCreate, ProjectUpdate
+from app.common.schemas import ProjectCreate, ProjectUpdate
 
 
 class TestProjectService:
@@ -56,7 +56,7 @@ class TestProjectService:
     @pytest.mark.asyncio
     async def test_get_project_not_found(self, service, mock_repo):
         """Test getting non-existent project."""
-        from tara_shared.utils.exceptions import NotFoundException
+        from app.common.utils.exceptions import NotFoundException
 
         mock_repo.get_by_id.return_value = None
 

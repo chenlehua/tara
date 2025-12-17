@@ -3,7 +3,7 @@
 from typing import Optional, Tuple
 
 from sqlalchemy.orm import Session
-from tara_shared.models import Report
+from app.common.models import Report
 
 
 class ReportRepository:

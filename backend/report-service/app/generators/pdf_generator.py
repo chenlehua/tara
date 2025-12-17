@@ -14,7 +14,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (PageBreak, Paragraph, SimpleDocTemplate,
                                 Spacer, Table, TableStyle)
-from tara_shared.utils import get_logger
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

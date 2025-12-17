@@ -9,10 +9,10 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
-from tara_shared.database.neo4j import graph_service
-from tara_shared.models import Asset
-from tara_shared.schemas.asset import AssetCreate, AssetUpdate
-from tara_shared.utils import get_logger
+from app.common.database.neo4j import graph_service
+from app.common.models import Asset
+from app.common.schemas.asset import AssetCreate, AssetUpdate
+from app.common.utils import get_logger
 
 from ..repositories.asset_repo import AssetRepository
 
@@ -209,7 +209,7 @@ class AssetService:
         logger.info(f"Starting asset discovery task {task_id}")
 
         # Import document model
-        from tara_shared.models import Document
+        from app.common.models import Document
 
         for doc_id in document_ids:
             try:
@@ -224,7 +224,7 @@ class AssetService:
                 # Try to use AI service for asset extraction
                 try:
                     import httpx
-                    from tara_shared.config import settings
+                    from app.common.config import settings
 
                     async with httpx.AsyncClient() as client:
                         response = await client.post(
@@ -368,7 +368,7 @@ class AssetService:
         Fetches extracted assets from document service and creates them in DB.
         """
         import httpx
-        from tara_shared.config import settings
+        from app.common.config import settings
 
         logger.info(f"Identifying assets from document {document_id} for project {project_id}")
 

@@ -9,7 +9,7 @@ import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from tara_shared.utils import get_logger
+from app.common.utils import get_logger
 
 from ..agents.asset_agent import AssetAgent
 from ..agents.document_agent import DocumentAgent

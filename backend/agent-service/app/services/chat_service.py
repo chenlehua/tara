@@ -11,9 +11,9 @@ from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 import httpx
-from tara_shared.config import settings
-from tara_shared.database.redis import get_cache_service
-from tara_shared.utils import get_logger
+from app.common.config import settings
+from app.common.database.redis import get_cache_service
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

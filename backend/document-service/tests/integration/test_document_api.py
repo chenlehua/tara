@@ -49,7 +49,7 @@ class TestDocumentAPI:
     @patch("app.services.document_service.DocumentService.parse_document")
     def test_parse_document(self, mock_parse, client, test_project, db_session):
         """Test POST /documents/{id}/parse triggers parsing."""
-        from tara_shared.models import Document
+        from app.common.models import Document
 
         # Create a document record
         doc = Document(

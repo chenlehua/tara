@@ -8,11 +8,11 @@ Business logic for attack path management.
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
-from tara_shared.constants.tara import ATTACK_POTENTIAL_TO_FEASIBILITY
-from tara_shared.models import AttackPath, ControlMeasure
-from tara_shared.schemas.threat_risk import (AttackPathCreate,
+from app.common.constants.tara import ATTACK_POTENTIAL_TO_FEASIBILITY
+from app.common.models import AttackPath, ControlMeasure
+from app.common.schemas.threat_risk import (AttackPathCreate,
                                              ControlMeasureCreate)
-from tara_shared.utils import get_logger
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

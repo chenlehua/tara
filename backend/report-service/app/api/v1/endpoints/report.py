@@ -12,13 +12,13 @@ from fastapi import (APIRouter, BackgroundTasks, Depends, File, Form, Query,
                      UploadFile)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas import (GenerationProgressResponse,
+from app.common.database import get_db
+from app.common.schemas import (GenerationProgressResponse,
                                  OneClickGenerateRequest,
                                  OneClickGenerateResponse, ReportCreate,
                                  ReportGenerateRequest, ReportListResponse,
                                  ReportResponse, ReportUpdate)
-from tara_shared.utils import paginated_response, success_response
+from app.common.utils import paginated_response, success_response
 
 router = APIRouter()
 

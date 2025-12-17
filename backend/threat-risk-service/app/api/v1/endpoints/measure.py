@@ -9,11 +9,11 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.models import ControlMeasure
-from tara_shared.schemas.threat_risk import ControlMeasureResponse
-from tara_shared.utils import paginated_response, success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.database import get_db
+from app.common.models import ControlMeasure
+from app.common.schemas.threat_risk import ControlMeasureResponse
+from app.common.utils import paginated_response, success_response
+from app.common.utils.exceptions import NotFoundException
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ async def list_measures(
     
     if project_id is not None:
         # Join through attack_path to filter by project
-        from tara_shared.models import AttackPath, ThreatRisk
+        from app.common.models import AttackPath, ThreatRisk
         query = query.join(AttackPath, ControlMeasure.attack_path_id == AttackPath.id)
         query = query.join(ThreatRisk, AttackPath.threat_risk_id == ThreatRisk.id)
         query = query.filter(ThreatRisk.project_id == project_id)

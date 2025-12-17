@@ -9,10 +9,10 @@ from typing import List, Optional, Tuple
 
 import httpx
 from sqlalchemy.orm import Session
-from tara_shared.config import settings
-from tara_shared.database.minio import storage_service
-from tara_shared.models import Document
-from tara_shared.utils import (generate_file_path, get_file_extension,
+from app.common.config import settings
+from app.common.database.minio import storage_service
+from app.common.models import Document
+from app.common.utils import (generate_file_path, get_file_extension,
                                get_logger, get_mime_type)
 
 from ..parsers import get_parser

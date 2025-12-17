@@ -8,11 +8,11 @@ from typing import Any, Optional, Tuple
 from app.generators import ExcelGenerator, PDFGenerator, WordGenerator
 from app.repositories.report_repo import ReportRepository
 from sqlalchemy.orm import Session
-from tara_shared.constants import ReportStatus
-from tara_shared.models import Asset, Project, Report, ThreatRisk
-from tara_shared.schemas import ReportCreate, ReportGenerateRequest
-from tara_shared.utils import get_logger
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.constants import ReportStatus
+from app.common.models import Asset, Project, Report, ThreatRisk
+from app.common.schemas import ReportCreate, ReportGenerateRequest
+from app.common.utils import get_logger
+from app.common.utils.exceptions import NotFoundException
 
 logger = get_logger(__name__)
 
@@ -259,7 +259,7 @@ class ReportService:
         # Try to get file from MinIO if path exists
         if report.file_path:
             try:
-                from tara_shared.database.minio import storage_service
+                from app.common.database.minio import storage_service
 
                 if storage_service.is_available():
                     file_data = storage_service.get_object(

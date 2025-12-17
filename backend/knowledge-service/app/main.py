@@ -10,8 +10,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from tara_shared.config import settings
-from tara_shared.utils import get_logger
+from app.common.config import settings
+from app.common.utils import get_logger
 
 from .api.v1.router import api_router
 

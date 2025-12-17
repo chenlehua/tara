@@ -7,11 +7,11 @@ REST API endpoints for damage scenario management.
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.schemas.asset import (DamageScenarioCreate,
+from app.common.database import get_db
+from app.common.schemas.asset import (DamageScenarioCreate,
                                        DamageScenarioResponse)
-from tara_shared.utils import success_response
-from tara_shared.utils.exceptions import NotFoundException
+from app.common.utils import success_response
+from app.common.utils.exceptions import NotFoundException
 
 from ....services.damage_service import DamageScenarioService
 

@@ -7,7 +7,7 @@ Engine for risk calculation based on ISO 21434.
 
 from typing import Dict, Tuple
 
-from tara_shared.constants.tara import (ATTACK_POTENTIAL_TO_FEASIBILITY,
+from app.common.constants.tara import (ATTACK_POTENTIAL_TO_FEASIBILITY,
                                         RISK_LEVEL_TO_CAL, RISK_MATRIX)
 
 

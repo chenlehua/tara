@@ -8,8 +8,8 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from tara_shared.database import get_db
-from tara_shared.utils import success_response
+from app.common.database import get_db
+from app.common.utils import success_response
 
 router = APIRouter()
 

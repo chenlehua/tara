@@ -9,7 +9,7 @@ import io
 from typing import Any, Dict
 
 from docx import Document as DocxDocument
-from tara_shared.utils import get_logger
+from app.common.utils import get_logger
 
 from .base_parser import BaseParser
 

@@ -9,8 +9,8 @@ Supports document upload, chunking, vector storage, and hybrid search.
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, Query, UploadFile, status
-from tara_shared.utils import paginated_response, success_response
-from tara_shared.utils.exceptions import NotFoundException, ValidationException
+from app.common.utils import paginated_response, success_response
+from app.common.utils.exceptions import NotFoundException, ValidationException
 
 from ....services.knowledge_service import KnowledgeService
 

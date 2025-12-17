@@ -7,8 +7,8 @@ from app.config import settings
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from tara_shared.utils import get_logger
-from tara_shared.utils.exceptions import TaraException
+from app.common.utils import get_logger
+from app.common.utils.exceptions import TaraException
 
 logger = get_logger(__name__)
 

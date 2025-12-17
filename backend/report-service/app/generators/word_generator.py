@@ -10,7 +10,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Inches, Pt, RGBColor
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
-from tara_shared.utils import get_logger
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 

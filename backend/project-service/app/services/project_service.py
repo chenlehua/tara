@@ -8,9 +8,9 @@ Business logic for project management.
 from typing import Any, Dict, List, Optional, Tuple
 
 from sqlalchemy.orm import Session
-from tara_shared.models import Asset, Document, Project, Report, ThreatRisk
-from tara_shared.schemas import ProjectCreate, ProjectUpdate
-from tara_shared.utils import get_logger
+from app.common.models import Asset, Document, Project, Report, ThreatRisk
+from app.common.schemas import ProjectCreate, ProjectUpdate
+from app.common.utils import get_logger
 
 from ..repositories.project_repo import ProjectRepository
 

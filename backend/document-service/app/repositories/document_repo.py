@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from tara_shared.models import Document
+from app.common.models import Document
 
 
 class DocumentRepository:

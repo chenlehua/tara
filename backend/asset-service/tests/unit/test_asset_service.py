@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from app.services.asset_service import AssetService
-from tara_shared.schemas import AssetCreate
+from app.common.schemas import AssetCreate
 
 
 class TestAssetService:
@@ -60,7 +60,7 @@ class TestAssetService:
     @pytest.mark.asyncio
     async def test_get_asset_not_found(self, service, mock_repo):
         """Test getting non-existent asset."""
-        from tara_shared.utils.exceptions import NotFoundException
+        from app.common.utils.exceptions import NotFoundException
 
         mock_repo.get_by_id.return_value = None
 

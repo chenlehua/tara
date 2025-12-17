@@ -1,6 +1,6 @@
 """Diagram service configuration."""
 
-from tara_shared.config import Settings as BaseSettings
+from app.common.config import Settings as BaseSettings
 
 
 class ServiceSettings(BaseSettings):

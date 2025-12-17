@@ -15,10 +15,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
-from tara_shared.config import settings
-from tara_shared.database.elasticsearch import SearchService, get_search_service
-from tara_shared.database.milvus import VectorService, get_global_vector_service
-from tara_shared.utils import get_logger
+from app.common.config import settings
+from app.common.database.elasticsearch import SearchService, get_search_service
+from app.common.database.milvus import VectorService, get_global_vector_service
+from app.common.utils import get_logger
 
 logger = get_logger(__name__)
 
