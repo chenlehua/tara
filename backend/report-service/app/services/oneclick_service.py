@@ -305,69 +305,166 @@ class OneClickGenerateService:
         return assets
 
     def _generate_sample_assets(self) -> List[Dict[str, Any]]:
-        """Generate sample assets for demo purposes."""
+        """Generate sample assets for demo purposes (ISO 21434 TARA format)."""
         return [
             {
-                "id": "ASSET-001",
-                "name": "整车控制器 (VCU)",
+                "id": "A-001",
+                "name": "SOC (高通SA8155P)",
                 "type": "ECU",
-                "interfaces": [{"type": "CAN"}, {"type": "Ethernet"}],
-                "security_properties": {
-                    "confidentiality": "high",
-                    "integrity": "critical",
-                    "availability": "critical",
+                "category": "内部实体",
+                "description": "主处理器芯片，运行Android Automotive系统",
+                "interfaces": [{"type": "Ethernet"}, {"type": "USB"}, {"type": "LVDS"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": True,
                 },
             },
             {
-                "id": "ASSET-002",
-                "name": "电池管理系统 (BMS)",
+                "id": "A-002",
+                "name": "MCU (NXP S32G274)",
                 "type": "ECU",
-                "interfaces": [{"type": "CAN"}, {"type": "LIN"}],
-                "security_properties": {
-                    "confidentiality": "high",
-                    "integrity": "critical",
-                    "availability": "critical",
+                "category": "内部实体",
+                "description": "安全微控制器，负责车控通信与安全功能",
+                "interfaces": [{"type": "CAN"}, {"type": "LIN"}, {"type": "Ethernet"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": True,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": True,
                 },
             },
             {
-                "id": "ASSET-003",
-                "name": "智能网关 (CGW)",
-                "type": "Gateway",
-                "interfaces": [{"type": "CAN"}, {"type": "Ethernet"}, {"type": "LIN"}],
-                "security_properties": {
-                    "confidentiality": "critical",
-                    "integrity": "critical",
-                    "availability": "critical",
+                "id": "A-003",
+                "name": "DDR RAM (8GB)",
+                "type": "存储",
+                "category": "内部实体",
+                "description": "LPDDR4X双通道内存",
+                "interfaces": [],
+                "security_attrs": {
+                    "authenticity": False,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": False,
                 },
             },
             {
-                "id": "ASSET-004",
-                "name": "远程通信单元 (T-Box)",
-                "type": "Gateway",
-                "interfaces": [
-                    {"type": "4G/5G"},
-                    {"type": "WiFi"},
-                    {"type": "Bluetooth"},
-                ],
-                "security_properties": {
-                    "confidentiality": "critical",
-                    "integrity": "critical",
-                    "availability": "high",
+                "id": "A-004",
+                "name": "UFS ROM (128GB)",
+                "type": "存储",
+                "category": "内部实体",
+                "description": "系统存储芯片，存储OS和应用",
+                "interfaces": [],
+                "security_attrs": {
+                    "authenticity": False,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": False,
                 },
             },
             {
-                "id": "ASSET-005",
-                "name": "信息娱乐系统 (IVI)",
-                "type": "ECU",
-                "interfaces": [
-                    {"type": "Ethernet"},
-                    {"type": "USB"},
-                    {"type": "Bluetooth"},
-                ],
-                "security_properties": {
-                    "confidentiality": "medium",
-                    "integrity": "medium",
-                    "availability": "low",
+                "id": "A-005",
+                "name": "BT模块",
+                "type": "通信模块",
+                "category": "内部实体",
+                "description": "蓝牙5.2模块，支持A2DP/HFP/AVRCP",
+                "interfaces": [{"type": "Bluetooth"}, {"type": "UART"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": True,
+                },
+            },
+            {
+                "id": "A-006",
+                "name": "WiFi模块",
+                "type": "通信模块",
+                "category": "内部实体",
+                "description": "WiFi 6模块，支持2.4G/5G双频",
+                "interfaces": [{"type": "WiFi"}, {"type": "SDIO"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": True,
+                },
+            },
+            {
+                "id": "A-007",
+                "name": "4G/5G模块",
+                "type": "通信模块",
+                "category": "外部接口",
+                "description": "蜂窝网络模块，支持LTE/5G NR",
+                "interfaces": [{"type": "4G/5G"}, {"type": "USB"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": True,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": True,
+                },
+            },
+            {
+                "id": "A-008",
+                "name": "CAN接口",
+                "type": "接口",
+                "category": "内部接口",
+                "description": "CAN FD总线接口，连接车身控制网络",
+                "interfaces": [{"type": "CAN"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": False,
+                    "availability": True,
+                    "authorization": True,
+                },
+            },
+            {
+                "id": "A-009",
+                "name": "以太网接口",
+                "type": "接口",
+                "category": "内部接口",
+                "description": "100BASE-T1车载以太网",
+                "interfaces": [{"type": "Ethernet"}],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": False,
+                    "confidentiality": True,
+                    "availability": True,
+                    "authorization": True,
+                },
+            },
+            {
+                "id": "A-010",
+                "name": "用户数据",
+                "type": "数据",
+                "category": "数据流",
+                "description": "包括用户账户、偏好设置、通讯录等",
+                "interfaces": [],
+                "security_attrs": {
+                    "authenticity": True,
+                    "integrity": True,
+                    "non_repudiation": True,
+                    "confidentiality": True,
+                    "availability": False,
+                    "authorization": True,
                 },
             },
         ]
@@ -417,40 +514,93 @@ class OneClickGenerateService:
         template: str,
         prompt: str,
     ) -> List[Dict[str, Any]]:
-        """Perform STRIDE-based threat analysis."""
+        """Perform STRIDE-based threat analysis (ISO 21434 format)."""
         threats = []
         threat_id = 1
 
-        # STRIDE categories
+        # STRIDE categories with threat type code
         stride_categories = [
-            ("Spoofing", "身份伪造", "攻击者伪造合法身份访问系统"),
-            ("Tampering", "数据篡改", "攻击者修改传输或存储的数据"),
-            ("Repudiation", "抵赖", "用户否认执行过某操作"),
-            ("Information Disclosure", "信息泄露", "敏感信息被未授权访问"),
-            ("Denial of Service", "拒绝服务", "系统资源被耗尽导致服务不可用"),
-            ("Elevation of Privilege", "权限提升", "攻击者获取更高权限"),
+            ("S", "Spoofing", "身份伪造", "欺骗", "攻击者伪造合法身份访问系统"),
+            ("T", "Tampering", "数据篡改", "篡改", "攻击者修改传输或存储的数据"),
+            ("R", "Repudiation", "抵赖", "抵赖", "用户否认执行过某操作"),
+            ("I", "Information Disclosure", "信息泄露", "信息泄露", "敏感信息被未授权访问"),
+            ("D", "Denial of Service", "拒绝服务", "拒绝服务", "系统资源被耗尽导致服务不可用"),
+            ("E", "Elevation of Privilege", "权限提升", "权限提升", "攻击者获取更高权限"),
         ]
 
+        # Security attribute to STRIDE mapping
+        sec_attr_stride = {
+            "authenticity": "S",
+            "integrity": "T",
+            "non_repudiation": "R",
+            "confidentiality": "I",
+            "availability": "D",
+            "authorization": "E",
+        }
+
         for asset in assets:
-            for stride_code, stride_name, stride_desc in stride_categories:
-                # Generate threats based on asset type and interfaces
-                if self._should_generate_threat(asset, stride_code):
+            security_attrs = asset.get("security_attrs", asset.get("security_properties", {})) or {}
+            
+            for stride_type, stride_code, stride_name_en, stride_name_cn, stride_desc in stride_categories:
+                # Check if this STRIDE type is relevant based on security attributes
+                relevant = False
+                for attr, s_type in sec_attr_stride.items():
+                    if s_type == stride_type and security_attrs.get(attr):
+                        relevant = True
+                        break
+                
+                # Also consider interface-based relevance
+                if not relevant and self._should_generate_threat(asset, stride_code):
+                    relevant = True
+                
+                if relevant:
+                    # Generate attack path based on interfaces
+                    interfaces = asset.get("interfaces", [])
+                    iface_types = [i.get("type", str(i)) if isinstance(i, dict) else str(i) for i in interfaces]
+                    attack_path = f"{'/'.join(iface_types[:2]) if iface_types else 'Local'}→{asset['name'][:10]}"
+                    
+                    # Calculate detailed threat data
+                    likelihood = self._calculate_likelihood(asset, stride_code)
+                    impact = self._calculate_impact(asset, stride_code)
+                    
                     threat = {
-                        "id": f"THREAT-{threat_id:03d}",
-                        "asset_id": asset["id"],
-                        "asset_name": asset["name"],
+                        "id": f"THR-{threat_id:03d}",
+                        "asset_id": asset.get("id", ""),
+                        "asset_name": asset.get("name", ""),
+                        "asset_category": asset.get("category", "内部实体"),
+                        "threat_type": stride_type,  # S, T, R, I, D, E
                         "category": stride_code,
-                        "category_name": stride_name,
-                        "name": f"{asset['name']}的{stride_name}威胁",
+                        "category_name": stride_name_cn,
+                        "name": f"{stride_name_cn}威胁 - {asset['name']}",
                         "description": f"针对{asset['name']}的{stride_desc}",
                         "attack_vector": self._get_attack_vector(asset, stride_code),
-                        "likelihood": self._calculate_likelihood(asset, stride_code),
-                        "impact": self._calculate_impact(asset, stride_code),
+                        "attack_path": attack_path,
+                        "wp29_ref": self._get_wp29_ref(stride_type),
+                        "likelihood": likelihood,
+                        "impact": impact,
+                        # Add detailed impact values
+                        "safety_impact": impact.get("safety", 0),
+                        "financial_impact": impact.get("financial", 0),
+                        "operational_impact": impact.get("operational", 0),
+                        "privacy_impact": impact.get("privacy", 0),
+                        "impact_level": impact.get("total", 0),
                     }
                     threats.append(threat)
                     threat_id += 1
 
         return threats
+    
+    def _get_wp29_ref(self, stride_type: str) -> str:
+        """Get WP29 reference for STRIDE type."""
+        wp29_map = {
+            "S": "4.3.1",
+            "T": "5.1.1",
+            "R": "5.2.1",
+            "I": "4.3.3",
+            "D": "4.3.4",
+            "E": "4.3.5",
+        }
+        return wp29_map.get(stride_type, "4.3.1")
 
     def _should_generate_threat(self, asset: dict, stride_code: str) -> bool:
         """Determine if a threat should be generated for this asset/STRIDE combo."""
@@ -910,15 +1060,21 @@ class OneClickGenerateService:
         asset_id_map = {}
         try:
             for asset_data in assets:
-                # Map security properties to security_attrs format
-                security_props = asset_data.get("security_properties", {})
-                security_attrs = {
-                    "confidentiality": security_props.get("confidentiality", "medium"),
-                    "integrity": security_props.get("integrity", "medium"),
-                    "availability": security_props.get("availability", "medium"),
-                }
+                # Get security attributes - support both new and old format
+                security_attrs = asset_data.get("security_attrs", {})
+                if not security_attrs:
+                    # Fallback to old format
+                    security_props = asset_data.get("security_properties", {})
+                    security_attrs = {
+                        "confidentiality": security_props.get("confidentiality", "medium"),
+                        "integrity": security_props.get("integrity", "medium"),
+                        "availability": security_props.get("availability", "medium"),
+                        "authenticity": security_props.get("authenticity", False),
+                        "non_repudiation": security_props.get("non_repudiation", False),
+                        "authorization": security_props.get("authorization", False),
+                    }
 
-                # Determine criticality from security level
+                # Determine criticality from security level or security attributes
                 security_level = asset_data.get("security_level", "CAL-2")
                 criticality_map = {
                     "CAL-4": "critical",
@@ -927,12 +1083,19 @@ class OneClickGenerateService:
                     "CAL-1": "low",
                 }
                 criticality = criticality_map.get(security_level, "medium")
+                
+                # Override criticality based on security attributes
+                critical_attrs = sum(1 for v in security_attrs.values() if v is True or v == "critical")
+                if critical_attrs >= 5:
+                    criticality = "critical"
+                elif critical_attrs >= 3:
+                    criticality = "high"
 
                 asset = Asset(
                     project_id=project_id,
                     name=asset_data.get("name", "Unknown Asset"),
                     asset_type=asset_data.get("type", "ECU"),
-                    category=self._get_asset_category(asset_data.get("type", "ECU")),
+                    category=asset_data.get("category", self._get_asset_category(asset_data.get("type", "ECU"))),
                     description=asset_data.get("description", ""),
                     interfaces=asset_data.get("interfaces", []),
                     security_attrs=security_attrs,
