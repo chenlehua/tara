@@ -1,0 +1,289 @@
+{
+  "assets": [
+    {
+      "id": "A-001",
+      "name": "SOC主处理器",
+      "type": "ECU",
+      "category": "内部实体",
+      "description": "高通SA8155P系统级芯片，运行Android Automotive OS，负责HMI显示、多媒体处理、导航等功能",
+      "interfaces": ["Ethernet", "USB", "LVDS", "I2C", "SPI"],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["用户设置", "导航数据", "多媒体缓存", "应用数据"],
+      "trust_boundary": "internal",
+      "criticality": "critical"
+    },
+    {
+      "id": "A-002",
+      "name": "MCU安全控制器",
+      "type": "ECU",
+      "category": "内部实体",
+      "description": "NXP S32G274安全微控制器，负责车控通信、功能安全监控、安全启动验证",
+      "interfaces": ["CAN", "CAN-FD", "LIN", "Ethernet", "SPI"],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": ["车辆状态", "诊断数据", "安全密钥"],
+      "trust_boundary": "internal",
+      "criticality": "critical"
+    },
+    {
+      "id": "A-003",
+      "name": "DDR内存",
+      "type": "存储",
+      "category": "内部实体",
+      "description": "8GB LPDDR4X双通道内存，存储运行时数据",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": ["运行时数据", "密钥缓存", "用户会话"],
+      "trust_boundary": "internal",
+      "criticality": "high"
+    },
+    {
+      "id": "A-004",
+      "name": "UFS存储",
+      "type": "存储",
+      "category": "内部实体",
+      "description": "128GB UFS 3.0闪存，存储操作系统、应用和用户数据",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": ["操作系统", "应用程序", "用户文件", "日志数据"],
+      "trust_boundary": "internal",
+      "criticality": "high"
+    },
+    {
+      "id": "A-005",
+      "name": "WiFi模块",
+      "type": "通信模块",
+      "category": "外部接口",
+      "description": "WiFi 6 (802.11ax)模块，支持2.4G/5G双频，用于热点、手机互联",
+      "interfaces": ["WiFi", "SDIO"],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["网络凭证", "通信数据"],
+      "trust_boundary": "external",
+      "criticality": "high"
+    },
+    {
+      "id": "A-006",
+      "name": "蓝牙模块",
+      "type": "通信模块",
+      "category": "外部接口",
+      "description": "蓝牙5.2模块，支持A2DP/HFP/AVRCP/PBAP等协议",
+      "interfaces": ["Bluetooth", "UART"],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["配对信息", "通讯录", "通话记录"],
+      "trust_boundary": "external",
+      "criticality": "medium"
+    },
+    {
+      "id": "A-007",
+      "name": "4G/5G T-Box",
+      "type": "通信模块",
+      "category": "外部接口",
+      "description": "车载远程信息处理单元，提供LTE/5G NR蜂窝网络连接",
+      "interfaces": ["4G/5G", "USB", "Ethernet"],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": ["SIM卡信息", "远程命令", "车辆位置", "OTA数据"],
+      "trust_boundary": "external",
+      "criticality": "critical"
+    },
+    {
+      "id": "A-008",
+      "name": "CAN网关",
+      "type": "网关",
+      "category": "内部接口",
+      "description": "CAN FD网关模块，连接IVI与车身控制网络、底盘网络",
+      "interfaces": ["CAN", "CAN-FD"],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["CAN报文", "路由表", "过滤规则"],
+      "trust_boundary": "internal",
+      "criticality": "critical"
+    },
+    {
+      "id": "A-009",
+      "name": "车载以太网接口",
+      "type": "接口",
+      "category": "内部接口",
+      "description": "100BASE-T1车载以太网接口，用于高速数据传输",
+      "interfaces": ["Ethernet"],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["IP数据包", "诊断数据"],
+      "trust_boundary": "internal",
+      "criticality": "high"
+    },
+    {
+      "id": "A-010",
+      "name": "USB接口",
+      "type": "接口",
+      "category": "外部接口",
+      "description": "USB Type-A/C接口，用于外设连接和数据传输",
+      "interfaces": ["USB 2.0", "USB 3.0"],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "medium",
+        "availability": "low",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["外部存储数据", "手机投屏数据"],
+      "trust_boundary": "external",
+      "criticality": "medium"
+    },
+    {
+      "id": "A-011",
+      "name": "诊断接口",
+      "type": "接口",
+      "category": "外部接口",
+      "description": "OBD-II诊断接口，支持UDS协议诊断",
+      "interfaces": ["OBD-II", "UDS"],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "high",
+        "availability": "low",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": ["诊断数据", "故障码", "标定数据"],
+      "trust_boundary": "external",
+      "criticality": "high"
+    },
+    {
+      "id": "A-012",
+      "name": "用户隐私数据",
+      "type": "数据",
+      "category": "数据流",
+      "description": "包括用户账户、偏好设置、通讯录、导航历史等",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": ["用户账户", "偏好设置", "通讯录", "导航历史", "媒体收藏"],
+      "trust_boundary": "internal",
+      "criticality": "critical"
+    },
+    {
+      "id": "A-013",
+      "name": "车辆状态数据",
+      "type": "数据",
+      "category": "数据流",
+      "description": "车辆速度、里程、油量/电量、故障信息等",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": ["车速", "里程", "油量", "电池状态", "故障信息"],
+      "trust_boundary": "internal",
+      "criticality": "high"
+    },
+    {
+      "id": "A-014",
+      "name": "密钥与证书",
+      "type": "数据",
+      "category": "数据流",
+      "description": "用于身份认证、数据加密的密钥和数字证书",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": ["设备证书", "TLS密钥", "签名密钥", "对称密钥"],
+      "trust_boundary": "internal",
+      "criticality": "critical"
+    },
+    {
+      "id": "A-015",
+      "name": "OTA升级服务",
+      "type": "服务",
+      "category": "外部接口",
+      "description": "远程软件升级服务，包括差分升级和整包升级",
+      "interfaces": ["HTTPS", "TLS"],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": ["升级包", "版本信息", "升级日志"],
+      "trust_boundary": "external",
+      "criticality": "critical"
+    }
+  ]
+}

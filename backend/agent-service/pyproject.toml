@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tara-agent-service"
+version = "0.1.0"
+description = "TARA AI Agent Service"
+requires-python = ">=3.11"
+
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sqlalchemy>=2.0.25",
+    "pymysql>=1.1.0",
+    "cryptography>=42.0.0",
+    "redis>=5.0.1",
+    "pymilvus>=2.3.5",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+    "httpx>=0.26.0",
+    "structlog>=24.1.0",
+    "python-multipart>=0.0.6",
+    "sse-starlette>=1.8.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.4",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]

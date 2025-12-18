@@ -1,0 +1,402 @@
+{
+  "project": {
+    "name": "智能网联电动汽车TARA分析",
+    "vehicle_type": "BEV",
+    "vehicle_model": "EV-2025-Premium",
+    "version": "2.0",
+    "standard": "ISO/SAE 21434:2021",
+    "description": "针对L2+级智能网联电动汽车的完整威胁分析与风险评估",
+    "scope": "整车电子电气架构，包含动力域、底盘域、车身域、座舱域和ADAS域"
+  },
+  "assets": [
+    {
+      "id": "ASSET-001",
+      "name": "整车控制器 (VCU)",
+      "type": "ECU",
+      "category": "控制单元",
+      "domain": "动力域",
+      "supplier": "Bosch",
+      "description": "负责整车动力系统协调控制，包括驱动电机、电池管理、能量回收等功能",
+      "interfaces": [
+        {"type": "CAN", "name": "动力CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"},
+        {"type": "CAN", "name": "底盘CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"},
+        {"type": "Ethernet", "name": "车载以太网", "speed": "100Mbps", "protocol": "DoIP"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "车辆状态数据", "sensitivity": "high"},
+        {"name": "驱动控制指令", "sensitivity": "critical"},
+        {"name": "故障诊断信息", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "驱动电机控制",
+        "能量回收管理",
+        "动力系统协调",
+        "故障诊断"
+      ]
+    },
+    {
+      "id": "ASSET-002",
+      "name": "电池管理系统 (BMS)",
+      "type": "ECU",
+      "category": "控制单元",
+      "domain": "动力域",
+      "supplier": "CATL",
+      "description": "负责电池包的状态监控、充放电管理、热管理和安全保护",
+      "interfaces": [
+        {"type": "CAN", "name": "动力CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"},
+        {"type": "LIN", "name": "电池从节点", "speed": "19.2Kbps"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "电池SOC/SOH", "sensitivity": "high"},
+        {"name": "单体电压温度", "sensitivity": "high"},
+        {"name": "充电状态", "sensitivity": "medium"},
+        {"name": "热管理参数", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "电池状态监控",
+        "充放电管理",
+        "热管理控制",
+        "安全保护"
+      ]
+    },
+    {
+      "id": "ASSET-003",
+      "name": "电机控制器 (MCU)",
+      "type": "ECU",
+      "category": "控制单元",
+      "domain": "动力域",
+      "supplier": "Infineon",
+      "description": "控制驱动电机的转速和扭矩输出",
+      "interfaces": [
+        {"type": "CAN", "name": "动力CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "扭矩指令", "sensitivity": "critical"},
+        {"name": "电机转速", "sensitivity": "medium"},
+        {"name": "温度数据", "sensitivity": "low"}
+      ],
+      "functions": [
+        "扭矩控制",
+        "转速调节",
+        "再生制动"
+      ]
+    },
+    {
+      "id": "ASSET-004",
+      "name": "智能网关 (CGW)",
+      "type": "Gateway",
+      "category": "网络设备",
+      "domain": "核心",
+      "supplier": "Continental",
+      "description": "负责车内各域网络之间的数据路由、协议转换和安全隔离",
+      "interfaces": [
+        {"type": "CAN", "name": "动力CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"},
+        {"type": "CAN", "name": "底盘CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"},
+        {"type": "CAN", "name": "车身CAN", "speed": "250Kbps", "protocol": "CAN 2.0B"},
+        {"type": "Ethernet", "name": "骨干网", "speed": "1Gbps", "protocol": "AVB/TSN"},
+        {"type": "LIN", "name": "车身子网", "speed": "19.2Kbps"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "路由表", "sensitivity": "high"},
+        {"name": "防火墙规则", "sensitivity": "critical"},
+        {"name": "密钥材料", "sensitivity": "critical"},
+        {"name": "安全配置", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "报文路由",
+        "协议转换",
+        "安全隔离",
+        "入侵检测"
+      ]
+    },
+    {
+      "id": "ASSET-005",
+      "name": "远程通信单元 (T-Box)",
+      "type": "Gateway",
+      "category": "通信设备",
+      "domain": "座舱域",
+      "supplier": "Harman",
+      "description": "提供车辆与云端的通信连接，支持远程控制、OTA升级等功能",
+      "interfaces": [
+        {"type": "4G/5G", "name": "蜂窝网络", "speed": "100Mbps", "protocol": "TCP/IP"},
+        {"type": "WiFi", "name": "车内热点", "speed": "300Mbps", "protocol": "802.11ac"},
+        {"type": "Bluetooth", "name": "蓝牙", "speed": "3Mbps", "protocol": "BLE 5.0"},
+        {"type": "CAN", "name": "车身CAN", "speed": "250Kbps", "protocol": "CAN 2.0B"},
+        {"type": "Ethernet", "name": "骨干网", "speed": "100Mbps", "protocol": "DoIP"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high"
+      },
+      "data_assets": [
+        {"name": "用户凭证", "sensitivity": "critical"},
+        {"name": "OTA固件包", "sensitivity": "critical"},
+        {"name": "远程指令", "sensitivity": "critical"},
+        {"name": "位置数据", "sensitivity": "high"},
+        {"name": "车辆状态数据", "sensitivity": "high"}
+      ],
+      "functions": [
+        "远程控制",
+        "OTA升级",
+        "车联网服务",
+        "紧急呼叫"
+      ]
+    },
+    {
+      "id": "ASSET-006",
+      "name": "智能驾驶控制器 (ADAS)",
+      "type": "ECU",
+      "category": "控制单元",
+      "domain": "ADAS域",
+      "supplier": "Mobileye",
+      "description": "处理传感器数据，实现L2+级别自动驾驶功能",
+      "interfaces": [
+        {"type": "Ethernet", "name": "高速传感器", "speed": "1Gbps", "protocol": "AVB"},
+        {"type": "CAN", "name": "底盘CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "感知数据", "sensitivity": "high"},
+        {"name": "决策数据", "sensitivity": "critical"},
+        {"name": "控制指令", "sensitivity": "critical"},
+        {"name": "高精地图", "sensitivity": "high"}
+      ],
+      "functions": [
+        "环境感知",
+        "路径规划",
+        "决策控制",
+        "传感器融合"
+      ]
+    },
+    {
+      "id": "ASSET-007",
+      "name": "前视摄像头",
+      "type": "Sensor",
+      "category": "传感器",
+      "domain": "ADAS域",
+      "supplier": "Sony",
+      "description": "提供前方道路图像数据用于车道保持和目标识别",
+      "interfaces": [
+        {"type": "Ethernet", "name": "视频流", "speed": "1Gbps", "protocol": "AVB"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "high",
+        "availability": "high"
+      },
+      "data_assets": [
+        {"name": "视频流", "sensitivity": "medium"},
+        {"name": "目标检测结果", "sensitivity": "high"}
+      ],
+      "functions": [
+        "图像采集",
+        "目标检测",
+        "车道识别"
+      ]
+    },
+    {
+      "id": "ASSET-008",
+      "name": "前向毫米波雷达",
+      "type": "Sensor",
+      "category": "传感器",
+      "domain": "ADAS域",
+      "supplier": "Bosch",
+      "description": "提供前方障碍物距离和速度信息",
+      "interfaces": [
+        {"type": "CAN", "name": "感知CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "high",
+        "availability": "high"
+      },
+      "data_assets": [
+        {"name": "目标列表", "sensitivity": "high"},
+        {"name": "距离速度数据", "sensitivity": "high"}
+      ],
+      "functions": [
+        "障碍物检测",
+        "测距测速",
+        "ACC支持"
+      ]
+    },
+    {
+      "id": "ASSET-009",
+      "name": "信息娱乐系统 (IVI)",
+      "type": "ECU",
+      "category": "信息娱乐",
+      "domain": "座舱域",
+      "supplier": "Harman",
+      "description": "提供导航、多媒体、车辆设置等人机交互功能",
+      "interfaces": [
+        {"type": "Ethernet", "name": "骨干网", "speed": "100Mbps", "protocol": "DoIP"},
+        {"type": "CAN", "name": "车身CAN", "speed": "250Kbps", "protocol": "CAN 2.0B"},
+        {"type": "USB", "name": "外设接口", "speed": "480Mbps", "protocol": "USB 2.0"},
+        {"type": "Bluetooth", "name": "手机连接", "speed": "3Mbps", "protocol": "BLE 5.0"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "medium",
+        "availability": "low"
+      },
+      "data_assets": [
+        {"name": "用户设置", "sensitivity": "medium"},
+        {"name": "导航数据", "sensitivity": "medium"},
+        {"name": "媒体文件", "sensitivity": "low"},
+        {"name": "通讯录", "sensitivity": "high"}
+      ],
+      "functions": [
+        "导航",
+        "多媒体播放",
+        "车辆设置",
+        "语音助手"
+      ]
+    },
+    {
+      "id": "ASSET-010",
+      "name": "OBD-II诊断接口",
+      "type": "Interface",
+      "category": "诊断接口",
+      "domain": "车身域",
+      "description": "提供车辆诊断和标定功能的物理接口",
+      "interfaces": [
+        {"type": "CAN", "name": "诊断CAN", "speed": "500Kbps", "protocol": "UDS"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "low"
+      },
+      "data_assets": [
+        {"name": "诊断数据", "sensitivity": "high"},
+        {"name": "标定参数", "sensitivity": "critical"},
+        {"name": "故障码", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "故障诊断",
+        "参数标定",
+        "固件刷写"
+      ]
+    },
+    {
+      "id": "ASSET-011",
+      "name": "电子驻车制动 (EPB)",
+      "type": "ECU",
+      "category": "控制单元",
+      "domain": "底盘域",
+      "supplier": "Continental",
+      "description": "控制驻车制动系统",
+      "interfaces": [
+        {"type": "CAN", "name": "底盘CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "制动指令", "sensitivity": "critical"},
+        {"name": "制动状态", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "驻车制动",
+        "自动驻车",
+        "坡道辅助"
+      ]
+    },
+    {
+      "id": "ASSET-012",
+      "name": "电子稳定程序 (ESP)",
+      "type": "ECU",
+      "category": "控制单元",
+      "domain": "底盘域",
+      "supplier": "Bosch",
+      "description": "车辆动态稳定控制",
+      "interfaces": [
+        {"type": "CAN", "name": "底盘CAN", "speed": "500Kbps", "protocol": "CAN 2.0B"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "critical",
+        "availability": "critical"
+      },
+      "data_assets": [
+        {"name": "车辆动态数据", "sensitivity": "medium"},
+        {"name": "控制指令", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "防抱死制动",
+        "牵引力控制",
+        "车身稳定"
+      ]
+    }
+  ],
+  "network_topology": {
+    "domains": [
+      {
+        "name": "动力域",
+        "bus_type": "CAN",
+        "speed": "500Kbps",
+        "assets": ["ASSET-001", "ASSET-002", "ASSET-003"]
+      },
+      {
+        "name": "底盘域",
+        "bus_type": "CAN",
+        "speed": "500Kbps",
+        "assets": ["ASSET-006", "ASSET-008", "ASSET-011", "ASSET-012"]
+      },
+      {
+        "name": "车身域",
+        "bus_type": "CAN",
+        "speed": "250Kbps",
+        "assets": ["ASSET-005", "ASSET-009", "ASSET-010"]
+      },
+      {
+        "name": "ADAS域",
+        "bus_type": "Ethernet",
+        "speed": "1Gbps",
+        "assets": ["ASSET-006", "ASSET-007"]
+      }
+    ],
+    "gateway": "ASSET-004",
+    "external_interfaces": [
+      {"type": "4G/5G", "asset": "ASSET-005"},
+      {"type": "WiFi", "asset": "ASSET-005"},
+      {"type": "Bluetooth", "asset": "ASSET-005"},
+      {"type": "USB", "asset": "ASSET-009"},
+      {"type": "OBD-II", "asset": "ASSET-010"}
+    ]
+  },
+  "security_requirements": {
+    "authentication": "强制双向认证",
+    "encryption": "AES-128/256",
+    "key_management": "HSM硬件安全模块",
+    "secure_boot": "必须启用",
+    "intrusion_detection": "网关级IDS"
+  }
+}
