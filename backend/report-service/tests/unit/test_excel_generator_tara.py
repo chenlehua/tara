@@ -40,11 +40,9 @@ import sys
 from io import BytesIO
 
 import pytest
-
-# Add the backend path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend', 'report-service'))
-
 from openpyxl import load_workbook
+
+from app.generators.excel_generator import ExcelGenerator
 
 
 # Sample input data matching MY25 EV平台中控主机_TARA分析报告.xlsx
@@ -526,15 +524,7 @@ class TestExcelGeneratorTARA:
     @pytest.fixture
     def generator(self):
         """Create an ExcelGenerator instance."""
-        # Import directly to avoid loading all generators
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "excel_generator",
-            os.path.join(os.path.dirname(__file__), '..', 'backend', 'report-service', 'app', 'generators', 'excel_generator.py')
-        )
-        excel_generator_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(excel_generator_module)
-        return excel_generator_module.ExcelGenerator()
+        return ExcelGenerator()
 
     @pytest.fixture
     def sample_data(self):
@@ -713,86 +703,3 @@ class TestExcelGeneratorTARA:
         # Reload and verify
         wb = load_workbook(output_path)
         assert len(wb.sheetnames) == 6
-
-
-def run_tests():
-    """Run tests directly without pytest."""
-    async def run():
-        # Import directly to avoid loading all generators
-        import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            "excel_generator",
-            os.path.join(os.path.dirname(__file__), '..', 'backend', 'report-service', 'app', 'generators', 'excel_generator.py')
-        )
-        excel_generator_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(excel_generator_module)
-        ExcelGenerator = excel_generator_module.ExcelGenerator
-        
-        generator = ExcelGenerator()
-        sample_data = {
-            "content": {
-                "project": SAMPLE_PROJECT,
-                "assets": SAMPLE_ASSETS,
-                "threats": SAMPLE_THREATS,
-                "control_measures": SAMPLE_MEASURES,
-            }
-        }
-        
-        print("=" * 70)
-        print("Testing TARA Excel Generator")
-        print("=" * 70)
-        
-        # Generate Excel
-        buffer = await generator.generate(sample_data)
-        
-        # Save output
-        output_dir = os.path.join(os.path.dirname(__file__), "output")
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, "test_tara_generator_output.xlsx")
-        
-        with open(output_path, "wb") as f:
-            f.write(buffer.getvalue())
-        
-        print(f"\n✓ Generated Excel file: {output_path}")
-        print(f"  File size: {buffer.getbuffer().nbytes:,} bytes")
-        
-        # Load and verify
-        buffer.seek(0)
-        wb = load_workbook(buffer, data_only=False)
-        
-        print(f"\n✓ Sheet names: {wb.sheetnames}")
-        
-        # Check TARA results sheet
-        ws = wb["5-TARA分析结果"]
-        print(f"\n✓ TARA Results sheet:")
-        print(f"  - Max row: {ws.max_row}")
-        print(f"  - Max column: {ws.max_column}")
-        print(f"  - Data rows: {ws.max_row - 5}")
-        
-        # Check formulas
-        print(f"\n✓ Checking formulas in row 6:")
-        formula_cols = [(13, "M"), (20, "T"), (34, "AH"), (36, "AJ")]
-        for col, name in formula_cols:
-            cell = ws.cell(row=6, column=col)
-            has_formula = isinstance(cell.value, str) and cell.value.startswith("=")
-            print(f"  - Column {name}({col}): {'✓ Has formula' if has_formula else '✗ No formula'}")
-        
-        # Check input values
-        print(f"\n✓ Checking input values in row 6:")
-        input_cols = [(1, "A", "P001"), (8, "H", "S欺骗"), (12, "L", "本地"), (22, "V", "中等的")]
-        for col, name, expected in input_cols:
-            actual = ws.cell(row=6, column=col).value
-            match = actual == expected
-            print(f"  - Column {name}({col}): {'✓' if match else '✗'} {actual}")
-        
-        print("\n" + "=" * 70)
-        print("All checks completed successfully!")
-        print("=" * 70)
-        
-        return True
-    
-    return asyncio.run(run())
-
-
-if __name__ == "__main__":
-    run_tests()
