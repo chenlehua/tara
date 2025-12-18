@@ -185,11 +185,11 @@ test-frontend: ## 运行前端测试
 
 test-report: ## 运行报告服务测试
 	cd backend/report-service && \
-		PYTHONPATH=. pytest tests/ -v
+		PYTHONPATH=. python3 -m pytest tests/ -v
 
 test-report-excel: ## 运行TARA Excel生成器测试
 	cd backend/report-service && \
-		PYTHONPATH=. pytest tests/unit/test_excel_generator_tara.py -v
+		PYTHONPATH=. python3 -m pytest tests/unit/test_excel_generator_tara.py -v
 
 coverage: install-shared ## 生成测试覆盖率报告
 	PYTHONPATH=backend/shared \

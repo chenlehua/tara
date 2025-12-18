@@ -1,14 +1,12 @@
-"""Pytest configuration for report service tests."""
+"""Pytest configuration for report service tests.
+
+This conftest uses lazy imports to avoid loading the full application
+when running unit tests that don't need the app or database.
+"""
 
 from unittest.mock import MagicMock, patch
 
 import pytest
-from app.main import app
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
-from app.common.database.mysql import Base, get_db
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
 
@@ -16,6 +14,10 @@ TEST_DATABASE_URL = "sqlite:///:memory:"
 @pytest.fixture(scope="session")
 def engine():
     """Create test database engine."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import StaticPool
+    from app.common.database.mysql import Base
+    
     engine = create_engine(
         TEST_DATABASE_URL,
         connect_args={"check_same_thread": False},
@@ -29,6 +31,8 @@ def engine():
 @pytest.fixture(scope="function")
 def db_session(engine):
     """Create database session."""
+    from sqlalchemy.orm import sessionmaker
+    
     Session = sessionmaker(bind=engine)
     session = Session()
     yield session
@@ -39,6 +43,9 @@ def db_session(engine):
 @pytest.fixture(scope="function")
 def client(db_session):
     """Create test client."""
+    from app.main import app
+    from app.common.database.mysql import get_db
+    from fastapi.testclient import TestClient
 
     def override_get_db():
         try:
