@@ -192,40 +192,218 @@ class ExcelGenerator:
         
         row = 4
         func_desc = project.get("description", 
-            "车载信息娱乐系统(In-Vehicle Infotainment, IVI)是一种集成多媒体娱乐、导航、车辆信息显示、通信和车辆控制功能于一体的车载电子系统。")
+            "车载信息娱乐系统(In-Vehicle Infotainment, IVI)是一种集成多媒体娱乐、导航、车辆信息显示、通信和车辆控制功能于一体的车载电子系统。\n\n主要功能包括：\n• 多媒体播放：音乐、视频、图片等媒体文件的播放和管理\n• 导航定位：GPS定位、地图显示、路径规划和导航引导\n• 蓝牙通信：与手机连接实现免提通话和音乐传输\n• 车辆信息：显示车速、油耗、里程等车辆状态信息\n• 车辆控制：车窗、空调、座椅等舒适性功能的控制\n• 远程服务：OTA升级、远程诊断、紧急救援等服务")
         ws.cell(row=row, column=1, value=func_desc)
-        ws.merge_cells(start_row=row, start_column=1, end_row=row+2, end_column=6)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+7, end_column=6)
         ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
         
         # Section 2: Item Boundary Diagram
         row = 12
-        ws.cell(row=row, column=1, value="2. 项目边界图 Item Boundary Diagram").font = Font(bold=True, size=12)
+        ws.cell(row=row, column=1, value="2. 项目边界 Item Boundary").font = Font(bold=True, size=12)
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        
+        row = 13
+        # Get custom boundary diagram or use default
+        boundary_diagram = project.get("boundary_diagram", """
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           车载信息娱乐系统 项目边界示意图                             │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐    │
+│  │                         IVI 系统边界 (Scope Boundary)                        │    │
+│  │  ┌──────────────────────────────────────────────────────────────────────┐   │    │
+│  │  │                    硬件层 Hardware Layer                              │   │    │
+│  │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐        │   │    │
+│  │  │  │   SOC   │ │   MCU   │ │ DDR RAM │ │ UFS ROM │ │  eMMC   │        │   │    │
+│  │  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘        │   │    │
+│  │  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                    │   │    │
+│  │  │  │ BT模块  │ │ WIFI模块│ │以太网接口│ │ CAN接口 │                    │   │    │
+│  │  │  └─────────┘ └─────────┘ └─────────┘ └─────────┘                    │   │    │
+│  │  └──────────────────────────────────────────────────────────────────────┘   │    │
+│  │                                 ↕ 内部通信                                   │    │
+│  │  ┌──────────────────────────────────────────────────────────────────────┐   │    │
+│  │  │                    软件层 Software Layer                              │   │    │
+│  │  │  系统固件 │ 操作系统 │ 中间件 │ 应用软件 │ 安全服务 │ 配置数据        │   │    │
+│  │  └──────────────────────────────────────────────────────────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────────────┘    │
+│                              ↕ 外部接口 External Interface                          │
+│  ┌────────────────────────────┐  ┌────────────────────────────────────────────┐    │
+│  │   外部接口 (项目边界)       │  │        外部系统 (项目范围外)                │    │
+│  │  • TBox接口 (以太网/CAN)   │  │  • 云服务平台 (OTA服务器、TSP)             │    │
+│  │  • OBD接口 (诊断)          │  │  • 用户手机 (蓝牙/WiFi连接)                │    │
+│  │  • USB接口                 │  │  • 诊断设备                                │    │
+│  │  • CAN总线接口             │  │  • 车身域控制器/网关                        │    │
+│  └────────────────────────────┘  └────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+""")
+        ws.cell(row=row, column=1, value=boundary_diagram)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+18, end_column=6)
+        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
+        ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
         
         # Section 3: System Architecture Diagram
-        row = 40
-        ws.cell(row=row, column=1, value="3. 系统架构图 System Architecture Diagram").font = Font(bold=True, size=12)
+        row = 32
+        ws.cell(row=row, column=1, value="3. 系统架构图 System Architecture").font = Font(bold=True, size=12)
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
         
-        # Section 4: Reference Standards
-        row = 70
-        ws.cell(row=row, column=1, value="4. 参考标准 Reference Standards").font = Font(bold=True, size=12)
+        row = 33
+        system_arch_diagram = project.get("system_architecture_diagram", """
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           IVI 系统架构图 System Architecture                         │
+│                                                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           应用层 Application Layer                              │ │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐│ │
+│  │  │ 导航APP  │ │ 多媒体APP │ │ 蓝牙APP  │ │ 车控APP  │ │ 设置APP  │ │ OTA APP  ││ │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘│ │
+│  └────────────────────────────────────────────────────────────────────────────────┘ │
+│                                        ↓                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           中间件层 Middleware Layer                             │ │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐│ │
+│  │  │ 音频管理 │ │ 显示管理 │ │ 网络管理 │ │ 安全服务 │ │ 诊断服务 │ │ OTA服务  ││ │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘│ │
+│  └────────────────────────────────────────────────────────────────────────────────┘ │
+│                                        ↓                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           操作系统层 OS Layer                                   │ │
+│  │                    Android Automotive OS / QNX / Linux                          │ │
+│  └────────────────────────────────────────────────────────────────────────────────┘ │
+│                                        ↓                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           硬件抽象层 HAL Layer                                  │ │
+│  │       Audio HAL │ Display HAL │ Camera HAL │ Vehicle HAL │ Sensors HAL         │ │
+│  └────────────────────────────────────────────────────────────────────────────────┘ │
+│                                        ↓                                            │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│  │                           硬件层 Hardware Layer                                 │ │
+│  │  SOC │ MCU │ DDR │ UFS │ BT │ WIFI │ Ethernet │ CAN │ USB │ Display │ Audio    │ │
+│  └────────────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+""")
+        ws.cell(row=row, column=1, value=system_arch_diagram)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+18, end_column=6)
+        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
+        ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
+        
+        # Section 4: Software Architecture Diagram
+        row = 52
+        ws.cell(row=row, column=1, value="4. 软件架构图 Software Architecture").font = Font(bold=True, size=12)
         ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        
+        row = 53
+        software_arch_diagram = project.get("software_architecture_diagram", """
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           IVI 软件架构图 Software Architecture                       │
+│                                                                                      │
+│  ┌────────────────────────────────────────────────────────────────────────────────┐ │
+│  │  安全域 Secure World (ARM TrustZone)  │  普通域 Normal World                   │ │
+│  │  ┌────────────────────────────────┐   │  ┌────────────────────────────────┐   │ │
+│  │  │      TEE OS (OP-TEE)           │   │  │      Rich OS (Android/Linux)   │   │ │
+│  │  │  ┌──────────────────────────┐  │   │  │  ┌──────────────────────────┐  │   │ │
+│  │  │  │  Trusted Applications    │  │   │  │  │   User Applications      │  │   │ │
+│  │  │  │  • Secure Boot           │  │   │  │  │  • 导航 Navigation       │  │   │ │
+│  │  │  │  • Key Management        │  │   │  │  │  • 多媒体 Multimedia     │  │   │ │
+│  │  │  │  • Crypto Services       │  │   │  │  │  • 蓝牙 Bluetooth        │  │   │ │
+│  │  │  │  • Secure Storage        │  │   │  │  │  • 车控 Vehicle Control  │  │   │ │
+│  │  │  │  • DRM Services          │  │   │  │  │  • OTA Update            │  │   │ │
+│  │  │  └──────────────────────────┘  │   │  │  └──────────────────────────┘  │   │ │
+│  │  │              ↑                 │   │  │              ↑                 │   │ │
+│  │  │  ┌──────────────────────────┐  │   │  │  ┌──────────────────────────┐  │   │ │
+│  │  │  │  TEE Internal API        │  │   │  │  │  System Services         │  │   │ │
+│  │  │  │  (GlobalPlatform)        │  │   │  │  │  • Communication Mgr     │  │   │ │
+│  │  │  └──────────────────────────┘  │   │  │  │  • Diagnostic Service    │  │   │ │
+│  │  └────────────────────────────────┘   │  │  │  • Security Service      │  │   │ │
+│  │              ↑                        │  │  └──────────────────────────┘  │   │ │
+│  │  ┌────────────────────────────────┐   │  │              ↑                 │   │ │
+│  │  │       HSM (Hardware)           │   │  │  ┌──────────────────────────┐  │   │ │
+│  │  │  • Secure Key Storage          │   │  │  │  Drivers Layer           │  │   │ │
+│  │  │  • Crypto Acceleration         │   │  │  │  CAN│ETH│USB│BT│WIFI│...│  │   │ │
+│  │  └────────────────────────────────┘   │  │  └──────────────────────────┘  │   │ │
+│  └───────────────────────────────────────┴──┴────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+""")
+        ws.cell(row=row, column=1, value=software_arch_diagram)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row+18, end_column=6)
+        ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
+        ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
+        
+        # Section 5: Item Assumptions
+        row = 72
+        ws.cell(row=row, column=1, value="5. 相关项假设 Item Assumptions").font = Font(bold=True, size=12)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        
+        # Assumption headers
+        row = 73
+        ws.cell(row=row, column=1, value="假设编号\nAssumption ID").font = Font(bold=True, size=10)
+        ws.cell(row=row, column=2, value="假设描述 Assumption Description").font = Font(bold=True, size=10)
+        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+        
+        # Assumptions data
+        assumptions = project.get("assumptions", [
+            ("ASM-01", "IVI系统运行在独立的电子控制单元上，与车辆安全关键系统(如制动、转向)物理隔离"),
+            ("ASM-02", "IVI系统与车身域控制器通过CAN网关进行通信，网关具备消息过滤和访问控制功能"),
+            ("ASM-03", "TBox与IVI之间的通信链路为车内以太网(100BASE-T1)或CAN总线"),
+            ("ASM-04", "普通用户不具备拆解IVI硬件的专业工具和能力，物理攻击需要专业设备"),
+            ("ASM-05", "IVI系统具备安全启动(Secure Boot)功能，启动链完整性受硬件信任根保护"),
+            ("ASM-06", "系统固件和应用软件由OEM统一管理和分发，具备代码签名机制"),
+            ("ASM-07", "车辆使用期间，云服务器(TSP)持续在线提供OTA、远程诊断等服务"),
+            ("ASM-08", "用户移动设备的安全性不在本分析范围内，假设手机可能被恶意软件感染"),
+            ("ASM-09", "车辆网络(CAN/Ethernet)与外部网络之间存在网关隔离"),
+            ("ASM-10", "诊断接口(OBD)在车辆正常使用时可被物理访问"),
+        ])
+        
+        row = 74
+        for asm_id, asm_desc in assumptions:
+            ws.cell(row=row, column=1, value=asm_id)
+            ws.cell(row=row, column=2, value=asm_desc)
+            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+            row += 1
+        
+        # Section 6: Terminology
+        row += 1
+        ws.cell(row=row, column=1, value="6. 术语表 Terminology").font = Font(bold=True, size=12)
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        
+        # Terminology headers
+        row += 1
+        ws.cell(row=row, column=1, value="缩写\nAbbreviation").font = Font(bold=True, size=10)
+        ws.cell(row=row, column=2, value="英文全称 English Full Name").font = Font(bold=True, size=10)
+        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=5)
+        ws.cell(row=row, column=6, value="中文全称 Chinese Name").font = Font(bold=True, size=10)
+        
+        # Terminology data
+        terminology = project.get("terminology", [
+            ("IVI", "In-Vehicle Infotainment", "车载信息娱乐系统"),
+            ("TARA", "Threat Analysis and Risk Assessment", "威胁分析与风险评估"),
+            ("SOC", "System on Chip", "片上系统"),
+            ("MCU", "Microcontroller Unit", "微控制器单元"),
+            ("DDR RAM", "Double Data Rate Random Access Memory", "双倍数据率随机存取存储器"),
+            ("UFS ROM", "Universal Flash Storage", "通用闪存存储"),
+            ("BT", "Bluetooth", "蓝牙"),
+            ("WIFI", "Wireless Fidelity", "无线保真/无线网络"),
+            ("TBox", "Telematics Box", "车载终端/远程信息处理器"),
+            ("OBD", "On-Board Diagnostics", "车载诊断系统"),
+            ("CAN", "Controller Area Network", "控制器局域网"),
+            ("OTA", "Over-The-Air", "空中下载/远程升级"),
+            ("TEE", "Trusted Execution Environment", "可信执行环境"),
+            ("HSM", "Hardware Security Module", "硬件安全模块"),
+            ("PKI", "Public Key Infrastructure", "公钥基础设施"),
+            ("STRIDE", "Spoofing,Tampering,Repudiation,Information Disclosure,DoS,EoP", "欺骗、篡改、抵赖、信息泄露、拒绝服务、权限提升"),
+            ("WP29", "World Forum for Harmonization of Vehicle Regulations", "世界车辆法规协调论坛"),
+            ("SecOC", "Secure Onboard Communication", "安全车载通信"),
+            ("UDS", "Unified Diagnostic Services", "统一诊断服务"),
+            ("DoIP", "Diagnostics over IP", "基于IP的诊断"),
+        ])
         
         row += 1
-        standards = [
-            "• ISO/SAE 21434:2021 - Road vehicles — Cybersecurity engineering",
-            "• UN R155 - Cyber Security Management System",
-            "• UN R156 - Software Update Management System",
-            "• GB/T XXXXX - 汽车网络安全相关标准",
-        ]
-        for std in standards:
-            ws.cell(row=row, column=2, value=std)
-            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=6)
+        for abbr, eng, chn in terminology:
+            ws.cell(row=row, column=1, value=abbr)
+            ws.cell(row=row, column=2, value=eng)
+            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=5)
+            ws.cell(row=row, column=6, value=chn)
             row += 1
 
         # Adjust column widths
-        ws.column_dimensions['A'].width = 20
+        ws.column_dimensions['A'].width = 15
         for col in range(2, 7):
             ws.column_dimensions[get_column_letter(col)].width = 25
 
@@ -305,34 +483,55 @@ class ExcelGenerator:
         title_cell.font = Font(bold=True, size=14, color="2F5496")
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=9)
 
-        # Data flow diagram placeholder
+        # Data flow diagram
         diagram_text = project.get("data_flow_diagram", """
-┌────────────────────────────────────────────────────────────────────────┐
-│                              系统边界                                    │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐         │
-│  │   外部接口    │ ───► │   核心处理   │ ───► │   内部通信   │         │
-│  │ (WiFi/BT/4G) │ ◄─── │   (SOC/MCU)  │ ◄─── │  (CAN/ETH)   │         │
-│  └──────────────┘      └──────────────┘      └──────────────┘         │
-│         │                     │                     │                  │
-│         ▼                     ▼                     ▼                  │
-│  ┌──────────────┐      ┌──────────────┐      ┌──────────────┐         │
-│  │   数据存储    │      │   安全模块   │      │   车身控制   │         │
-│  │  (ROM/RAM)   │      │   (HSM/SE)   │      │   (BCM等)    │         │
-│  └──────────────┘      └──────────────┘      └──────────────┘         │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                    IVI系统数据流图 Data Flow Diagram (Level 0)                                │
+│                                                                                                               │
+│     ┌─────────────┐                                                              ┌─────────────┐             │
+│     │ 云服务器    │                                                              │  车身控制器  │             │
+│     │ Cloud Server│                                                              │  BCM/Gateway│             │
+│     │    (E1)     │                                                              │    (E6)     │             │
+│     └──────┬──────┘                                                              └──────┬──────┘             │
+│            │                                                                            │                     │
+│            │ DF1: OTA升级包                                                             │ DF9: CAN车控指令     │
+│            │ DF2: 远程配置                                                              │ DF10: 车辆状态      │
+│            ↓                                                                            ↑                     │
+│     ┌─────────────┐         DF3: 远程指令          ╔════════════════════════════════════════════════╗        │
+│     │   TBox      │ ─────────────────────────────→ ║                                                ║        │
+│     │ Telematics  │ ←───────────────────────────── ║           IVI 主系统                           ║        │
+│     │    (E2)     │         DF4: 状态上报          ║         IVI Main System                        ║        │
+│     └─────────────┘                                ║                                                ║        │
+│                                                    ║  ┌────────────────────────────────────────┐    ║        │
+│     ┌─────────────┐         DF5: 蓝牙音频/电话     ║  │         P1: SOC 主处理器                │    ║        │
+│     │  用户手机   │ ─────────────────────────────→ ║  │         Main Processor                 │    ║        │
+│     │ User Phone  │ ←───────────────────────────── ║  │  ┌────────┐  ┌────────┐  ┌────────┐   │    ║        │
+│     │    (E3)     │         DF6: 联系人/通知       ║  │  │ D1:配置│  │ D2:密钥│  │D3:用户 │   │    ║ ──────→│
+│     └─────────────┘                                ║  │  │  数据  │  │  存储  │  │  数据  │   │    ║        │
+│                                                    ║  │  └────────┘  └────────┘  └────────┘   │    ║        │
+│     ┌─────────────┐         DF7: 诊断请求          ║  │                    ↕                   │    ║        │
+│     │  诊断设备   │ ─────────────────────────────→ ║  │         ┌────────────────────┐        │    ║        │
+│     │ Diagnostic  │ ←───────────────────────────── ║  │         │   P2: MCU 安全控制  │        │    ║        │
+│     │ Tool (E4)   │         DF8: 诊断响应          ║  │         │   Safety Controller │        │    ║        │
+│     └─────────────┘                                ║  │         └────────────────────┘        │    ║        │
+│                                                    ║  └────────────────────────────────────────┘    ║        │
+│     ┌─────────────┐         DF11: 媒体文件         ║                                                ║        │
+│     │  USB设备    │ ─────────────────────────────→ ║                                                ║        │
+│     │ USB Device  │                                ╚════════════════════════════════════════════════╝        │
+│     │    (E5)     │                                                                                           │
+│     └─────────────┘                                                                                           │
+│                                                                                                               │
+│  图例 Legend:  ═══ 信任边界 Trust Boundary    ───→ 数据流 Data Flow    [ ] 处理 Process    (Dx) 数据存储      │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 """)
         ws.cell(row=3, column=1, value=diagram_text)
         ws.merge_cells(start_row=3, start_column=1, end_row=40, end_column=9)
         ws.cell(row=3, column=1).alignment = Alignment(wrap_text=True, vertical='top')
-        ws.cell(row=3, column=1).font = Font(name='Courier New', size=10)
-        
-        # Asset interface table
-        row = 43
-        ws.cell(row=row, column=1, value="资产接口列表 Asset Interface List").font = Font(bold=True, size=11)
-        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=9)
+        ws.cell(row=3, column=1).font = Font(name='Courier New', size=9)
 
         # Adjust column widths
-        for col in range(1, 10):
+        ws.column_dimensions['A'].width = 120
+        for col in range(2, 10):
             ws.column_dimensions[get_column_letter(col)].width = 15
 
     def _create_attack_tree_sheet(self, wb: Workbook, threats: list, project: dict):
@@ -346,25 +545,113 @@ class ExcelGenerator:
         title_cell.font = Font(bold=True, size=14, color="2F5496")
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=6)
 
-        # Attack tree examples
-        attack_trees = project.get("attack_trees", [
+        # Default attack trees (4 diagrams matching the sample)
+        default_attack_trees = [
             {
-                "name": "攻击树1 Attack Tree 1: 远程入侵IVI系统 Remote Compromise of IVI System",
-                "diagram": """
-                        ┌────────────────────────────────────┐
-                        │     远程入侵IVI系统                  │
-                        │   Remote Compromise of IVI         │
-                        └───────────────┬────────────────────┘
-                                        │
-              ┌─────────────────────────┼─────────────────────────┐
-              │                         │                         │
-      ┌───────┴───────┐         ┌───────┴───────┐         ┌───────┴───────┐
-      │  网络攻击入口  │         │  无线接口入口  │         │  云端服务入口  │
-      │ Network Entry │         │ Wireless Entry│         │  Cloud Entry  │
-      └───────────────┘         └───────────────┘         └───────────────┘
+                "name": "攻击树1 Attack Tree 1: 远程入侵IVI系统 Remote Compromise IVI",
+                "diagram": """                                        ┌─────────────────────────────────┐
+                                        │     【攻击目标 Attack Goal】     │
+                                        │     远程入侵IVI系统              │
+                                        │     Remote Compromise IVI       │
+                                        └────────────────┬────────────────┘
+                                                         │
+                     ┌───────────────────────────────────┼───────────────────────────────────┐
+                     │                                   │                                   │
+         ┌───────────┴───────────┐           ┌───────────┴───────────┐           ┌───────────┴───────────┐
+         │ [OR] 通过TBox入侵     │           │ [OR] 通过WiFi入侵     │           │ [OR] 通过云服务入侵   │
+         │ Via TBox (AT1.1)      │           │ Via WiFi (AT1.2)      │           │ Via Cloud (AT1.3)     │
+         └───────────┬───────────┘           └───────────┬───────────┘           └───────────┬───────────┘
+                     │                                   │                                   │
+     ┌───────────────┼───────────────┐       ┌───────────┼───────────┐       ┌───────────────┼───────────────┐
+     │               │               │       │           │           │       │               │               │
+┌────┴────┐    ┌─────┴─────┐   ┌─────┴─────┐ │     ┌─────┴─────┐     │ ┌─────┴─────┐   ┌─────┴─────┐   ┌─────┴─────┐
+│ 利用4G  │    │ 伪造远程  │   │ TBox固件  │ │     │ WiFi协议  │     │ │ 伪造OTA   │   │ 中间人    │   │ 云服务器  │
+│ 协议漏洞│    │ 控制指令  │   │ 漏洞利用  │ │     │ 漏洞利用  │     │ │ 升级包    │   │ 攻击MITM  │   │ 被攻陷    │
+│(1.1.1)  │    │ (1.1.2)   │   │ (1.1.3)   │ │     │ (1.2.1)   │     │ │ (1.3.1)   │   │ (1.3.2)   │   │ (1.3.3)   │
+└─────────┘    └───────────┘   └───────────┘ │     └───────────┘     │ └───────────┘   └───────────┘   └───────────┘
+                                             │           │           │
+                                       ┌─────┴─────┐┌────┴────┐┌─────┴─────┐
+                                       │ 恶意WiFi  ││连接恶意 ││ 无线监听  │
+                                       │ AP欺骗   ││ 热点    ││ 数据窃取  │
+                                       │ (1.2.2)  ││(1.2.3)  ││ (1.2.4)   │
+                                       └──────────┘└─────────┘└───────────┘
 """
-            }
-        ])
+            },
+            {
+                "name": "攻击树2 Attack Tree 2: 物理接口攻击IVI系统 Physical Attack on IVI",
+                "diagram": """                                        ┌─────────────────────────────────┐
+                                        │     【攻击目标 Attack Goal】     │
+                                        │     物理接口攻击IVI系统          │
+                                        │     Physical Attack on IVI      │
+                                        └────────────────┬────────────────┘
+                                                         │
+                     ┌───────────────────────────────────┼───────────────────────────────────┐
+                     │                                   │                                   │
+         ┌───────────┴───────────┐           ┌───────────┴───────────┐           ┌───────────┴───────────┐
+         │ [OR] OBD接口攻击      │           │ [OR] USB接口攻击      │           │ [OR] CAN总线攻击      │
+         │ Via OBD (AT2.1)       │           │ Via USB (AT2.2)       │           │ Via CAN (AT2.3)       │
+         └───────────┬───────────┘           └───────────┬───────────┘           └───────────┬───────────┘
+                     │                                   │                                   │
+     ┌───────────────┼───────────────┐       ┌───────────┼───────────┐       ┌───────────────┼───────────────┐
+     │               │               │       │           │           │       │               │               │
+┌────┴────┐    ┌─────┴─────┐   ┌─────┴─────┐┌────┴────┐┌────┴────┐┌────┴────┐┌────┴────┐   ┌─────┴─────┐   ┌─────┴─────┐
+│非授权   │    │ 注入恶意  │   │ 读取敏感  ││恶意U盘  ││固件刷写 ││USB漏洞  ││CAN报文  │   │ CAN DoS   │   │ CAN中间人 │
+│诊断访问 │    │ 诊断指令  │   │ 诊断数据  ││感染病毒 ││攻击     ││利用     ││注入伪造 │   │ 攻击      │   │ 攻击      │
+│(2.1.1)  │    │ (2.1.2)   │   │ (2.1.3)   ││(2.2.1)  ││(2.2.2)  ││(2.2.3)  ││(2.3.1)  │   │ (2.3.2)   │   │ (2.3.3)   │
+└─────────┘    └───────────┘   └───────────┘└─────────┘└─────────┘└─────────┘└─────────┘   └───────────┘   └───────────┘
+"""
+            },
+            {
+                "name": "攻击树3 Attack Tree 3: 窃取IVI系统敏感数据 Steal Sensitive Data",
+                "diagram": """                                        ┌─────────────────────────────────┐
+                                        │     【攻击目标 Attack Goal】     │
+                                        │     窃取IVI系统敏感数据          │
+                                        │     Steal Sensitive Data        │
+                                        └────────────────┬────────────────┘
+                                                         │
+                     ┌───────────────────────────────────┼───────────────────────────────────┐
+                     │                                   │                                   │
+         ┌───────────┴───────────┐           ┌───────────┴───────────┐           ┌───────────┴───────────┐
+         │ [OR] 窃取用户数据     │           │ [OR] 窃取车辆信息     │           │ [OR] 窃取安全凭证     │
+         │ User Data (AT3.1)     │           │ Vehicle Info (AT3.2)  │           │ Credentials (AT3.3)   │
+         └───────────┬───────────┘           └───────────┬───────────┘           └───────────┬───────────┘
+                     │                                   │                                   │
+     ┌───────────────┼───────────────┐       ┌───────────┼───────────┐       ┌───────────────┼───────────────┐
+     │               │               │       │           │           │       │               │               │
+┌────┴────┐    ┌─────┴─────┐   ┌─────┴─────┐┌────┴────┐┌────┴────┐┌────┴────┐┌────┴────┐   ┌─────┴─────┐   ┌─────┴─────┐
+│导航轨迹 │    │ 通讯录    │   │ 账户信息  ││VIN信息  ││里程篡改 ││故障码   ││提取证书 │   │ 密钥窃取  │   │ 令牌劫持  │
+│位置信息 │    │ 个人信息  │   │ 凭证窃取  ││泄露     ││读取     ││泄露     ││(3.3.1)  │   │ (3.3.2)   │   │ (3.3.3)   │
+│(3.1.1)  │    │ (3.1.2)   │   │ (3.1.3)   ││(3.2.1)  ││(3.2.2)  ││(3.2.3)  │└─────────┘   └───────────┘   └───────────┘
+└─────────┘    └───────────┘   └───────────┘└─────────┘└─────────┘└─────────┘
+"""
+            },
+            {
+                "name": "攻击树4 Attack Tree 4: 恶意控制车辆功能 Malicious Vehicle Control",
+                "diagram": """                                        ┌─────────────────────────────────┐
+                                        │     【攻击目标 Attack Goal】     │
+                                        │     恶意控制车辆功能             │
+                                        │     Malicious Vehicle Control   │
+                                        └────────────────┬────────────────┘
+                                                         │
+                     ┌───────────────────────────────────┼───────────────────────────────────┐
+                     │                                   │                                   │
+         ┌───────────┴───────────┐           ┌───────────┴───────────┐           ┌───────────┴───────────┐
+         │ [OR] 远程车控攻击     │           │ [OR] 本地车控攻击     │           │ [OR] 供应链攻击       │
+         │ Remote Control(AT4.1)│           │ Local Control(AT4.2)  │           │ Supply Chain(AT4.3)   │
+         └───────────┬───────────┘           └───────────┬───────────┘           └───────────┬───────────┘
+                     │                                   │                                   │
+     ┌───────────────┼───────────────┐       ┌───────────┼───────────┐       ┌───────────────┼───────────────┐
+     │               │               │       │           │           │       │               │               │
+┌────┴────┐    ┌─────┴─────┐   ┌─────┴─────┐┌────┴────┐┌────┴────┐┌────┴────┐┌────┴────┐   ┌─────┴─────┐   ┌─────┴─────┐
+│伪造车控 │    │ 重放攻击  │   │ 会话劫持  ││APP提权  ││IVI越权  ││物理篡改 ││恶意固件 │   │ 后门植入  │   │ 供应商   │
+│指令     │    │ 历史指令  │   │ 接管会话  ││车控     ││车控指令 ││MCU      ││植入     │   │ (4.3.2)   │   │ 被攻陷   │
+│(4.1.1)  │    │ (4.1.2)   │   │ (4.1.3)   ││(4.2.1)  ││(4.2.2)  ││(4.2.3)  ││(4.3.1)  │   └───────────┘   │ (4.3.3)  │
+└─────────┘    └───────────┘   └───────────┘└─────────┘└─────────┘└─────────┘└─────────┘                   └───────────┘
+"""
+            },
+        ]
+        
+        attack_trees = project.get("attack_trees", default_attack_trees)
         
         row = 3
         for tree in attack_trees:
@@ -376,10 +663,10 @@ class ExcelGenerator:
             ws.merge_cells(start_row=row, start_column=1, end_row=row+18, end_column=6)
             ws.cell(row=row, column=1).alignment = Alignment(wrap_text=True, vertical='top')
             ws.cell(row=row, column=1).font = Font(name='Courier New', size=9)
-            row += 22
+            row += 21
 
         # Adjust column width
-        ws.column_dimensions['A'].width = 100
+        ws.column_dimensions['A'].width = 120
 
     def _create_tara_results_sheet(self, wb: Workbook, assets: list, threats: list, 
                                    measures: list, project: dict):
@@ -396,60 +683,72 @@ class ExcelGenerator:
         title_cell.font = self.title_font
         ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=40)
 
-        # Row 3: Main header groups
+        # Row 3: Main header groups (matching sample exactly)
         header_groups = [
-            (1, 6, "Asset Identification资产识别"),
-            (7, 11, "Threat & Damage Scenario\n威胁&损害场景"),
-            (12, 21, "Threat Analysis\n威胁分析"),
-            (22, 35, "Impact Analysis\n影响分析"),
-            (36, 36, "Risk Assessment\n风险评估"),
-            (37, 37, "Risk Treatment\n风险处置"),
-            (38, 40, "Risk Mitigation\n风险缓解"),
+            (1, 6, "Asset Identification资产识别"),      # A-F
+            (7, 11, "Threat & Damage Scenario\n威胁&损害场景"),  # G-K
+            (12, 21, "Threat Analysis\n威胁分析"),        # L-U
+            (22, 35, "Impact Analysis\n影响分析"),        # V-AI
+            # Columns AJ(36) and AK(37) have no row 3 header - they're header in row 4 only
+            (38, 40, "Risk Mitigation\n风险缓解"),        # AL-AN
         ]
         
         for start_col, end_col, title in header_groups:
             self._merge_and_style(ws, 3, start_col, 3, end_col, title,
                                  self.header_font, self.header_fill, self.center_align)
-
-        # Row 4: Sub-headers
-        row4_headers = {
-            1: ("Asset | ID\n资产ID", 1, 1),
-            2: ("Asset Name\n资产名称", 2, 2),
-            3: ("细分类", 3, 5),  # Spans 3 columns
-            6: ("Category\n分类", 6, 6),
-            7: ("Security Attributes\n安全属性", 7, 7),
-            8: ("STRIDE Model\nSTRIDE模型", 8, 8),
-            9: ("Potential Threat and Damage Scenario\n潜在威胁和损害场景", 9, 9),
-            10: ("Attack Path\n攻击路径", 10, 10),
-            11: ("来源\n", 11, 11),
-            12: ("Attack Vector(V)\n攻击向量", 12, 13),
-            14: ("Attack Complexity(C)\n攻击复杂度", 14, 15),
-            16: ("Privileges Required(P)\n权限要求", 16, 17),
-            18: ("User Interaction(U)\n用户交互", 18, 19),
-            20: ("Attack Feasibility\n攻击可行性计算", 20, 21),
-            22: ("Safety\n安全", 22, 24),
-            25: ("Financial\n经济", 25, 27),
-            28: ("Operational\n操作", 28, 30),
-            31: ("Privacy & Legislation\n隐私和法律", 31, 33),
-            34: ("Impact Level Calculation\n影响等级计算", 34, 35),
-            36: ("Risk Level\n风险等级", 36, 36),
-            37: ("Risk Treatment Decision\n风险处置决策", 37, 37),
-            38: ("Security Goal\n安全目标", 38, 38),
-            39: ("Security Requirement\n安全需求", 39, 39),
-            40: ("Source来源\n", 40, 40),
-        }
         
-        for start_col, (title, col_start, col_end) in row4_headers.items():
-            if col_start == col_end:
-                cell = ws.cell(row=4, column=col_start, value=title)
-                self._apply_cell_style(cell, self.subheader_font, self.subheader_fill, self.center_align)
-                # Also merge with row 5 for single-column headers that don't have sub-headers
-                if col_start in [1, 2, 6, 7, 8, 9, 10, 36, 37, 38, 39]:
-                    self._merge_and_style(ws, 4, col_start, 5, col_end, title,
-                                         self.subheader_font, self.subheader_fill, self.center_align)
-            else:
-                self._merge_and_style(ws, 4, col_start, 4, col_end, title,
-                                     self.subheader_font, self.subheader_fill, self.center_align)
+        # Apply border to unmerged header cells in row 3
+        for col in [36, 37]:
+            cell = ws.cell(row=3, column=col)
+            cell.border = self.border
+            cell.fill = self.header_fill
+
+        # Row 4-5: Sub-headers (matching sample structure)
+        # Headers that span row 4-5 (merged vertically)
+        row45_merged_headers = [
+            (1, "Asset\nID\n资产ID"),
+            (2, "Asset Name\n资产名称"),
+            (6, "Category\n分类"),
+            (7, "Security Attributes\n安全属性"),
+            (8, "STRIDE Model\nSTRIDE模型"),
+            (9, "Potential Threat and Damage Scenario\n潜在威胁和损害场景"),
+            (10, "Attack Path\n攻击路径"),
+            (36, "Risk Level\n风险等级"),
+            (37, "Risk Treatment Decision\n风险处置决策"),
+            (38, "Security Goal\n安全目标"),
+            (39, "Security Requirement\n安全需求"),
+        ]
+        
+        for col, title in row45_merged_headers:
+            self._merge_and_style(ws, 4, col, 5, col, title,
+                                 self.subheader_font, self.subheader_fill, self.center_align)
+
+        # Row 4 only headers (with sub-headers in row 5)
+        row4_only_headers = [
+            (3, 5, "细分类"),                          # C4:E4
+            (12, 13, "Attack Vector(V)\n攻击向量"),    # L4:M4
+            (14, 15, "Attack Complexity(C)\n攻击复杂度"),  # N4:O4
+            (16, 17, "Privileges Required(P)\n权限要求"),  # P4:Q4
+            (18, 19, "User Interaction(U)\n用户交互"),  # R4:S4
+            (20, 21, "Attack Feasibility\n攻击可行性计算"),  # T4:U4
+            (22, 24, "Safety\n安全"),                  # V4:X4
+            (25, 27, "Financial\n经济"),               # Y4:AA4
+            (28, 30, "Operational\n操作"),             # AB4:AD4
+            (31, 33, "Privacy & Legislation\n隐私和法律"),  # AE4:AG4
+            (34, 35, "Impact Level Calculation\n影响等级计算"),  # AH4:AI4
+        ]
+        
+        for start_col, end_col, title in row4_only_headers:
+            self._merge_and_style(ws, 4, start_col, 4, end_col, title,
+                                 self.subheader_font, self.subheader_fill, self.center_align)
+        
+        # Row 4 single cell header (column 11 - 来源)
+        cell = ws.cell(row=4, column=11, value="来源\n")
+        self._apply_cell_style(cell, self.subheader_font, self.subheader_fill, self.center_align)
+        
+        # Row 4 column 40 (WP29 Source)
+        cell = ws.cell(row=4, column=40, value="Source来源\n")
+        self._apply_cell_style(cell, self.subheader_font, self.subheader_fill, self.center_align)
 
         # Row 5: Detail headers
         row5_headers = {
@@ -488,10 +787,12 @@ class ExcelGenerator:
             cell = ws.cell(row=5, column=col, value=title)
             self._apply_cell_style(cell, self.detail_font, self.detail_fill, self.center_align)
 
-        # Fill remaining row 5 cells with borders
-        for col in range(1, 41):
-            if col not in row5_headers:
-                ws.cell(row=5, column=col).border = self.border
+        # Apply borders to all cells in rows 3-5 that don't have values
+        for row_num in range(3, 6):
+            for col in range(1, 41):
+                cell = ws.cell(row=row_num, column=col)
+                if cell.border != self.border:
+                    cell.border = self.border
 
         # Prepare measures lookup
         measures_by_threat = {}
@@ -503,10 +804,49 @@ class ExcelGenerator:
                 measures_by_threat[tid].append(m)
 
         # Data rows with formulas
+        # Track asset groups for merging cells
         row = 6
-        for threat in threats:
+        asset_groups = []  # List of (start_row, end_row) tuples
+        current_group_start = row
+        
+        for idx, threat in enumerate(threats):
             self._write_tara_data_row(ws, row, threat, assets, measures_by_threat)
+            
+            # Check if this is a new asset group or continuation
+            asset_id = threat.get("asset_id_str", "")
+            
+            # Check if next threat is a continuation (empty asset_id_str)
+            is_last = (idx == len(threats) - 1)
+            next_is_continuation = False
+            if not is_last:
+                next_asset_id = threats[idx + 1].get("asset_id_str", "")
+                next_is_continuation = (next_asset_id == "" or next_asset_id.strip() == "")
+            
+            # If next row is NOT a continuation or this is the last row, end the group
+            if not next_is_continuation:
+                if row > current_group_start:
+                    # We have a group of multiple rows
+                    asset_groups.append((current_group_start, row))
+                current_group_start = row + 1
+            
             row += 1
+        
+        # Merge cells for asset groups
+        # Columns to merge: A(1), B(2), C(3), D(4), F(6) - but NOT E(5) which is category_sub3
+        merge_columns = [1, 2, 3, 4]  # A, B, C, D
+        
+        for start_row, end_row in asset_groups:
+            for col in merge_columns:
+                if start_row < end_row:
+                    ws.merge_cells(start_row=start_row, start_column=col, 
+                                   end_row=end_row, end_column=col)
+                    # Ensure the merged cell has the right value and style
+                    cell = ws.cell(row=start_row, column=col)
+                    cell.border = self.border
+                    cell.alignment = self.center_align if col > 2 else self.left_align
+                    # Apply border to all cells in merge range
+                    for r in range(start_row, end_row + 1):
+                        ws.cell(row=r, column=col).border = self.border
 
         # Set column widths to match sample
         col_widths = {
