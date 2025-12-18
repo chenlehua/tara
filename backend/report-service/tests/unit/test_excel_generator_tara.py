@@ -518,6 +518,11 @@ SAMPLE_THREATS = [
 SAMPLE_MEASURES = []  # No measures in the sample data for this test
 
 
+def _run_async(coro):
+    """Helper to run async functions synchronously."""
+    return asyncio.run(coro)
+
+
 class TestExcelGeneratorTARA:
     """Test suite for TARA Excel Generator."""
 
@@ -538,10 +543,9 @@ class TestExcelGeneratorTARA:
             }
         }
 
-    @pytest.mark.asyncio
-    async def test_generate_creates_all_sheets(self, generator, sample_data):
+    def test_generate_creates_all_sheets(self, generator, sample_data):
         """Test that all required sheets are created."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer)
         
         expected_sheets = [
@@ -555,20 +559,18 @@ class TestExcelGeneratorTARA:
         
         assert wb.sheetnames == expected_sheets
 
-    @pytest.mark.asyncio
-    async def test_tara_results_has_correct_columns(self, generator, sample_data):
+    def test_tara_results_has_correct_columns(self, generator, sample_data):
         """Test that 5-TARA分析结果 has 40 columns."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer)
         ws = wb["5-TARA分析结果"]
         
         # Should have 40 columns
         assert ws.max_column == 40
 
-    @pytest.mark.asyncio
-    async def test_tara_results_has_formulas(self, generator, sample_data):
+    def test_tara_results_has_formulas(self, generator, sample_data):
         """Test that auto-calculated columns contain formulas."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer, data_only=False)
         ws = wb["5-TARA分析结果"]
         
@@ -601,10 +603,9 @@ class TestExcelGeneratorTARA:
             assert isinstance(cell.value, str), f"Column {col_name}({col}) should have a formula"
             assert cell.value.startswith("="), f"Column {col_name}({col}) formula should start with ="
 
-    @pytest.mark.asyncio
-    async def test_tara_results_input_columns_have_values(self, generator, sample_data):
+    def test_tara_results_input_columns_have_values(self, generator, sample_data):
         """Test that input columns contain the expected values."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer)
         ws = wb["5-TARA分析结果"]
         
@@ -620,10 +621,9 @@ class TestExcelGeneratorTARA:
         assert ws.cell(row=6, column=28).value == "重大的" # Operational Impact
         assert ws.cell(row=6, column=31).value == "可忽略不计的" # Privacy Impact
 
-    @pytest.mark.asyncio
-    async def test_tara_results_row_count(self, generator, sample_data):
+    def test_tara_results_row_count(self, generator, sample_data):
         """Test that the correct number of data rows are generated."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer)
         ws = wb["5-TARA分析结果"]
         
@@ -633,10 +633,9 @@ class TestExcelGeneratorTARA:
         # max_row should be 5 (headers) + number of threats
         assert ws.max_row == 5 + expected_data_rows
 
-    @pytest.mark.asyncio
-    async def test_asset_list_sheet(self, generator, sample_data):
+    def test_asset_list_sheet(self, generator, sample_data):
         """Test that 2-资产列表 sheet is generated correctly."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer)
         ws = wb["2-资产列表"]
         
@@ -651,10 +650,9 @@ class TestExcelGeneratorTARA:
         assert ws.cell(row=5, column=1).value == "P001"
         assert ws.cell(row=5, column=2).value == "SOC"
 
-    @pytest.mark.asyncio
-    async def test_formula_attack_vector_value(self, generator, sample_data):
+    def test_formula_attack_vector_value(self, generator, sample_data):
         """Test the Attack Vector Value formula."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer, data_only=False)
         ws = wb["5-TARA分析结果"]
         
@@ -665,10 +663,9 @@ class TestExcelGeneratorTARA:
         assert '=IF(L6="本地",0.55' in formula or 'L6="本地",0.55' in formula
         assert '=IF(L6="物理",0.2' in formula or 'L6="物理",0.2' in formula
 
-    @pytest.mark.asyncio
-    async def test_formula_attack_feasibility(self, generator, sample_data):
+    def test_formula_attack_feasibility(self, generator, sample_data):
         """Test the Attack Feasibility Calculation formula."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer, data_only=False)
         ws = wb["5-TARA分析结果"]
         
@@ -676,10 +673,9 @@ class TestExcelGeneratorTARA:
         formula = ws.cell(row=6, column=20).value
         assert formula == "=8.22*M6*O6*Q6*S6"
 
-    @pytest.mark.asyncio
-    async def test_formula_impact_calculation(self, generator, sample_data):
+    def test_formula_impact_calculation(self, generator, sample_data):
         """Test the Impact Calculation formula."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         wb = load_workbook(buffer, data_only=False)
         ws = wb["5-TARA分析结果"]
         
@@ -687,10 +683,9 @@ class TestExcelGeneratorTARA:
         formula = ws.cell(row=6, column=34).value
         assert formula == "=SUM(X6+AA6+AD6+AG6)"
 
-    @pytest.mark.asyncio
-    async def test_generate_and_save_file(self, generator, sample_data, tmp_path):
+    def test_generate_and_save_file(self, generator, sample_data, tmp_path):
         """Test generating and saving an Excel file."""
-        buffer = await generator.generate(sample_data)
+        buffer = _run_async(generator.generate(sample_data))
         
         # Save to file
         output_path = tmp_path / "test_tara_report.xlsx"
