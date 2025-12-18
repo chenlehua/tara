@@ -1,0 +1,1348 @@
+{
+  "project": {
+    "id": 2,
+    "name": "MY25 EV平台中控主机 TARA分析",
+    "description": "针对MY25年款纯电动汽车平台中控主机系统的全面威胁分析与风险评估，涵盖硬件组件、软件服务、数据资产及外部接口等完整攻击面。",
+    "vehicle_type": "纯电动乘用车",
+    "vehicle_model": "MY25 EV Premium",
+    "vehicle_year": "2025",
+    "platform": "E3-SOA平台",
+    "standard": "ISO/SAE 21434:2021",
+    "scope": "中控主机全系统，包括主控单元、显示系统、音频系统、通信模块、存储系统、车载服务等",
+    "status": 1,
+    "owner": "网络安全工程部",
+    "team": ["张首席安全工程师", "李威胁分析师", "王渗透测试工程师", "赵安全开发工程师"],
+    "tags": ["IVI", "中控主机", "TARA", "ISO21434", "UN R155", "车联网安全", "SOA架构"],
+    "created_at": "2024-12-18T09:00:00Z",
+    "updated_at": "2024-12-18T10:30:00Z"
+  },
+  "assets": [
+    {
+      "id": "IVI-001",
+      "name": "主控SoC (SA8295P)",
+      "type": "ECU",
+      "category": "核心处理单元",
+      "domain": "座舱域",
+      "supplier": "Qualcomm",
+      "description": "高通SA8295P数字座舱处理器，8核Kryo CPU，Adreno 690 GPU，支持多屏互联和AI加速",
+      "interfaces": [
+        {"type": "LPDDR5", "name": "内存接口", "speed": "6400Mbps"},
+        {"type": "PCIe", "name": "高速扩展", "speed": "Gen4"},
+        {"type": "Ethernet", "name": "车载以太网", "speed": "1Gbps", "protocol": "TSN"},
+        {"type": "USB", "name": "USB3.1", "speed": "10Gbps"},
+        {"type": "LVDS", "name": "显示输出", "channels": 4}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "系统固件", "sensitivity": "critical"},
+        {"name": "安全密钥", "sensitivity": "critical"},
+        {"name": "用户配置", "sensitivity": "high"}
+      ],
+      "functions": [
+        "多操作系统运行(QNX+Android)",
+        "多屏渲染输出",
+        "AI语音处理",
+        "视频编解码",
+        "安全启动验证"
+      ]
+    },
+    {
+      "id": "IVI-002",
+      "name": "安全MCU (S32K344)",
+      "type": "ECU",
+      "category": "安全控制器",
+      "domain": "座舱域",
+      "supplier": "NXP",
+      "description": "NXP S32K344安全微控制器，负责车控信号处理、安全监控和CAN网关功能",
+      "interfaces": [
+        {"type": "CAN-FD", "name": "车身CAN", "speed": "5Mbps", "protocol": "SecOC"},
+        {"type": "CAN-FD", "name": "动力CAN", "speed": "5Mbps", "protocol": "SecOC"},
+        {"type": "LIN", "name": "车身子网", "speed": "19.2Kbps"},
+        {"type": "SPI", "name": "SoC通信", "speed": "50MHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "车控指令", "sensitivity": "critical"},
+        {"name": "HSM密钥", "sensitivity": "critical"},
+        {"name": "SecOC密钥", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "CAN网关路由",
+        "车控信号转发",
+        "安全看门狗",
+        "电源管理",
+        "诊断服务"
+      ]
+    },
+    {
+      "id": "IVI-003",
+      "name": "独立GPU (Mali-G78)",
+      "type": "芯片",
+      "category": "图形处理单元",
+      "domain": "座舱域",
+      "supplier": "ARM",
+      "description": "独立图形处理单元，负责高性能3D渲染、AR-HUD图形合成",
+      "interfaces": [
+        {"type": "PCIe", "name": "与SoC连接", "speed": "Gen4 x4"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "图形缓存", "sensitivity": "low"},
+        {"name": "纹理数据", "sensitivity": "low"}
+      ],
+      "functions": [
+        "3D图形渲染",
+        "AR-HUD合成",
+        "多屏独立渲染"
+      ]
+    },
+    {
+      "id": "IVI-004",
+      "name": "NPU加速器 (Hexagon)",
+      "type": "芯片",
+      "category": "AI处理单元",
+      "domain": "座舱域",
+      "supplier": "Qualcomm",
+      "description": "神经网络处理单元，用于DMS驾驶员监控、语音识别、手势识别等AI推理",
+      "interfaces": [
+        {"type": "内部总线", "name": "与SoC集成", "speed": "内部"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "AI模型", "sensitivity": "high"},
+        {"name": "推理结果", "sensitivity": "medium"},
+        {"name": "人脸特征", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "驾驶员监控(DMS)",
+        "语音唤醒词识别",
+        "手势识别",
+        "人脸识别"
+      ]
+    },
+    {
+      "id": "IVI-005",
+      "name": "中控显示屏 (15.6寸OLED)",
+      "type": "显示设备",
+      "category": "人机交互",
+      "domain": "座舱域",
+      "supplier": "BOE",
+      "description": "15.6英寸OLED触控显示屏，2K分辨率，支持多点触控和手写输入",
+      "interfaces": [
+        {"type": "LVDS", "name": "视频输入", "speed": "4K60"},
+        {"type": "I2C", "name": "触控信号", "speed": "400KHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "触控坐标", "sensitivity": "low"},
+        {"name": "显示内容", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "主界面显示",
+        "触摸输入",
+        "手写识别"
+      ]
+    },
+    {
+      "id": "IVI-006",
+      "name": "仪表显示屏 (12.3寸LCD)",
+      "type": "显示设备",
+      "category": "人机交互",
+      "domain": "座舱域",
+      "supplier": "LG Display",
+      "description": "12.3英寸全液晶仪表盘，显示车速、续航、导航等关键信息",
+      "interfaces": [
+        {"type": "LVDS", "name": "视频输入", "speed": "1080P60"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "high",
+        "availability": "critical",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "车辆状态显示", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "仪表信息显示",
+        "驾驶辅助提示",
+        "导航简图"
+      ]
+    },
+    {
+      "id": "IVI-007",
+      "name": "HUD抬头显示",
+      "type": "显示设备",
+      "category": "人机交互",
+      "domain": "座舱域",
+      "supplier": "Continental",
+      "description": "AR-HUD增强现实抬头显示，投影距离10米，显示导航和ADAS信息",
+      "interfaces": [
+        {"type": "Ethernet", "name": "视频流", "speed": "100Mbps"},
+        {"type": "CAN", "name": "车辆状态", "speed": "500Kbps"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "AR叠加内容", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "车速投影显示",
+        "AR导航指引",
+        "ADAS警告提示"
+      ]
+    },
+    {
+      "id": "IVI-008",
+      "name": "副驾显示屏 (12.8寸)",
+      "type": "显示设备",
+      "category": "人机交互",
+      "domain": "座舱域",
+      "supplier": "BOE",
+      "description": "副驾专属娱乐显示屏，支持视频播放和独立应用",
+      "interfaces": [
+        {"type": "LVDS", "name": "视频输入", "speed": "2K60"},
+        {"type": "I2C", "name": "触控信号", "speed": "400KHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "low",
+        "availability": "low",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "娱乐内容", "sensitivity": "low"}
+      ],
+      "functions": [
+        "副驾娱乐显示",
+        "独立应用运行"
+      ]
+    },
+    {
+      "id": "IVI-009",
+      "name": "后排娱乐屏幕 (x2)",
+      "type": "显示设备",
+      "category": "人机交互",
+      "domain": "座舱域",
+      "supplier": "Samsung",
+      "description": "后排双屏娱乐系统，支持视频播放、游戏和投屏功能",
+      "interfaces": [
+        {"type": "HDMI", "name": "视频输入", "speed": "4K30"},
+        {"type": "USB", "name": "充电和数据", "speed": "USB2.0"},
+        {"type": "Bluetooth", "name": "耳机连接", "speed": "BLE5.2"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "low",
+        "availability": "low",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "后排用户设置", "sensitivity": "low"}
+      ],
+      "functions": [
+        "后排视频播放",
+        "游戏功能",
+        "手机投屏"
+      ]
+    },
+    {
+      "id": "IVI-010",
+      "name": "车内麦克风阵列",
+      "type": "传感器",
+      "category": "语音输入",
+      "domain": "座舱域",
+      "supplier": "Harman",
+      "description": "6麦克风阵列，支持声源定位、降噪和多区域语音拾取",
+      "interfaces": [
+        {"type": "I2S", "name": "音频流", "speed": "48KHz/24bit"},
+        {"type": "PDM", "name": "数字麦克风", "speed": "3.072MHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "语音数据", "sensitivity": "high"},
+        {"name": "车内对话", "sensitivity": "high"}
+      ],
+      "functions": [
+        "语音指令采集",
+        "电话通话",
+        "声源定位",
+        "噪声消除"
+      ]
+    },
+    {
+      "id": "IVI-011",
+      "name": "车内摄像头 (DMS)",
+      "type": "传感器",
+      "category": "视觉输入",
+      "domain": "座舱域",
+      "supplier": "OmniVision",
+      "description": "驾驶员监控摄像头，红外夜视，用于疲劳检测和注意力监控",
+      "interfaces": [
+        {"type": "MIPI-CSI", "name": "视频流", "speed": "1080P30"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": false,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "驾驶员视频", "sensitivity": "critical"},
+        {"name": "疲劳检测结果", "sensitivity": "high"},
+        {"name": "人脸图像", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "驾驶员疲劳检测",
+        "注意力监控",
+        "人脸识别登录"
+      ]
+    },
+    {
+      "id": "IVI-012",
+      "name": "乘客监控摄像头 (OMS)",
+      "type": "传感器",
+      "category": "视觉输入",
+      "domain": "座舱域",
+      "supplier": "OmniVision",
+      "description": "乘客监控摄像头，用于儿童遗留检测、安全带检测等",
+      "interfaces": [
+        {"type": "MIPI-CSI", "name": "视频流", "speed": "720P30"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "乘客视频", "sensitivity": "high"},
+        {"name": "儿童检测结果", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "儿童遗留检测",
+        "安全带检测",
+        "乘员计数"
+      ]
+    },
+    {
+      "id": "IVI-013",
+      "name": "高性能音频功放",
+      "type": "执行器",
+      "category": "音频输出",
+      "domain": "座舱域",
+      "supplier": "Harman",
+      "description": "12声道高保真音频功放，支持主动降噪和3D音效",
+      "interfaces": [
+        {"type": "I2S", "name": "音频输入", "speed": "96KHz/24bit"},
+        {"type": "I2C", "name": "控制接口", "speed": "400KHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "音频均衡设置", "sensitivity": "low"}
+      ],
+      "functions": [
+        "音频放大",
+        "主动降噪",
+        "3D环绕音效",
+        "独立区域音量"
+      ]
+    },
+    {
+      "id": "IVI-014",
+      "name": "eMMC存储 (256GB)",
+      "type": "存储",
+      "category": "数据存储",
+      "domain": "座舱域",
+      "supplier": "Samsung",
+      "description": "嵌入式多媒体存储，用于操作系统和应用程序存储",
+      "interfaces": [
+        {"type": "eMMC5.1", "name": "存储接口", "speed": "400MB/s"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "操作系统镜像", "sensitivity": "critical"},
+        {"name": "应用程序", "sensitivity": "high"},
+        {"name": "系统配置", "sensitivity": "high"}
+      ],
+      "functions": [
+        "系统存储",
+        "应用存储",
+        "日志存储"
+      ]
+    },
+    {
+      "id": "IVI-015",
+      "name": "LPDDR5内存 (16GB)",
+      "type": "存储",
+      "category": "运行内存",
+      "domain": "座舱域",
+      "supplier": "SK Hynix",
+      "description": "低功耗DDR5内存，用于系统运行时数据存储",
+      "interfaces": [
+        {"type": "LPDDR5", "name": "内存接口", "speed": "6400Mbps"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "critical",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "运行时数据", "sensitivity": "high"},
+        {"name": "密钥缓存", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "系统运行内存",
+        "应用运行空间"
+      ]
+    },
+    {
+      "id": "IVI-016",
+      "name": "用户数据存储 (UFS 512GB)",
+      "type": "存储",
+      "category": "数据存储",
+      "domain": "座舱域",
+      "supplier": "Western Digital",
+      "description": "高速UFS存储，用于用户数据、多媒体内容和地图数据",
+      "interfaces": [
+        {"type": "UFS3.1", "name": "存储接口", "speed": "2.9GB/s"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "用户多媒体", "sensitivity": "medium"},
+        {"name": "离线地图", "sensitivity": "medium"},
+        {"name": "应用数据", "sensitivity": "high"}
+      ],
+      "functions": [
+        "用户数据存储",
+        "多媒体缓存",
+        "地图数据存储"
+      ]
+    },
+    {
+      "id": "IVI-017",
+      "name": "WiFi 6E模块",
+      "type": "通信模块",
+      "category": "无线通信",
+      "domain": "座舱域",
+      "supplier": "Qualcomm",
+      "description": "WiFi 6E无线模块，支持6GHz频段，提供车载热点和手机互联",
+      "interfaces": [
+        {"type": "PCIe", "name": "与SoC连接", "speed": "Gen3"},
+        {"type": "RF", "name": "天线接口", "bands": "2.4/5/6GHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "WiFi凭证", "sensitivity": "high"},
+        {"name": "网络流量", "sensitivity": "high"}
+      ],
+      "functions": [
+        "车载热点",
+        "手机互联",
+        "CarPlay/Android Auto"
+      ]
+    },
+    {
+      "id": "IVI-018",
+      "name": "蓝牙5.3模块",
+      "type": "通信模块",
+      "category": "无线通信",
+      "domain": "座舱域",
+      "supplier": "Qualcomm",
+      "description": "蓝牙5.3模块，支持LE Audio和多设备连接",
+      "interfaces": [
+        {"type": "UART", "name": "HCI接口", "speed": "4Mbps"},
+        {"type": "RF", "name": "天线", "bands": "2.4GHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "medium",
+        "availability": "low",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "配对信息", "sensitivity": "high"},
+        {"name": "通讯录同步", "sensitivity": "high"}
+      ],
+      "functions": [
+        "手机蓝牙连接",
+        "音频流传输",
+        "蓝牙钥匙"
+      ]
+    },
+    {
+      "id": "IVI-019",
+      "name": "5G通信模块 (T-Box集成)",
+      "type": "通信模块",
+      "category": "蜂窝通信",
+      "domain": "座舱域",
+      "supplier": "Quectel",
+      "description": "5G蜂窝通信模块，支持SA/NSA双模，提供车联网连接",
+      "interfaces": [
+        {"type": "PCIe", "name": "与SoC连接", "speed": "Gen3"},
+        {"type": "USB", "name": "调制解调器", "speed": "USB3.0"},
+        {"type": "RF", "name": "天线接口", "bands": "Sub-6GHz/mmWave"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "eSIM凭证", "sensitivity": "critical"},
+        {"name": "远程控制指令", "sensitivity": "critical"},
+        {"name": "车辆状态上报", "sensitivity": "high"}
+      ],
+      "functions": [
+        "车联网服务",
+        "远程控制",
+        "OTA升级通道",
+        "紧急呼叫(eCall)"
+      ]
+    },
+    {
+      "id": "IVI-020",
+      "name": "GNSS定位模块",
+      "type": "通信模块",
+      "category": "定位系统",
+      "domain": "座舱域",
+      "supplier": "U-blox",
+      "description": "多频GNSS模块，支持GPS/BDS/GLONASS/Galileo，提供高精度定位",
+      "interfaces": [
+        {"type": "UART", "name": "NMEA输出", "speed": "115200bps"},
+        {"type": "I2C", "name": "控制接口", "speed": "400KHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "位置信息", "sensitivity": "high"},
+        {"name": "轨迹数据", "sensitivity": "high"}
+      ],
+      "functions": [
+        "车辆定位",
+        "导航支持",
+        "轨迹记录"
+      ]
+    },
+    {
+      "id": "IVI-021",
+      "name": "V2X通信模块",
+      "type": "通信模块",
+      "category": "车路协同",
+      "domain": "座舱域",
+      "supplier": "Autotalks",
+      "description": "C-V2X通信模块，支持车与车(V2V)、车与基础设施(V2I)通信",
+      "interfaces": [
+        {"type": "Ethernet", "name": "与SoC连接", "speed": "100Mbps"},
+        {"type": "RF", "name": "天线", "bands": "5.9GHz ITS频段"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "V2X证书", "sensitivity": "critical"},
+        {"name": "BSM消息", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "碰撞预警",
+        "红绿灯信息",
+        "道路事件广播"
+      ]
+    },
+    {
+      "id": "IVI-022",
+      "name": "UWB模块 (数字钥匙)",
+      "type": "通信模块",
+      "category": "近场通信",
+      "domain": "座舱域",
+      "supplier": "NXP",
+      "description": "超宽带通信模块，用于精确测距的数字钥匙和手势控制",
+      "interfaces": [
+        {"type": "SPI", "name": "与SoC连接", "speed": "20MHz"},
+        {"type": "RF", "name": "天线阵列", "bands": "6-8GHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "数字钥匙凭证", "sensitivity": "critical"},
+        {"name": "测距数据", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "数字钥匙定位",
+        "无感解锁",
+        "防中继攻击"
+      ]
+    },
+    {
+      "id": "IVI-023",
+      "name": "NFC模块",
+      "type": "通信模块",
+      "category": "近场通信",
+      "domain": "座舱域",
+      "supplier": "NXP",
+      "description": "近场通信模块，用于手机钥匙和卡片钥匙",
+      "interfaces": [
+        {"type": "I2C", "name": "与MCU连接", "speed": "400KHz"},
+        {"type": "RF", "name": "天线", "frequency": "13.56MHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "NFC钥匙凭证", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "手机NFC钥匙",
+        "卡片钥匙",
+        "应急钥匙"
+      ]
+    },
+    {
+      "id": "IVI-024",
+      "name": "车载以太网交换机",
+      "type": "网络设备",
+      "category": "网络基础设施",
+      "domain": "座舱域",
+      "supplier": "Marvell",
+      "description": "8端口车载以太网交换机，支持TSN时间敏感网络",
+      "interfaces": [
+        {"type": "Ethernet", "name": "骨干网口", "speed": "1Gbps", "ports": 8},
+        {"type": "SPI", "name": "管理接口", "speed": "50MHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "路由表", "sensitivity": "high"},
+        {"name": "VLAN配置", "sensitivity": "high"},
+        {"name": "MACsec密钥", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "以太网交换",
+        "VLAN隔离",
+        "流量整形",
+        "MACsec加密"
+      ]
+    },
+    {
+      "id": "IVI-025",
+      "name": "CAN-FD网关",
+      "type": "网络设备",
+      "category": "网络基础设施",
+      "domain": "座舱域",
+      "supplier": "内部集成于MCU",
+      "description": "集成于安全MCU的CAN-FD网关，负责域间CAN通信路由和安全过滤",
+      "interfaces": [
+        {"type": "CAN-FD", "name": "多路CAN", "channels": 4, "speed": "5Mbps"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "CAN路由规则", "sensitivity": "high"},
+        {"name": "报文白名单", "sensitivity": "high"},
+        {"name": "SecOC密钥", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "CAN报文路由",
+        "报文过滤",
+        "SecOC认证",
+        "入侵检测"
+      ]
+    },
+    {
+      "id": "IVI-026",
+      "name": "USB Hub控制器",
+      "type": "接口",
+      "category": "外部接口",
+      "domain": "座舱域",
+      "supplier": "Genesys Logic",
+      "description": "USB 3.1 Hub控制器，提供多个USB接口用于外设连接",
+      "interfaces": [
+        {"type": "USB3.1", "name": "上行接口", "speed": "10Gbps"},
+        {"type": "USB", "name": "下行端口", "ports": 6, "speed": "mixed"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "medium",
+        "availability": "low",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "USB设备数据", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "USB设备连接",
+        "充电供电",
+        "数据传输"
+      ]
+    },
+    {
+      "id": "IVI-027",
+      "name": "前排USB接口 (Type-C x2)",
+      "type": "接口",
+      "category": "外部接口",
+      "domain": "座舱域",
+      "description": "前排USB Type-C接口，用于手机连接和充电",
+      "interfaces": [
+        {"type": "USB-C", "name": "Type-C接口", "speed": "USB3.1", "power": "27W"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "medium",
+        "availability": "low",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "连接设备数据", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "手机连接",
+        "快速充电",
+        "CarPlay/Android Auto"
+      ]
+    },
+    {
+      "id": "IVI-028",
+      "name": "SD卡接口",
+      "type": "接口",
+      "category": "外部接口",
+      "domain": "座舱域",
+      "description": "SD卡接口，用于多媒体文件和行车记录仪存储",
+      "interfaces": [
+        {"type": "SD", "name": "SDXC接口", "speed": "UHS-II"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "low",
+        "availability": "low",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "SD卡内容", "sensitivity": "low"}
+      ],
+      "functions": [
+        "多媒体导入",
+        "行车记录存储"
+      ]
+    },
+    {
+      "id": "IVI-029",
+      "name": "OBD-II诊断接口",
+      "type": "接口",
+      "category": "诊断接口",
+      "domain": "座舱域",
+      "description": "车载诊断接口，支持UDS诊断协议和标定功能",
+      "interfaces": [
+        {"type": "CAN", "name": "诊断CAN", "speed": "500Kbps", "protocol": "UDS/ISO14229"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "low",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "诊断数据", "sensitivity": "high"},
+        {"name": "标定参数", "sensitivity": "critical"},
+        {"name": "安全访问密钥", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "故障诊断",
+        "参数读取",
+        "固件刷写"
+      ]
+    },
+    {
+      "id": "IVI-030",
+      "name": "PMIC电源管理",
+      "type": "芯片",
+      "category": "电源管理",
+      "domain": "座舱域",
+      "supplier": "Dialog",
+      "description": "电源管理芯片，为SoC和外围设备提供电源供应",
+      "interfaces": [
+        {"type": "I2C", "name": "控制接口", "speed": "400KHz"},
+        {"type": "电源", "name": "输入", "voltage": "12V"}
+      ],
+      "security_properties": {
+        "confidentiality": "low",
+        "integrity": "high",
+        "availability": "critical",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": false
+      },
+      "data_assets": [
+        {"name": "电源配置", "sensitivity": "low"}
+      ],
+      "functions": [
+        "电压调节",
+        "电源时序控制",
+        "休眠管理"
+      ]
+    },
+    {
+      "id": "IVI-031",
+      "name": "HSM硬件安全模块",
+      "type": "安全芯片",
+      "category": "安全组件",
+      "domain": "座舱域",
+      "supplier": "Infineon",
+      "description": "集成于MCU的硬件安全模块，提供密钥存储和密码学运算",
+      "interfaces": [
+        {"type": "内部", "name": "与MCU集成", "speed": "内部总线"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "主密钥", "sensitivity": "critical"},
+        {"name": "设备证书", "sensitivity": "critical"},
+        {"name": "安全计数器", "sensitivity": "high"}
+      ],
+      "functions": [
+        "安全密钥存储",
+        "密码学运算",
+        "安全启动支持",
+        "真随机数生成"
+      ]
+    },
+    {
+      "id": "IVI-032",
+      "name": "SE安全元件",
+      "type": "安全芯片",
+      "category": "安全组件",
+      "domain": "座舱域",
+      "supplier": "NXP",
+      "description": "独立安全元件，用于数字钥匙和支付凭证存储",
+      "interfaces": [
+        {"type": "SPI", "name": "与SoC连接", "speed": "10MHz"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "数字钥匙私钥", "sensitivity": "critical"},
+        {"name": "支付凭证", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "数字钥匙凭证存储",
+        "车载支付",
+        "身份认证"
+      ]
+    },
+    {
+      "id": "IVI-033",
+      "name": "Android Automotive OS",
+      "type": "软件",
+      "category": "操作系统",
+      "domain": "座舱域",
+      "supplier": "Google/OEM定制",
+      "description": "车载Android操作系统，运行信息娱乐应用",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "系统镜像", "sensitivity": "critical"},
+        {"name": "应用沙箱", "sensitivity": "high"},
+        {"name": "SELinux策略", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "应用运行环境",
+        "权限管理",
+        "安全隔离"
+      ]
+    },
+    {
+      "id": "IVI-034",
+      "name": "QNX Hypervisor",
+      "type": "软件",
+      "category": "虚拟化层",
+      "domain": "座舱域",
+      "supplier": "BlackBerry",
+      "description": "QNX虚拟化管理程序，提供多操作系统隔离运行",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "虚拟机配置", "sensitivity": "critical"},
+        {"name": "虚拟设备", "sensitivity": "high"}
+      ],
+      "functions": [
+        "多OS隔离",
+        "资源分配",
+        "安全隔离"
+      ]
+    },
+    {
+      "id": "IVI-035",
+      "name": "语音助手服务",
+      "type": "服务",
+      "category": "云端服务",
+      "domain": "座舱域",
+      "supplier": "OEM/第三方",
+      "description": "智能语音助手，支持自然语言理解和多轮对话",
+      "interfaces": [
+        {"type": "HTTPS", "name": "云端API", "protocol": "REST"},
+        {"type": "WebSocket", "name": "流式传输", "protocol": "WSS"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "medium",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "语音指令", "sensitivity": "high"},
+        {"name": "对话历史", "sensitivity": "high"}
+      ],
+      "functions": [
+        "语音识别",
+        "自然语言理解",
+        "车控语音指令"
+      ]
+    },
+    {
+      "id": "IVI-036",
+      "name": "在线导航服务",
+      "type": "服务",
+      "category": "云端服务",
+      "domain": "座舱域",
+      "supplier": "高德/百度",
+      "description": "在线导航服务，提供实时路况和路径规划",
+      "interfaces": [
+        {"type": "HTTPS", "name": "地图API", "protocol": "REST"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "high",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "导航历史", "sensitivity": "high"},
+        {"name": "收藏地点", "sensitivity": "medium"},
+        {"name": "实时位置", "sensitivity": "high"}
+      ],
+      "functions": [
+        "路径规划",
+        "实时路况",
+        "POI搜索"
+      ]
+    },
+    {
+      "id": "IVI-037",
+      "name": "OTA升级服务",
+      "type": "服务",
+      "category": "云端服务",
+      "domain": "座舱域",
+      "supplier": "OEM",
+      "description": "远程软件升级服务，支持整车OTA和增量升级",
+      "interfaces": [
+        {"type": "HTTPS", "name": "升级服务器", "protocol": "REST"},
+        {"type": "MQTT", "name": "推送通道", "protocol": "MQTT over TLS"}
+      ],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "固件升级包", "sensitivity": "critical"},
+        {"name": "升级签名", "sensitivity": "critical"},
+        {"name": "版本信息", "sensitivity": "medium"}
+      ],
+      "functions": [
+        "固件下载",
+        "增量升级",
+        "回滚保护"
+      ]
+    },
+    {
+      "id": "IVI-038",
+      "name": "远程车控服务",
+      "type": "服务",
+      "category": "云端服务",
+      "domain": "座舱域",
+      "supplier": "OEM",
+      "description": "手机APP远程控制服务，支持远程解锁、空调、寻车等",
+      "interfaces": [
+        {"type": "HTTPS", "name": "车控API", "protocol": "REST"},
+        {"type": "MQTT", "name": "指令通道", "protocol": "MQTT over TLS"}
+      ],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "high",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "车控指令", "sensitivity": "critical"},
+        {"name": "用户凭证", "sensitivity": "critical"},
+        {"name": "车辆状态", "sensitivity": "high"}
+      ],
+      "functions": [
+        "远程解锁",
+        "远程启动空调",
+        "车辆定位"
+      ]
+    },
+    {
+      "id": "IVI-039",
+      "name": "在线娱乐服务",
+      "type": "服务",
+      "category": "云端服务",
+      "domain": "座舱域",
+      "supplier": "第三方",
+      "description": "在线音视频娱乐服务，包括音乐、视频、游戏等",
+      "interfaces": [
+        {"type": "HTTPS", "name": "内容服务", "protocol": "REST"},
+        {"type": "HLS/DASH", "name": "流媒体", "protocol": "HTTP流"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "low",
+        "availability": "low",
+        "authenticity": true,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "会员凭证", "sensitivity": "medium"},
+        {"name": "播放历史", "sensitivity": "low"}
+      ],
+      "functions": [
+        "音乐播放",
+        "视频播放",
+        "游戏服务"
+      ]
+    },
+    {
+      "id": "IVI-040",
+      "name": "应用商店",
+      "type": "服务",
+      "category": "应用服务",
+      "domain": "座舱域",
+      "supplier": "OEM",
+      "description": "车载应用商店，提供第三方应用下载安装",
+      "interfaces": [
+        {"type": "HTTPS", "name": "应用市场", "protocol": "REST"}
+      ],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "critical",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "应用包", "sensitivity": "high"},
+        {"name": "应用签名", "sensitivity": "critical"}
+      ],
+      "functions": [
+        "应用下载",
+        "应用更新",
+        "应用签名验证"
+      ]
+    },
+    {
+      "id": "IVI-041",
+      "name": "用户账户数据",
+      "type": "数据",
+      "category": "用户数据",
+      "domain": "座舱域",
+      "description": "用户登录账户、个人偏好设置等",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "用户ID", "sensitivity": "medium"},
+        {"name": "登录凭证", "sensitivity": "critical"},
+        {"name": "个人偏好", "sensitivity": "medium"}
+      ],
+      "functions": []
+    },
+    {
+      "id": "IVI-042",
+      "name": "通讯录与消息",
+      "type": "数据",
+      "category": "用户数据",
+      "domain": "座舱域",
+      "description": "从手机同步的通讯录和消息数据",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "medium",
+        "availability": "low",
+        "authenticity": false,
+        "non_repudiation": false,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "联系人", "sensitivity": "high"},
+        {"name": "通话记录", "sensitivity": "high"},
+        {"name": "短信", "sensitivity": "high"}
+      ],
+      "functions": []
+    },
+    {
+      "id": "IVI-043",
+      "name": "行车记录数据",
+      "type": "数据",
+      "category": "车辆数据",
+      "domain": "座舱域",
+      "description": "行车记录仪视频、行驶轨迹等数据",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "high",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "行车视频", "sensitivity": "high"},
+        {"name": "GPS轨迹", "sensitivity": "high"},
+        {"name": "事件数据", "sensitivity": "high"}
+      ],
+      "functions": []
+    },
+    {
+      "id": "IVI-044",
+      "name": "密钥与证书",
+      "type": "数据",
+      "category": "安全数据",
+      "domain": "座舱域",
+      "description": "系统安全相关的密钥、证书和凭证",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "critical",
+        "integrity": "critical",
+        "availability": "critical",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "设备私钥", "sensitivity": "critical"},
+        {"name": "CA证书链", "sensitivity": "high"},
+        {"name": "会话密钥", "sensitivity": "critical"}
+      ],
+      "functions": []
+    },
+    {
+      "id": "IVI-045",
+      "name": "系统日志",
+      "type": "数据",
+      "category": "审计数据",
+      "domain": "座舱域",
+      "description": "系统运行日志、安全事件日志等",
+      "interfaces": [],
+      "security_properties": {
+        "confidentiality": "medium",
+        "integrity": "high",
+        "availability": "medium",
+        "authenticity": true,
+        "non_repudiation": true,
+        "authorization": true
+      },
+      "data_assets": [
+        {"name": "系统日志", "sensitivity": "medium"},
+        {"name": "安全事件", "sensitivity": "high"},
+        {"name": "诊断日志", "sensitivity": "medium"}
+      ],
+      "functions": []
+    }
+  ],
+  "metadata": {
+    "total_assets": 45,
+    "categories": {
+      "核心处理单元": 4,
+      "显示设备": 5,
+      "传感器": 3,
+      "音频输出": 1,
+      "存储": 3,
+      "通信模块": 7,
+      "网络设备": 2,
+      "外部接口": 4,
+      "安全组件": 2,
+      "软件系统": 2,
+      "云端服务": 6,
+      "用户数据": 5
+    }
+  }
+}
